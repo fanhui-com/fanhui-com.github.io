@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>操作日志 - 格力WMS系统</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: "Microsoft YaHei", "PingFang SC", -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f0f2f5;
+      color: #333;
+      font-size: 14px;
+    }
+
+    /* 顶部导航栏 */
+    .header {
+      background: #3F9BA2;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      color: #fff;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+    }
+    .header-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      opacity: 0.9;
+      padding: 6px 12px;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    .header-item:hover {
+      opacity: 1;
+      background: rgba(255,255,255,0.15);
+    }
+    .header-divider {
+      width: 1px;
+      height: 20px;
+      background: rgba(255,255,255,0.3);
+    }
+    .user-avatar {
+      width: 28px;
+      height: 28px;
+      background: rgba(255,255,255,0.25);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    /* 主布局 */
+    .main-layout {
+      display: flex;
+      height: calc(100vh - 50px);
+    }
+
+    /* 左侧菜单 */
+    .sidebar {
+      width: 180px;
+      background: #fff;
+      border-right: 1px solid #e8e8e8;
+      overflow-y: auto;
+    }
+    .menu-search {
+      padding: 12px;
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .menu-search input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
+      font-size: 13px;
+      outline: none;
+    }
+    .menu-search input:focus {
+      border-color: #3F9BA2;
+    }
+    .menu-item {
+      padding: 12px 16px;
+      cursor: pointer;
+      border-left: 3px solid transparent;
+      transition: all 0.2s;
+      color: #666;
+      font-size: 13px;
+    }
+    .menu-item:hover {
+      background: #f5f5f5;
+      color: #3F9BA2;
+    }
+    .menu-item.active {
+      background: #e6f7f4;
+      border-left-color: #3F9BA2;
+      color: #3F9BA2;
+    }
+    .menu-group-title {
+      padding: 12px 16px 8px 16px;
+      font-size: 11px;
+      color: #999;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* 内容区域 */
+    .content {
+      flex: 1;
+      overflow: auto;
+      padding: 16px;
+    }
+
+    /* 面包屑导航 */
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: #666;
+    }
+    .breadcrumb a {
+      color: #666;
+      text-decoration: none;
+    }
+    .breadcrumb a:hover {
+      color: #3a9d8f;
+    }
+    .breadcrumb-separator {
+      color: #ccc;
+    }
+    .breadcrumb-current {
+      color: #333;
+      font-weight: 500;
+    }
+
+    /* Tab导航 */
+    .tab-nav {
+      display: flex;
+      background: #fff;
+      border-bottom: 1px solid #e8e8e8;
+      padding: 0 16px;
+      margin: -16px -16px 16px -16px;
+    }
+    .tab-item {
+      padding: 12px 20px;
+      cursor: pointer;
+      color: #666;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      font-size: 14px;
+      position: relative;
+    }
+    .tab-item:hover {
+      color: #3F9BA2;
+    }
+    .tab-item.active {
+      color: #3F9BA2;
+      border-bottom-color: #3F9BA2;
+      font-weight: 500;
+    }
+    .tab-badge {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      min-width: 18px;
+      height: 18px;
+      background: #ff4d4f;
+      color: #fff;
+      border-radius: 9px;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 5px;
+    }
+
+    /* 筛选栏 */
+    .filter-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .filter-btn {
+      padding: 6px 16px;
+      border: 1px solid #d9d9d9;
+      background: #fff;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filter-btn:hover {
+      border-color: #3F9BA2;
+      color: #3F9BA2;
+    }
+    .filter-label {
+      font-size: 13px;
+      color: #999;
+    }
+    .search-box {
+      display: flex;
+      align-items: center;
+      background: #fff;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
+      padding: 0 12px;
+      width: 200px;
+    }
+    .search-box input {
+      border: none;
+      background: transparent;
+      padding: 6px 8px;
+      font-size: 13px;
+      width: 100%;
+      outline: none;
+    }
+    .search-box input::placeholder {
+      color: #bfbfbf;
+    }
+
+    /* 表格卡片 */
+    .table-card {
+      background: #fff;
+      border-radius: 4px;
+      border: 1px solid #e8e8e8;
+      overflow: hidden;
+    }
+    .table-container {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    thead {
+      background: #fafafa;
+    }
+    th {
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 500;
+      color: #666;
+      font-size: 13px;
+      border-bottom: 1px solid #e8e8e8;
+      white-space: nowrap;
+    }
+    td {
+      padding: 12px 16px;
+      font-size: 13px;
+      border-bottom: 1px solid #f0f0f0;
+      color: #333;
+    }
+    tbody tr:hover {
+      background: #fafafa;
+    }
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* 操作类型标签 */
+    .action-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .tag-create {
+      background: #e6f7f4;
+      color: #3F9BA2;
+    }
+    .tag-update {
+      background: #e6f0ff;
+      color: #1890ff;
+    }
+    .tag-delete {
+      background: #fff1f0;
+      color: #ff4d4f;
+    }
+    .tag-login {
+      background: #f9f0ff;
+      color: #722ed1;
+    }
+    .tag-export {
+      background: #fff7e6;
+      color: #fa8c16;
+    }
+
+    /* 更新人样式 - 参考弹窗设计 */
+    .updater-cell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .updater-avatar {
+      width: 24px;
+      height: 24px;
+      background: #3F9BA2;
+      color: #fff;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .updater-name {
+      color: #333;
+      font-size: 13px;
+    }
+
+    /* 更新时间样式 */
+    .update-time {
+      color: #666;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    /* 分页 */
+    .pagination {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-top: 1px solid #f0f0f0;
+      background: #fafafa;
+    }
+    .pagination-info {
+      color: #999;
+      font-size: 13px;
+    }
+    .pagination-controls {
+      display: flex;
+      gap: 4px;
+    }
+    .page-btn {
+      min-width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      border: 1px solid #d9d9d9;
+      background: #fff;
+      cursor: pointer;
+      font-size: 13px;
+      color: #666;
+      transition: all 0.2s;
+    }
+    .page-btn:hover:not(:disabled) {
+      border-color: #3F9BA2;
+      color: #3F9BA2;
+    }
+    .page-btn.active {
+      background: #3F9BA2;
+      color: #fff;
+      border-color: #3F9BA2;
+    }
+    .page-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* 操作按钮 */
+    .op-link {
+      color: #3F9BA2;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .op-link:hover {
+      text-decoration: underline;
+    }
+    .op-divider {
+      color: #e8e8e8;
+      margin: 0 8px;
+    }
+
+    /* 展开详情 */
+    .expand-btn {
+      cursor: pointer;
+      color: #999;
+      transition: transform 0.2s;
+      display: inline-block;
+      width: 16px;
+      text-align: center;
+    }
+    .expand-btn.expanded {
+      transform: rotate(90deg);
+      color: #3a9d8f;
+    }
+    .detail-row {
+      display: none;
+    }
+    .detail-row.show {
+      display: table-row;
+    }
+    .detail-content {
+      padding: 16px 20px 16px 50px;
+      background: #fafafa;
+      font-size: 13px;
+      line-height: 1.8;
+      color: #666;
+    }
+    .detail-label {
+      font-weight: 500;
+      color: #999;
+    }
+
+    /* 详情面板 - 融合更新人更新时间设计 */
+    .detail-panel {
+      display: flex;
+      gap: 40px;
+      padding: 16px 20px;
+      background: #fafafa;
+      border-top: 1px solid #f0f0f0;
+    }
+    .detail-section {
+      flex: 1;
+    }
+    .detail-section-title {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px 24px;
+    }
+    .detail-item {
+      display: flex;
+      gap: 8px;
+    }
+    .detail-item-label {
+      color: #999;
+      min-width: 70px;
+    }
+    .detail-item-value {
+      color: #333;
+    }
+
+    /* 更新记录表格 - 参考弹窗样式 */
+    .update-record-table {
+      width: 100%;
+      border: 1px solid #e8e8e8;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .update-record-table th {
+      background: #3F9BA2;
+      color: #fff;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: left;
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .update-record-table td {
+      padding: 10px 16px;
+      font-size: 13px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .update-record-table tr:last-child td {
+      border-bottom: none;
+    }
+    .update-record-table tr:hover {
+      background: #fafafa;
+    }
+
+    /* 配置项区域样式 - 保持老页面风格 */
+    .section-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 12px;
+      padding-left: 4px;
+    }
+    .config-section {
+      background: #fff;
+      border: 1px solid #e8e8e8;
+      border-radius: 4px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+    }
+    .config-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .config-row:last-child {
+      margin-bottom: 0;
+    }
+    .config-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 300px;
+    }
+    .config-label {
+      font-size: 13px;
+      color: #333;
+      min-width: 200px;
+    }
+    .radio-label {
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+      padding: 4px 12px;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+    .radio-label:hover {
+      background: #f5f5f5;
+    }
+    .radio-label.active {
+      color: #3F9BA2;
+      font-weight: 500;
+    }
+    .radio-label input {
+      margin-right: 6px;
+    }
+
+    /* 日志区域样式 - 占满整个页面 */
+    .log-section {
+      background: #fff;
+      border: 1px solid #e8e8e8;
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 200px);
+    }
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid #e8e8e8;
+      background: #fafafa;
+      flex-shrink: 0;
+    }
+    .log-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+    }
+    .log-count {
+      font-size: 13px;
+      color: #999;
+    }
+    .log-table-wrapper {
+      overflow-y: auto;
+      flex: 1;
+    }
+    .log-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .log-table th {
+      background: #3F9BA2;
+      color: #fff;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: left;
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .log-table td {
+      padding: 12px 16px;
+      font-size: 13px;
+      border-bottom: 1px solid #f0f0f0;
+      color: #333;
+    }
+    .log-table tbody tr:hover {
+      background: #fafafa;
+    }
+    .op-on {
+      color: #52c41a;
+      font-weight: 500;
+    }
+    .op-off {
+      color: #ff4d4f;
+      font-weight: 500;
+    }
+    .log-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        display: none;
+      }
+      .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .search-box {
+        width: 100%;
+      }
+      .detail-panel {
+        flex-direction: column;
+      }
+      .config-row {
+        flex-direction: column;
+        gap: 12px;
+      }
+      .config-item {
+        min-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 顶部导航栏 -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9,22 9,12 15,12 15,22"/>
+        </svg>
+      </div>
+      <span>WMS仓储管理系统</span>
+    </div>
+      <div class="header-right">
+      <div class="header-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 01-3.46 0"/>
+        </svg>
+        <span>通知</span>
+      </div>
+      <div class="header-divider"></div>
+      <div class="header-item">
+        <div class="user-avatar">范</div>
+        <span>范会</span>
+      </div>
+      <div class="header-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+          <polyline points="16,17 21,12 16,7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        <span>退出</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主布局 -->
+  <div class="main-layout">
+    <!-- 左侧菜单 -->
+    <div class="sidebar">
+      <div class="menu-search">
+        <input type="text" placeholder="搜索菜单...">
+      </div>
+      <div class="menu-group-title">运营管理</div>
+      <div class="menu-item active">入库管理</div>
+      <div class="menu-item">库内管理</div>
+      <div class="menu-item">出库管理</div>
+      <div class="menu-item">车辆管理</div>
+      <div class="menu-item">操作日志</div>
+      <div class="menu-group-title">基础数据</div>
+      <div class="menu-item">仓库管理</div>
+      <div class="menu-item">库区管理</div>
+      <div class="menu-item">货品管理</div>
+      <div class="menu-group-title">系统设置</div>
+      <div class="menu-item">用户管理</div>
+      <div class="menu-item">角色权限</div>
+      <div class="menu-item">系统参数</div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content">
+      <!-- 面包屑导航 -->
+      <div class="breadcrumb">
+        <a href="#">首页</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="#">运营管理</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">操作日志</span>
+      </div>
+
+      <!-- Tab导航 -->
+      <div class="tab-nav">
+        <div class="tab-item">入库管理</div>
+        <div class="tab-item">库内管理</div>
+        <div class="tab-item">出库管理</div>
+        <div class="tab-item">车辆管理</div>
+        <div class="tab-item active">
+          操作日志
+          <span class="tab-badge">1</span>
+        </div>
+      </div>
+
+      <!-- 筛选栏 -->
+      <div class="filter-bar">
+        <span class="filter-label">快捷筛选</span>
+        <div class="search-box">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <input type="text" placeholder="请输入">
+        </div>
+      </div>
+
+      <!-- 操作日志表格 -->
+      <div class="log-section">
+        <div class="log-table-wrapper">
+          <table class="log-table">
+            <thead>
+              <tr>
+                <th>操作内容</th>
+                <th style="width: 140px;">更新人</th>
+                <th style="width: 140px;">更新时间</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>修改「生产/返包入库 整版模式播报数量」：<span class="op-off">关闭</span> → <span class="op-on">开启</span></td>
+                <td><span class="updater-name">范会100015888</span></td>
+                <td class="update-time">2026/5/8 16:00</td>
+              </tr>
+              <tr>
+                <td>修改「允许无任务返包入库」：<span class="op-off">否</span> → <span class="op-on">是</span></td>
+                <td><span class="updater-name">范会100015888</span></td>
+                <td class="update-time">2026/5/8 14:52</td>
+              </tr>
+              <tr>
+                <td>修改「生产物资获取新ERP箱信息」：<span class="op-on">开启</span> → <span class="op-off">关闭</span></td>
+                <td><span class="updater-name">范会100015888</span></td>
+                <td class="update-time">2026/5/8 09:15</td>
+              </tr>
+              <tr>
+                <td>修改「生产/返包入库 自动入库实时记账」：<span class="op-off">关闭</span> → <span class="op-on">开启</span></td>
+                <td><span class="updater-name">范会100015888</span></td>
+                <td class="update-time">2026/5/7 16:40</td>
+              </tr>
+              <tr>
+                <td>修改「PDA任务入库 目标库位不同库龄校验」：<span class="op-on">开启</span> → <span class="op-off">关闭</span></td>
+                <td><span class="updater-name">管理员</span></td>
+                <td class="update-time">2026/5/7 09:15</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('.expand-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const row = this.closest('tr');
+        const detailRow = row.nextElementSibling;
+        if (detailRow && detailRow.classList.contains('detail-row')) {
+          detailRow.classList.toggle('show');
+          this.classList.toggle('expanded');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
