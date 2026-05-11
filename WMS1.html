@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WMS库存看板</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "Microsoft YaHei", "PingFang SC", -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f0f2f5;
+      color: #333;
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ===== 顶部导航 ===== */
+    .header {
+      background: linear-gradient(90deg, #1a6fd8 0%, #2d7de0 40%, #3a8ef5 100%);
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(26,111,216,0.3);
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-logo {
+      width: 32px;
+      height: 32px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .search-box {
+      display: flex;
+      align-items: center;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 20px;
+      padding: 5px 14px;
+      gap: 8px;
+      width: 200px;
+    }
+    .search-box input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #fff;
+      font-size: 13px;
+      width: 100%;
+    }
+    .search-box input::placeholder { color: rgba(255,255,255,0.7); }
+    .header-icon {
+      width: 32px;
+      height: 32px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .header-icon:hover { background: rgba(255,255,255,0.25); }
+    .header-user {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; color: rgba(255,255,255,0.9);
+      padding: 5px 12px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 4px;
+    }
+    .new-warehouse-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 4px;
+      padding: 5px 14px;
+      cursor: pointer;
+      font-size: 13px;
+      color: #fff;
+      transition: background 0.2s;
+    }
+    .new-warehouse-btn:hover { background: rgba(255,255,255,0.25); }
+
+    /* ===== 主内容区 ===== */
+    .main { padding: 20px 24px; }
+
+    /* ===== 统计卡片 ===== */
+    .stat-cards {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+      border-radius: 14px;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border: 1px solid rgba(0,0,0,0.04);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .stat-card:hover { 
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12); 
+      transform: translateY(-2px);
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: -30px;
+      right: -30px;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      opacity: 0.08;
+      transition: all 0.3s;
+    }
+    .stat-card:nth-child(1)::before { background: #1a6fd8; }
+    .stat-card:nth-child(2)::before { background: #00b5b5; }
+    .stat-card:nth-child(3)::before { background: #00b96b; }
+    .stat-card:nth-child(4)::before { background: #ff7a00; }
+    .stat-card:nth-child(5)::before { background: #9c27b0; }
+    .stat-card:hover::before { transform: scale(1.5); opacity: 0.12; }
+    
+    .stat-icon {
+      width: 54px; height: 54px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-icon::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.5) 0%, transparent 60%);
+      opacity: 0.8;
+    }
+    .stat-icon.blue   { background: linear-gradient(145deg, #1a6fd8 0%, #4d8ef5 100%); box-shadow: 0 4px 16px rgba(26,111,216,0.4); }
+    .stat-icon.cyan   { background: linear-gradient(145deg, #00b5b5 0%, #00d4d4 100%); box-shadow: 0 4px 16px rgba(0,181,181,0.4); }
+    .stat-icon.green  { background: linear-gradient(145deg, #00b96b 0%, #00d48a 100%); box-shadow: 0 4px 16px rgba(0,185,107,0.4); }
+    .stat-icon.orange { background: linear-gradient(145deg, #ff7a00 0%, #ff9e3d 100%); box-shadow: 0 4px 16px rgba(255,122,0,0.4); }
+    .stat-icon.purple { background: linear-gradient(145deg, #9c27b0 0%, #ba68c8 100%); box-shadow: 0 4px 16px rgba(156,39,176,0.4); }
+    .stat-icon svg { position: relative; z-index: 1; }
+    
+    .stat-info { flex: 1; position: relative; z-index: 1; }
+    .stat-label { font-size: 13px; color: #666; margin-bottom: 6px; font-weight: 500; }
+    .stat-value { font-size: 28px; font-weight: 700; color: #1a1a2e; line-height: 1; display: flex; align-items: baseline; gap: 4px; }
+    .stat-value span { font-size: 13px; font-weight: 500; color: #999; }
+    
+    .stat-trend {
+      position: absolute; bottom: 16px; right: 16px;
+      display: flex; align-items: center; gap: 3px;
+      font-size: 11px; font-weight: 600; padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .stat-trend.up { background: #e6f7f0; color: #00b96b; }
+    .stat-trend.down { background: #fff0f0; color: #ff4d4f; }
+    .stat-trend svg { width: 10px; height: 10px; }
+
+    /* ===== 中间图表区 ===== */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .chart-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .chart-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .chart-title {
+      font-size: 15px; font-weight: 600; color: #222;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .chart-subtitle { font-size: 12px; color: #1a6fd8; font-weight: 400; }
+    .chart-legend { display: flex; align-items: center; gap: 16px; }
+    .legend-item {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 12px; color: #666; cursor: pointer;
+    }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .chart-tabs { display: flex; }
+    .chart-tab {
+      padding: 4px 12px; font-size: 13px; cursor: pointer;
+      color: #666; border: 1px solid #e0e0e0; transition: all 0.2s;
+    }
+    .chart-tab:first-child { border-radius: 4px 0 0 4px; }
+    .chart-tab:last-child { border-radius: 0 4px 4px 0; border-left: none; }
+    .chart-tab.active { background: #1a6fd8; color: #fff; border-color: #1a6fd8; }
+    .chart-meta { display: flex; gap: 16px; font-size: 12px; color: #999; }
+    .chart-meta span { color: #333; }
+    .line-chart-wrap { position: relative; height: 220px; }
+    .chart-footer { margin-top: 8px; font-size: 12px; color: #1a6fd8; text-align: center; }
+    .donut-area {
+      display: flex; align-items: center; justify-content: center;
+      gap: 24px; padding: 10px 0;
+    }
+    .donut-wrap {
+      position: relative; width: 150px; height: 150px; flex-shrink: 0;
+    }
+    .donut-label {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center; font-size: 13px; font-weight: 600;
+      color: #333; pointer-events: none;
+    }
+    .donut-right-legend { display: flex; flex-direction: column; gap: 8px; }
+    .donut-legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #555; }
+    .donut-legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+    /* ===== 仓库库容明细 ===== */
+    .detail-card {
+      background: #fff; border-radius: 8px; padding: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .detail-header {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 8px;
+      margin-bottom: 16px;
+    }
+    .refresh-link {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 13px; color: #ff4d4f; cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .refresh-link:hover { opacity: 0.75; }
+    .section-header {
+      display: flex; align-items: center; justify-content: flex-end;
+      margin-bottom: 8px;
+    }
+    .detail-title { font-size: 15px; font-weight: 600; color: #222; }
+    .summary-hint {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 13px; color: #666; flex: 1; justify-content: center;
+      flex-wrap: wrap;
+    }
+    .hint-group { display: flex; align-items: center; gap: 6px; }
+    .hint-label { white-space: nowrap; }
+    .hint-bar {
+      width: 80px; height: 8px; background: #eee;
+      border-radius: 4px; overflow: hidden;
+    }
+    .hint-fill { height: 100%; background: #1a6fd8; border-radius: 4px; }
+    .hint-fill.warn { background: #ff7a00; }
+    .hint-sep { width: 1px; height: 16px; background: #ddd; }
+    .hint-status {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-size: 12px; font-weight: 500;
+    }
+    .hint-status.normal { background: #e6f7f0; color: #00b96b; }
+    .detail-op {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 13px; color: #1a6fd8; cursor: pointer;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { background: #f7f8fa; }
+    th {
+      padding: 11px 16px; text-align: left;
+      font-size: 13px; font-weight: 500; color: #666;
+      border-bottom: 1px solid #eee; white-space: nowrap;
+    }
+    td {
+      padding: 12px 16px; font-size: 13px;
+      border-bottom: 1px solid #f5f5f5; color: #333;
+    }
+    tbody tr:hover { background: #fafbff; }
+    tbody tr:last-child td { border-bottom: none; }
+    .checkbox-cell { width: 40px; text-align: center; }
+    input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-color: #1a6fd8; }
+    .op-btn {
+      color: #1a6fd8; cursor: pointer; margin-right: 10px;
+      font-size: 13px; text-decoration: none;
+    }
+    .op-btn:hover { text-decoration: underline; }
+    .capacity-bar { display: flex; align-items: center; gap: 8px; min-width: 100px; }
+    .capacity-track {
+      flex: 1; height: 6px; background: #eee;
+      border-radius: 3px; overflow: hidden; min-width: 60px;
+    }
+    .capacity-fill { height: 100%; border-radius: 3px; background: #1a6fd8; }
+    .capacity-fill.warn { background: #ff7a00; }
+    .capacity-fill.danger { background: #ff4d4f; }
+    .capacity-pct { font-size: 12px; color: #999; white-space: nowrap; }
+    .status-tag {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-size: 12px; font-weight: 500;
+    }
+    .status-tag.normal { background: #e6f7f0; color: #00b96b; }
+    .status-tag.warn  { background: #fff3e6; color: #ff7a00; }
+    .status-tag.danger { background: #fff0f0; color: #ff4d4f; }
+    tfoot { background: #f0f5ff; }
+    .summary-row td {
+      padding: 10px 16px; font-size: 13px;
+      border-top: 2px solid #dde8ff;
+    }
+    .colgroup-row th {
+      padding: 6px 16px 0; text-align: left;
+      font-size: 12px; font-weight: 500; color: #999;
+      border-bottom: 1px solid #eee;
+    }
+    .colgroup-row th.checkbox-cell { padding-left: 16px; }
+  </style>
+</head>
+<body>
+
+  <!-- 顶部导航 -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+        </svg>
+      </div>
+      <div class="header-title">WMS库存看板</div>
+    </div>
+    <div class="header-right">
+      <div class="search-box">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input type="text" placeholder="筛选 筛选">
+      </div>
+      <div class="header-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 01-3.46 0"/>
+        </svg>
+      </div>
+      <div class="header-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 8v4l3 3"/>
+        </svg>
+      </div>
+      <div class="header-icon" id="refreshBtn" title="刷新数据" style="cursor:pointer;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+        </svg>
+      </div>
+      <div class="header-user">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        登录人：示范会
+      </div>
+      <div class="new-warehouse-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="7" width="20" height="14" rx="2"/>
+          <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
+        </svg>
+        珠海基地
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6,9 12,15 18,9"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主内容 -->
+  <div class="main">
+
+    <!-- 统计卡片 -->
+    <div class="section-header">
+      <div></div>
+      <span class="refresh-link" id="refreshCards">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+        </svg>
+        刷新
+      </span>
+    </div>
+    <div class="stat-cards">
+      <!-- 总库存 -->
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" y1="22.08" x2="12" y2="12"/>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <div class="stat-label">总库存</div>
+          <div class="stat-value">15<span>个</span></div>
+        </div>
+        <div class="stat-trend up">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+          +12%
+        </div>
+      </div>
+      
+      <!-- 可用库存 -->
+      <div class="stat-card">
+        <div class="stat-icon cyan">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <div class="stat-label">可用库存</div>
+          <div class="stat-value">303<span>个</span></div>
+        </div>
+        <div class="stat-trend up">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+          +8%
+        </div>
+      </div>
+      
+      <!-- 锁定库存 -->
+      <div class="stat-card">
+        <div class="stat-icon green">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            <circle cx="12" cy="16" r="1"/>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <div class="stat-label">锁定库存</div>
+          <div class="stat-value">80<span>个</span></div>
+        </div>
+        <div class="stat-trend down">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          -3%
+        </div>
+      </div>
+      
+      <!-- 在途库存 -->
+      <div class="stat-card">
+        <div class="stat-icon orange">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+            <rect x="1" y="3" width="15" height="13"/>
+            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+            <circle cx="5.5" cy="18.5" r="2.5"/>
+            <circle cx="18.5" cy="18.5" r="2.5"/>
+            <path d="M1 8h10"/>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <div class="stat-label">在途库存</div>
+          <div class="stat-value">126<span>个</span></div>
+        </div>
+        <div class="stat-trend up">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+          +25%
+        </div>
+      </div>
+      
+      <!-- 无条码库存 -->
+      <div class="stat-card">
+        <div class="stat-icon purple">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+            <rect x="3" y="4" width="18" height="16" rx="2"/>
+            <line x1="7" y1="8" x2="10" y2="8"/>
+            <line x1="7" y1="12" x2="17" y2="12"/>
+            <line x1="7" y1="16" x2="13" y2="16"/>
+            <line x1="14" y1="8" x2="14" y2="8"/>
+            <line x1="17" y1="8" x2="17" y2="8"/>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <div class="stat-label">无条码库存</div>
+          <div class="stat-value">47<span>个</span></div>
+        </div>
+        <div class="stat-trend down">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          -5%
+        </div>
+      </div>
+    </div>
+
+    <!-- 图表区 -->
+    <div class="charts-row">
+
+      <!-- 左：仓库库存走势 -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">
+            仓库库存走势
+            <span class="chart-subtitle">（在库库存）</span>
+          </div>
+          <div class="chart-legend">
+            <div class="legend-item">
+              <div class="legend-dot" style="background:#1a6fd8"></div>
+              <span>总库存</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background:#ff7a00"></div>
+              <span>待处理</span>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
+              <polyline points="6,9 12,15 18,9"/>
+            </svg>
+          </div>
+        </div>
+        <div class="line-chart-wrap">
+          <canvas id="lineChart"></canvas>
+        </div>
+        <div class="chart-footer">按仓库库存从多到少排库，在库库存</div>
+      </div>
+
+      <!-- 右：良品率 -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">良品率</div>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div class="chart-meta">
+              总库存：<span>20000</span>&nbsp;&nbsp;待处理总数：<span>1000</span>
+            </div>
+            <div class="chart-tabs">
+              <div class="chart-tab active">全部</div>
+              <div class="chart-tab">待处理</div>
+            </div>
+          </div>
+        </div>
+        <div class="donut-area">
+          <div class="donut-wrap">
+            <canvas id="donutGood"></canvas>
+            <div class="donut-label">良品率</div>
+          </div>
+          <div class="donut-wrap">
+            <canvas id="donutBad"></canvas>
+            <div class="donut-label">不良品率</div>
+          </div>
+          <div class="donut-right-legend">
+            <div class="donut-legend-item"><div class="donut-legend-dot" style="background:#00b96b"></div>良品率</div>
+            <div class="donut-legend-item"><div class="donut-legend-dot" style="background:#ff4d4f"></div>不良品率</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 仓库库容明细 -->
+    <div class="detail-card">
+      <div class="detail-header">
+        <div class="detail-title">仓库库容明细</div>
+        <div class="summary-hint">
+          <div class="hint-group">
+            <span class="hint-label">基地总库容（120000）</span>
+            <div class="hint-bar"><div class="hint-fill" style="width:100%"></div></div>
+          </div>
+          <div class="hint-group">
+            <span class="hint-label">已使用（730）</span>
+            <div class="hint-bar"><div class="hint-fill warn" style="width:0.6%"></div></div>
+          </div>
+          <div class="hint-group">
+            <span class="hint-label">剩余（119270）</span>
+            <div class="hint-bar"><div class="hint-fill" style="width:99.4%"></div></div>
+          </div>
+          <div class="hint-sep"></div>
+          <span class="hint-label">状态：</span>
+          <span class="hint-status normal">良好</span>
+        </div>
+        <div class="detail-op">
+          操作
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a6fd8" stroke-width="2">
+            <polyline points="6,9 12,15 18,9"/>
+          </svg>
+        </div>
+        <span class="refresh-link" id="refreshTable">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+          </svg>
+          刷新
+        </span>
+      </div>
+      <table>
+        <thead>
+          <tr class="colgroup-row">
+            <th class="checkbox-cell" style="border-bottom:none;"><input type="checkbox"></th>
+            <th colspan="4">库容（板）</th>
+            <th colspan="3">面积</th>
+            <th></th>
+            <th></th>
+            <th></th>
+          </tr>
+          <tr>
+            <th class="checkbox-cell"><input type="checkbox"></th>
+            <th>仓库名称</th>
+            <th>仓库总库容（板）</th>
+            <th>已使用（板）</th>
+            <th>剩余库容（板）</th>
+            <th>总面积</th>
+            <th>已使用面积</th>
+            <th>剩余面积</th>
+            <th>库存总数</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="checkbox-cell"><input type="checkbox"></td>
+            <td>2022-17-17-20</td>
+            <td>50000</td>
+            <td>200</td>
+            <td>
+              <div class="capacity-bar">
+                <div class="capacity-track"><div class="capacity-fill" style="width:99.6%"></div></div>
+                <span class="capacity-pct">49800</span>
+              </div>
+            </td>
+            <td>1000</td>
+            <td>320</td>
+            <td>
+              <div class="capacity-bar">
+                <div class="capacity-track"><div class="capacity-fill" style="width:68%"></div></div>
+                <span class="capacity-pct">680</span>
+              </div>
+            </td>
+            <td>1024</td>
+            <td><span class="status-tag normal">良好</span></td>
+            <td>
+              <span class="op-btn">查看</span>
+              <span class="op-btn" style="color:#999">编辑</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="checkbox-cell"><input type="checkbox"></td>
+            <td>2022-17-17-20</td>
+            <td>30000</td>
+            <td>150</td>
+            <td>
+              <div class="capacity-bar">
+                <div class="capacity-track"><div class="capacity-fill warn" style="width:99.5%"></div></div>
+                <span class="capacity-pct">29850</span>
+              </div>
+            </td>
+            <td>800</td>
+            <td>600</td>
+            <td>
+              <div class="capacity-bar">
+                <div class="capacity-track"><div class="capacity-fill warn" style="width:25%"></div></div>
+                <span class="capacity-pct">200</span>
+              </div>
+            </td>
+            <td>20480</td>
+            <td><span class="status-tag warn">紧张</span></td>
+            <td>
+              <span class="op-btn">查看</span>
+              <span class="op-btn" style="color:#999">编辑</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="checkbox-cell"><input type="checkbox"></td>
+            <td>2022-17-12-30</td>
+            <td>40000</td>
+            <td>380</td>
+            <td>
+              <div class="capacity-bar">
+                <div class="capacity-track"><div class="capacity-fill danger" style="width:99.05%"></div></div>
+                <span class="capacity-pct">39620</span>
+              </div>
+            </td>
+            <td>600</td>
+            <td>540</td>
+            <td>
+              <div class="capacity-bar">
+                <div class="capacity-track"><div class="capacity-fill danger" style="width:10%"></div></div>
+                <span class="capacity-pct">60</span>
+              </div>
+            </td>
+            <td>35840</td>
+            <td><span class="status-tag danger">爆仓</span></td>
+            <td>
+              <span class="op-btn">查看</span>
+              <span class="op-btn" style="color:#999">编辑</span>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="summary-row">
+            <td colspan="2" style="font-weight:600;">仓库汇总</td>
+            <td style="font-weight:700;color:#1a6fd8;">120000</td>
+            <td style="font-weight:700;color:#333;">730</td>
+            <td style="padding:8px 16px;">
+              <div class="capacity-bar">
+                <div class="capacity-track"><div class="capacity-fill" style="width:99.4%"></div></div>
+                <span class="capacity-pct" style="color:#00b96b;font-weight:600;">119270</span>
+              </div>
+            </td>
+            <td style="font-weight:700;color:#333;">2400</td>
+            <td style="font-weight:700;color:#333;">1460</td>
+            <td style="padding:8px 16px;">
+              <div class="capacity-bar">
+                <div class="capacity-track"><div class="capacity-fill warn" style="width:39%"></div></div>
+                <span class="capacity-pct" style="color:#00b96b;font-weight:600;">940</span>
+              </div>
+            </td>
+            <td style="font-weight:700;color:#333;">57344</td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+  </div>
+
+  <script>
+    // ===== 折线图 =====
+    const lineCtx = document.getElementById('lineChart').getContext('2d');
+    const gradient = lineCtx.createLinearGradient(0, 0, 0, 220);
+    gradient.addColorStop(0, 'rgba(26,111,216,0.25)');
+    gradient.addColorStop(1, 'rgba(26,111,216,0.02)');
+    const gradient2 = lineCtx.createLinearGradient(0, 0, 0, 220);
+    gradient2.addColorStop(0, 'rgba(255,122,0,0.2)');
+    gradient2.addColorStop(1, 'rgba(255,122,0,0.02)');
+
+    new Chart(lineCtx, {
+      type: 'line',
+      data: {
+        labels: ['801仓库', '802仓库', '803仓库', '804仓库', '805仓库', '806仓库', '807仓库', '808仓库'],
+        datasets: [
+          {
+            label: '总库存',
+            data: [20, 45, 70, 150, 530, 200, 160, 190],
+            borderColor: '#1a6fd8',
+            backgroundColor: gradient,
+            borderWidth: 2.5,
+            pointBackgroundColor: '#1a6fd8',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            fill: true,
+            tension: 0.45
+          },
+          {
+            label: '待处理',
+            data: [5, 12, 28, 45, 88, 60, 38, 55],
+            borderColor: '#ff7a00',
+            backgroundColor: gradient2,
+            borderWidth: 2.5,
+            pointBackgroundColor: '#ff7a00',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            fill: true,
+            tension: 0.45
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(26,111,216,0.9)',
+            callbacks: { label: ctx => '  ' + ctx.dataset.label + '：' + ctx.raw }
+          }
+        },
+        scales: {
+          x: { grid: { color: '#f0f0f0' }, ticks: { color: '#999', font: { size: 11 } } },
+          y: { grid: { color: '#f5f5f5' }, ticks: { color: '#999', font: { size: 11 } }, min: 0 }
+        }
+      }
+    });
+
+    // ===== 良品率/不良品率环形图 =====
+    new Chart(document.getElementById('donutGood').getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [65, 35],
+          backgroundColor: ['#00b96b', '#e0e0e0'],
+          borderWidth: 2, borderColor: '#fff', hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true, cutout: '68%',
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    new Chart(document.getElementById('donutBad').getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [18, 82],
+          backgroundColor: ['#ff4d4f', '#e0e0e0'],
+          borderWidth: 2, borderColor: '#fff', hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true, cutout: '68%',
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    // Tab 切换
+    document.querySelectorAll('.chart-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      });
+    });
+
+    // 刷新按钮
+    document.getElementById('refreshBtn').addEventListener('click', function () {
+      const svg = this.querySelector('svg');
+      svg.style.transition = 'transform 0.6s ease';
+      svg.style.transform = 'rotate(360deg)';
+      setTimeout(() => {
+        svg.style.transition = 'none';
+        svg.style.transform = 'rotate(0deg)';
+      }, 700);
+    });
+  </script>
+</body>
+</html>
