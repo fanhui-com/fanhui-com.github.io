@@ -1,0 +1,2059 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>装卸工时确认页面</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --primary: #4a9d9c;
+            --primary-dark: #3d8b8a;
+            --primary-light: #e8f4f4;
+            --success: #52c41a;
+            --warning: #faad14;
+            --danger: #ff4d4f;
+            --bg-gray: #f2f4f7;
+            --bg-section: #ffffff;
+            --border-color: #e0e0e0;
+            --border-light: #f0f0f0;
+            --text-primary: #1d2129;
+            --text-secondary: #4b4b4b;
+            --text-light: #86909c;
+            --table-header-bg: #4a9d9c;
+            --table-header-text: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg-gray);
+            font-size: 13px;
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* ========== 顶部任务信息区 ========== */
+        .task-info-bar {
+            background: #fff;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            padding-top: env(safe-area-inset-top, 44px);
+        }
+        .trip-card {
+            background: linear-gradient(135deg, #4a9d9c, #5ab0af);
+            padding: 12px 14px;
+            color: #fff;
+        }
+        .trip-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .trip-card-title {
+            font-size: 16px;
+            font-weight: 700;
+        }
+        .trip-status {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.25);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .trip-status.partial { background: rgba(255,255,255,0.25); color: #fff; }
+        .trip-status.unconfirmed { background: rgba(255,77,77,0.4); color: #fff; }
+        .trip-status.confirmed { background: rgba(82,196,26,0.4); color: #fff; }
+        .trip-card-body {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 12px;
+            opacity: 0.95;
+        }
+        .task-task-no { color: rgba(255,255,255,0.95); }
+        .task-task-no strong { color: #fff; font-weight: 600; }
+        .task-status { white-space: nowrap; }
+        .task-status strong { color: #fff; font-weight: 600; }
+        .task-hint { display: none; }
+
+        /* ========== 主Tab切换栏 ========== */
+        .tab-bar {
+            display: flex;
+            background: #fff;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .tab-item {
+            flex: 1;
+            text-align: center;
+            padding: 12px 0;
+            font-size: 14px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+            font-weight: 500;
+            user-select: none;
+        }
+        .tab-item.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            font-weight: 600;
+        }
+        .tab-item:active { background: var(--primary-light); }
+
+        /* ========== 子Tab切换 ========== */
+        .sub-tab-bar {
+            display: flex;
+            background: #fff;
+            padding: 0 14px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .sub-tab {
+            padding: 10px 0;
+            margin-right: 20px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        .sub-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* 筛选输入框 */
+        .filter-input {
+            padding: 7px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 13px;
+            width: 100px;
+            outline: none;
+            background: #fff;
+        }
+        .filter-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(22,119,255,0.12); }
+        .filter-input::placeholder { color: var(--text-light); }
+
+        /* 子视图切换 */
+        .sub-view { display: none; }
+        .sub-view.active { display: block; }
+
+        /* ========== 筛选区域 ========== */
+        .filter-section {
+            background: #f7f7f7;
+            padding: 10px 12px;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        .filter-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .filter-group { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .filter-label { font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+        .filter-select {
+            padding: 7px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 13px;
+            min-width: 110px;
+            outline: none;
+            background: #fff;
+            cursor: pointer;
+        }
+        .filter-select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(22,119,255,0.12); }
+        .filter-multi { font-size: 12px; color: var(--text-light); white-space: nowrap; }
+        .filter-btns { display: flex; gap: 8px; margin-left: auto; flex-shrink: 0; }
+        .btn-filter {
+            padding: 7px 20px;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            border: none;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-reset { background: #eee; color: var(--text-secondary); }
+        .btn-reset:hover { background: #ddd; }
+        .btn-query { background: var(--primary); color: #fff; }
+        .btn-query:hover { background: var(--primary-dark); }
+
+        /* ========== 视图区域容器 ========== */
+        .view-area { display: none; }
+        .view-area.active { display: block; }
+
+        /* ========== 区域标题（子Tab） ========== */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 12px 16px 8px;
+            background: #fff;
+        }
+        .section-title-tab {
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            padding-bottom: 5px;
+            color: var(--text-secondary);
+            position: relative;
+            user-select: none;
+        }
+        .section-title-tab.active {
+            color: var(--primary);
+            font-weight: 700;
+        }
+        .section-title-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2.5px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        /* ========== 表格容器 ========== */
+        .table-container { background: #fff; }
+        .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+        /* ========== 批量操作区 ========== */
+        .batch-bar {
+            background: #fff;
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        .batch-tabs {
+            display: flex;
+            gap: 16px;
+        }
+        .batch-tab {
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px 0;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        .batch-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            font-weight: 600;
+        }
+        .batch-selected {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-left: auto;
+        }
+        .batch-selected strong {
+            color: var(--primary);
+            font-size: 14px;
+        }
+        .btn-batch {
+            padding: 6px 14px;
+            background: linear-gradient(135deg, #4a9d9c, #5ab0af);
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 1px 3px rgba(74,157,156,0.25);
+        }
+        .btn-batch:hover {
+            background: linear-gradient(135deg, #3a8a89, #4a9d9c);
+        }
+        .btn-batch:active {
+            transform: scale(0.97);
+            box-shadow: 0 1px 3px rgba(74,157,156,0.3);
+        }
+        .btn-batch:disabled {
+            background: #ccc;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        /* ========== 数据表格 ========== */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .data-table thead th {
+            background: var(--primary);
+            color: #fff;
+            padding: 10px 8px;
+            text-align: center;
+            font-weight: 500;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .data-table tbody td {
+            padding: 10px 8px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            color: var(--text-primary);
+            font-size: 12px;
+        }
+        .data-table tbody tr:nth-child(even) { background: #f8fafa; }
+        .data-table tbody tr:active { background: var(--primary-light); }
+
+        /* 勾选列 */
+        .check-cell input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-color: var(--primary); }
+
+        /* 操作列 */
+        .action-cell { white-space: nowrap; width: 60px; }
+
+        /* 操作链接 */
+        .action-link { color: var(--primary); cursor: pointer; text-decoration: none; font-size: 13px; font-weight: 500; }
+        .action-link:hover { text-decoration: underline; }
+        .action-link:active { color: var(--primary-dark); }
+        .action-link.disabled { color: var(--warning); cursor: default; }
+        .action-link.disabled:hover { text-decoration: none; }
+        .cancel-link { color: var(--danger); }
+        .cancel-link:hover { text-decoration: underline; }
+        .cancel-link:active { color: #c00; }
+        .view-link { color: var(--primary); cursor: pointer; font-size: 13px; font-weight: 500; }
+        .view-link:hover { text-decoration: underline; }
+        .view-link:active { color: var(--primary-dark); }
+
+        /* 排序表头 */
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            padding-right: 20px !important;
+        }
+        .sortable::before,
+        .sortable::after {
+            content: '';
+            position: absolute;
+            right: 6px;
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+        }
+        .sortable::before {
+            top: 50%;
+            margin-top: -6px;
+            border-bottom: 5px solid rgba(255,255,255,0.5);
+        }
+        .sortable::after {
+            top: 50%;
+            margin-top: 2px;
+            border-top: 5px solid rgba(255,255,255,0.5);
+        }
+        .sortable.asc::before {
+            border-bottom-color: #fff;
+        }
+        .sortable.asc::after {
+            border-top-color: rgba(255,255,255,0.5);
+        }
+        .sortable.desc::before {
+            border-bottom-color: rgba(255,255,255,0.5);
+        }
+        .sortable.desc::after {
+            border-top-color: #fff;
+        }
+
+        /* 修改表单 */
+        .edit-tip {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 14px;
+        }
+        .edit-select-wrap {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 2px;
+        }
+        .edit-select {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            background: #fff;
+            font-size: 14px;
+            border-radius: 6px;
+            outline: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+        }
+        .edit-hint {
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+            margin-top: 14px;
+        }
+
+        /* 序号 */
+        .seq-num { color: var(--text-secondary); font-weight: 500; }
+
+        /* 数量样式 */
+        .qty-primary { font-weight: 700; color: var(--primary); font-size: 14px; }
+        .qty-link { font-weight: 700; color: var(--primary); font-size: 14px; cursor: pointer; }
+        .qty-link:hover { text-decoration: underline; }
+        .qty-sub { display: block; font-size: 10px; color: var(--primary); font-weight: 400; margin-top: 1px; }
+
+        /* 左对齐 */
+        .cell-left { text-align: left !important; padding-left: 12px !important; }
+
+        /* 底部提示 */
+        .bottom-hint { padding: 10px 16px 80px; font-size: 12px; color: var(--text-light); background: #fafafa; border-top: 1px solid var(--border-color); }
+
+        /* ========== 弹框 ========== */
+        .overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.45); z-index: 1000; display: none;
+            justify-content: center; align-items: center;
+        }
+        .overlay.show { display: flex; }
+        .modal-box {
+            background: #fff;
+            border-radius: 12px;
+            width: 92%;
+            max-width: 440px;
+            max-height: 88vh;
+            overflow-y: auto;
+            animation: modalIn 0.28s ease-out;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+        }
+        @keyframes modalIn { from{opacity:0;transform:scale(0.92)} to{opacity:1;transform:scale(1)} }
+
+        .modal-header {
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 { font-size: 17px; font-weight: 600; }
+        .modal-close {
+            width: 30px; height: 30px; border: none; background: #f0f0f0; border-radius: 50%;
+            font-size: 18px; cursor: pointer; color: var(--text-secondary);
+            display:flex;align-items:center;justify-content:center;
+        }
+        .modal-close:hover { background: #e0e0e0; }
+        .modal-body { padding: 22px; }
+
+        /* 签名弹框 */
+        .sig-card {
+            background: linear-gradient(135deg, #f8fbfc, #f0f5f9);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid #e8ecf0;
+        }
+        .sig-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
+        .sig-label { color: var(--text-secondary); }
+        .sig-val { font-weight: 600; color: var(--text-primary); }
+        .sig-tip { text-align: center; font-size: 13px; color: var(--text-light); margin-bottom: 14px; }
+
+        .canvas-wrap {
+            border: 2px dashed #d0d0d0;
+            border-radius: 10px;
+            background: #fdfdfd;
+            position: relative;
+            height: 190px;
+            overflow: hidden;
+            touch-action: none;
+        }
+        .canvas-wrap canvas { width: 100%; height: 100%; touch-action: none; }
+        .canvas-placeholder {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #bbb; font-size: 15px; pointer-events: none; user-select: none;
+        }
+        .canvas-placeholder.hidden { opacity: 0; }
+
+        .sig-actions { display: flex; gap: 10px; margin-top: 16px; }
+        .sig-actions button {
+            flex: 1; padding: 11px 0; border: none; border-radius: 7px;
+            font-size: 14px; font-weight: 500; cursor: pointer;
+        }
+        .btn-clear { background: #f0f0f0; color: var(--text-secondary); }
+        .btn-clear:hover { background: #e0e0e0; }
+        .btn-cancel { background: #fff; color: var(--text-secondary); border: 1px solid var(--border-color); }
+        .btn-cancel:hover { border-color: #bbb; }
+        .btn-confirm { background: var(--primary); color: #fff; }
+        .btn-confirm:hover { background: var(--primary-dark); }
+
+        /* 查看签名弹框 */
+        .view-sig-box { text-align: center; padding: 20px; }
+        .view-sig-svg { border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; background: #fafafa; margin-bottom: 12px; }
+        .view-sig-info { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-light); margin-top: 8px; }
+        .view-sig-footer { text-align: right; margin-top: 16px; }
+
+        /* 物料明细弹框 */
+        .mat-info { margin-bottom: 14px; }
+        .mat-info-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; }
+        .mat-info-row span:first-child { color: var(--text-secondary); }
+        .mat-info-row span:last-child { font-weight: 600; }
+        .mat-table-wrap { max-height: 320px; overflow-y: auto; }
+        .mat-table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; }
+        .mat-table th {
+            background: #fafbfc;
+            padding: 9px 8px;
+            text-align: left;
+            border: 1px solid #efefef;
+            font-weight: 500;
+            color: var(--text-secondary);
+            position: sticky;
+            top: 0;
+            white-space: nowrap;
+        }
+        .mat-table td {
+            padding: 8px 8px;
+            border: 1px solid #f5f5f5;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        /* ========== Toast ========== */
+        .toast {
+            position: fixed; top: 38%; left: 50%; transform: translate(-50%,-50%);
+            background: rgba(0,0,0,0.75); color: #fff; padding: 12px 26px; border-radius: 8px;
+            font-size: 14px; z-index: 3000; pointer-events: none; opacity: 0; transition: opacity 0.25s;
+        }
+        .toast.show { opacity: 1; }
+
+        /* ========== 确认对话框 ========== */
+        .confirm-dialog {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.45); z-index: 2000; display: none;
+            justify-content: center; align-items: center;
+        }
+        .confirm-dialog.show { display: flex; }
+        .dialog-box {
+            background: #fff; border-radius: 12px; width: 84%; max-width: 340px;
+            padding: 26px 22px; text-align: center;
+        }
+        .dialog-msg { font-size: 15px; margin-bottom: 20px; line-height: 1.5; color: var(--text-primary); }
+        .dialog-btns { display: flex; gap: 12px; }
+        .dialog-btns button {
+            flex: 1; padding: 10px 0; border: none; border-radius: 7px;
+            font-size: 14px; cursor: pointer; font-weight: 500;
+        }
+        .dialog-cancel { background: #f5f5f5; color: var(--text-secondary); }
+        .dialog-ok { background: var(--primary); color: #fff; }
+
+        /* ========== 底部固定操作栏 ========== */
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            padding: 0;
+            display: flex;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        .btn-back {
+            flex: 1;
+            padding: 12px 0;
+            background: #f8f8f8;
+            color: #666;
+            border: none;
+            border-right: 1px solid #eee;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .btn-back:active { background: #eee; }
+        .btn-batch {
+            flex: 2;
+            padding: 12px 0;
+            background: linear-gradient(135deg, #4a9d9c, #5ab0af);
+            color: #fff;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-batch:active { background: linear-gradient(135deg, #3d8b8a, #4a9d9c); }
+
+        /* ========== 响应式 ========== */
+        @media (max-width: 700px) {
+            body { font-size: 12px; }
+            .filter-row { flex-direction: column; align-items: stretch; gap: 8px; }
+            .filter-btns { margin-left: 0; justify-content: flex-end; margin-top: 4px; }
+            .filter-select { min-width: 100%; }
+            .data-table { font-size: 11px; }
+            .data-table thead th, .data-table tbody td { padding: 8px 5px; }
+        }
+
+        /* 查看签名弹框 - PDA适配（固定宽度） */
+        .view-sig-modal-full {
+            background: #fff;
+            border-radius: 6px;
+            width: 300px;
+            max-width: 300px;
+            max-height: 70vh;
+            overflow: hidden;
+            animation: modalIn 0.28s ease-out;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+        }
+        .vs-header {
+            background: linear-gradient(135deg, #4a9d9c, #5ab0af);
+            color: #fff;
+            padding: 8px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .vs-header-title { font-size: 13px; font-weight: 600; }
+        .vs-header-close {
+            width: 24px; height: 24px; border: none; background: rgba(255,255,255,0.2);
+            border-radius: 50%; color: #fff; font-size: 14px; cursor: pointer;
+        }
+        .vs-header-close:hover { background: rgba(255,255,255,0.3); }
+        .vs-info-bar {
+            background: #fff;
+            padding: 6px 10px;
+            display: flex;
+            gap: 12px;
+            border-bottom: 1px solid #e8e8e8;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .vs-info-item { display: flex; align-items: center; gap: 4px; }
+        .vs-info-label { font-size: 11px; color: #86909c; }
+        .vs-info-value { font-size: 12px; font-weight: 500; color: #1d2129; }
+        .vs-main-content {
+            padding: 8px;
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .vs-table-container {
+            background: #fff;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .vs-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .vs-data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9px;
+            white-space: nowrap;
+        }
+        .vs-data-table thead th {
+            background: #f5f7fa;
+            color: #666;
+            padding: 5px 3px;
+            text-align: center;
+            font-weight: 500;
+            border-bottom: 1px solid #e8e8e8;
+            font-size: 8px;
+        }
+        .vs-data-table tbody td {
+            padding: 5px 3px;
+            text-align: center;
+            border-bottom: 1px solid #f0f0f0;
+            color: #333;
+            font-size: 8px;
+        }
+        .vs-data-table tbody tr:nth-child(even) { background: #fafcfd; }
+        .vs-signature-section {
+            background: #fff;
+            border-radius: 6px;
+            padding: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .vs-sig-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .vs-sig-label { font-size: 11px; color: #333; font-weight: 500; }
+        .vs-sig-time { display: flex; align-items: center; gap: 6px; }
+        .vs-sig-time-label { font-size: 10px; color: #86909c; }
+        .vs-sig-time-value { font-size: 11px; color: #1d2129; font-weight: 500; }
+        .vs-signature-box {
+            background: #fafbfc;
+            border: 1px solid #e8e8e8;
+            border-radius: 6px;
+            padding: 10px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .vs-footer {
+            padding: 8px 10px;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .vs-btn-close {
+            padding: 8px 32px;
+            background: #f0f0f0;
+            color: #666;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+        }
+        .vs-btn-close:hover { background: #e0e0e0; }
+        /* 横屏适配 */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .vs-main-content { flex-direction: row; align-items: flex-start; gap: 8px; }
+            .vs-table-container { flex: 1.5; }
+            .vs-signature-section { flex: 1; min-width: 120px; }
+            .vs-data-table { font-size: 8px; }
+            .vs-data-table thead th, .vs-data-table tbody td { padding: 3px 2px; }
+        }
+        /* 竖屏适配 */
+        @media (orientation: portrait) {
+            .vs-data-table { font-size: 8px; }
+            .vs-data-table thead th, .vs-data-table tbody td { padding: 4px 2px; }
+            .view-sig-modal-full { max-height: 75vh; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ==================== 顶部任务信息 ==================== -->
+<div class="task-info-bar">
+    <div class="trip-card">
+        <div class="trip-card-header">
+            <span class="trip-card-title">车次 01</span>
+            <span class="trip-status partial" id="tripStatus">部分确认</span>
+        </div>
+        <div class="trip-card-body">
+            <span class="task-task-no">任务号：<strong>ts000001</strong></span>
+            <span class="task-status">状态：<strong>部分确认</strong></span>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== 主Tab ==================== -->
+<div class="tab-bar" id="mainTab">
+    <div class="tab-item active" data-tab="pending">待确认 (<span id="pendingCount">100</span>)</div>
+    <div class="tab-item" data-tab="confirmed">已确认 (<span id="confirmedCount">30</span>)</div>
+</div>
+
+<!-- ==================== 子Tab栏 ==================== -->
+<div class="sub-tab-bar">
+    <span class="sub-tab active" data-view="summary">汇总确认</span>
+    <span class="sub-tab" data-view="detail">物料明细</span>
+</div>
+
+<!-- ==================== 筛选区 ==================== -->
+
+<!-- 汇总确认筛选区 -->
+<div class="filter-section" id="summaryFilter">
+    <div class="filter-row">
+        <div class="filter-group">
+            <span class="filter-label">仓库</span>
+            <select class="filter-select" id="fWarehouse">
+                <option value="">多选，默认全部</option>
+                <option value="c1">c1</option>
+                <option value="c2">c2</option>
+                <option value="c3">c3</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <span class="filter-label">装卸单位</span>
+            <select class="filter-select" id="fUnit">
+                <option value="">多选，默认全部</option>
+                <option value="801">801</option>
+                <option value="802">802</option>
+                <option value="803">803</option>
+            </select>
+        </div>
+        <div class="filter-btns">
+            <button class="btn-filter btn-reset" onclick="resetSummaryFilter()">重置</button>
+            <button class="btn-filter btn-query" onclick="doSummaryQuery()">查询</button>
+        </div>
+    </div>
+</div>
+
+<!-- 物料明细筛选区 -->
+<div class="filter-section" id="detailFilter" style="display:none;">
+    <div class="filter-row">
+        <div class="filter-group">
+            <span class="filter-label">仓库</span>
+            <select class="filter-select" id="fWarehouseD">
+                <option value="">多选，默认全部</option>
+                <option value="c1">c1</option>
+                <option value="c2">c2</option>
+                <option value="c3">c3</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <span class="filter-label">装卸单位</span>
+            <select class="filter-select" id="fUnitD">
+                <option value="">多选，默认全部</option>
+                <option value="801">801</option>
+                <option value="802">802</option>
+                <option value="803">803</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <span class="filter-label">物料编码</span>
+            <input type="text" class="filter-input" id="fMatCode" placeholder="请输入">
+        </div>
+        <div class="filter-group">
+            <span class="filter-label">条码头</span>
+            <input type="text" class="filter-input" id="fBarcode" placeholder="请输入">
+        </div>
+        <div class="filter-btns">
+            <button class="btn-filter btn-reset" onclick="resetDetailFilter()">重置</button>
+            <button class="btn-filter btn-query" onclick="doDetailQuery()">查询</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!--                    待确认视图                                -->
+<!-- ============================================================ -->
+<div class="view-area active" id="pendingView">
+
+    <!-- 汇总确认视图 -->
+    <div class="sub-view active" id="summaryView">
+        <div class="table-container">
+            <div class="table-scroll">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width:40px;"><input type="checkbox" id="chkAllPending" onchange="togglePendingAll()"></th>
+                            <th>操作</th>
+                            <th class="sortable" data-sort="warehouse" onclick="sortTable('pendingBody', 'warehouse')">仓库</th>
+                            <th class="sortable" data-sort="unit" onclick="sortTable('pendingBody', 'unit')">装卸单位</th>
+                            <th>执行数量</th>
+                            <th>机型种类</th>
+                            <th>车牌</th>
+                            <th>记录确认人</th>
+                            <th>确认时间</th>
+                            <th>最后更新人</th>
+                            <th>最后更新时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pendingBody">
+                        <tr data-id="P001">
+                            <td class="check-cell"><input type="checkbox" class="row-chk-p" onchange="updatePendingBatchCount()"></td>
+                            <td class="action-cell"><a class="action-link" onclick="openSign('P001')">确认签名</a></td>
+                            <td>c1</td>
+                            <td>fanxxxx</td>
+                            <td><a class="qty-link" onclick="showMat('P001')">10</a></td>
+                            <td>1</td>
+                            <td></td>
+                            <td>确认后更新记录人</td>
+                            <td>确认后更新</td>
+                            <td>取消/确认/更新装卸单位，都需要更新</td>
+                            <td>取消/确认/更新装卸单位，都需要更新</td>
+                        </tr>
+                        <tr data-id="P002">
+                            <td class="check-cell"><input type="checkbox" class="row-chk-p" onchange="updatePendingBatchCount()"></td>
+                            <td class="action-cell"><a class="action-link" onclick="openSign('P002')">确认签名</a></td>
+                            <td>c2</td>
+                            <td>小红</td>
+                            <td><span class="qty-primary">10</span></td>
+                            <td>10</td>
+                            <td></td>
+                            <td>范会100011</td>
+                            <td>2025/2/4 11:11</td>
+                            <td>范会100011</td>
+                            <td>2025/2/4 11:11</td>
+                        </tr>
+                        <tr data-id="P003">
+                            <td class="check-cell"><input type="checkbox" class="row-chk-p" onchange="updatePendingBatchCount()"></td>
+                            <td class="action-cell"><a class="action-link" onclick="openSign('P003')">确认签名</a></td>
+                            <td>c1</td>
+                            <td>小红</td>
+                            <td><a class="qty-link" onclick="showMat('P003')">2</a></td>
+                            <td>--</td>
+                            <td></td>
+                            <td>范会100011</td>
+                            <td>2025/2/4 11:11</td>
+                            <td>范会100011</td>
+                            <td>2025/2/4 11:11</td>
+                        </tr>
+                        <tr data-id="P004">
+                            <td class="check-cell"><input type="checkbox" class="row-chk-p" onchange="updatePendingBatchCount()"></td>
+                            <td class="action-cell"><a class="action-link disabled">签名确认后数据到已确认</a></td>
+                            <td>c3</td>
+                            <td>小红</td>
+                            <td><span class="qty-primary">10</span></td>
+                            <td>--</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="bottom-hint">待确认汇总</div>
+    </div>
+
+    <!-- 物料明细视图 -->
+    <div class="sub-view" id="detailView">
+        <div class="table-container">
+            <div class="table-scroll">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width:32px;"><input type="checkbox" id="chkAllDetail" onchange="toggleDetailAll()"></th>
+                            <th style="width:45px;">操作</th>
+                            <th class="sortable" data-sort="detail_wh" onclick="sortTable('detailBody', 'detail_wh')">仓库</th>
+                            <th class="sortable" data-sort="detail_unit" onclick="sortTable('detailBody', 'detail_unit')">装卸单位</th>
+                            <th>物料编码</th>
+                            <th>条码头</th>
+                            <th>执行数量</th>
+                            <th>物料名称</th>
+                            <th>批次</th>
+                            <th>客户型号</th>
+                            <th>机型种类</th>
+                            <th>车牌</th>
+                            <th>记录确认人</th>
+                            <th>确认时间</th>
+                            <th>最后更新人</th>
+                            <th>最后更新时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detailBody">
+                        <tr data-id="D001">
+                            <td class="check-cell"><input type="checkbox" class="row-chk-d" onchange="updateDetailBatchCount()"></td>
+                            <td class="action-cell"><a class="action-link" onclick="openEditDetail('D001')">修改</a></td>
+                            <td>c1</td>
+                            <td>fanxxxx</td>
+                            <td>MT20260511001</td>
+                            <td>TK001</td>
+                            <td><span class="qty-primary">5</span></td>
+                            <td>标准件A型</td>
+                            <td>PC2026051101</td>
+                            <td>XA-100</td>
+                            <td>1</td>
+                            <td>粤B12345</td>
+                            <td>确认后更新</td>
+                            <td>确认后更新</td>
+                            <td>--</td>
+                            <td>--</td>
+                        </tr>
+                        <tr data-id="D002">
+                            <td class="check-cell"><input type="checkbox" class="row-chk-d" onchange="updateDetailBatchCount()"></td>
+                            <td class="action-cell"><a class="action-link" onclick="openEditDetail('D002')">修改</a></td>
+                            <td>c1</td>
+                            <td>fanxxxx</td>
+                            <td>MT20260511002</td>
+                            <td>TK002</td>
+                            <td><span class="qty-primary">3</span></td>
+                            <td>连接件B型</td>
+                            <td>PC2026051102</td>
+                            <td>XB-200</td>
+                            <td>1</td>
+                            <td>粤B12345</td>
+                            <td>确认后更新</td>
+                            <td>确认后更新</td>
+                            <td>--</td>
+                            <td>--</td>
+                        </tr>
+                        <tr data-id="D003">
+                            <td class="check-cell"><input type="checkbox" class="row-chk-d" onchange="updateDetailBatchCount()"></td>
+                            <td class="action-cell"><a class="action-link" onclick="openEditDetail('D003')">修改</a></td>
+                            <td>c2</td>
+                            <td>小红</td>
+                            <td>MT20260511003</td>
+                            <td>TK003</td>
+                            <td><span class="qty-primary">10</span></td>
+                            <td>固定支架</td>
+                            <td>PC2026051103</td>
+                            <td>XC-300</td>
+                            <td>10</td>
+                            <td>粤B67890</td>
+                            <td>范会100011</td>
+                            <td>2025/2/4 11:11</td>
+                            <td>范会100011</td>
+                            <td>2025/2/4 11:11</td>
+                        </tr>
+                        <tr data-id="D004">
+                            <td class="check-cell"><input type="checkbox" class="row-chk-d" onchange="updateDetailBatchCount()"></td>
+                            <td class="action-cell"><a class="action-link" onclick="openEditDetail('D004')">修改</a></td>
+                            <td>c2</td>
+                            <td>小红</td>
+                            <td>MT20260511004</td>
+                            <td>TK004</td>
+                            <td><span class="qty-primary">2</span></td>
+                            <td>紧固件套装</td>
+                            <td>PC2026051104</td>
+                            <td>XD-400</td>
+                            <td>10</td>
+                            <td>粤B67890</td>
+                            <td>范会100011</td>
+                            <td>2025/2/4 11:11</td>
+                            <td>范会100011</td>
+                            <td>2025/2/4 11:11</td>
+                        </tr>
+                        <tr data-id="D005">
+                            <td class="check-cell"><input type="checkbox" class="row-chk-d" onchange="updateDetailBatchCount()" disabled></td>
+                            <td class="action-cell"><a class="action-link disabled">签名确认后数据到已确认</a></td>
+                            <td>c3</td>
+                            <td>小明</td>
+                            <td>MT20260511005</td>
+                            <td>TK005</td>
+                            <td><span class="qty-primary">8</span></td>
+                            <td>密封圈</td>
+                            <td>PC2026051105</td>
+                            <td>XE-500</td>
+                            <td>--</td>
+                            <td>粤B11111</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>--</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="bottom-hint">待确认物料明细（可修改装卸单位）</div>
+    </div>
+
+</div>
+
+<!-- ============================================================ -->
+<!--                    已确认视图                                -->
+<!-- ============================================================ -->
+<div class="view-area" id="confirmedView">
+
+    <!-- 汇总确认视图 -->
+    <div class="sub-view active" id="confSummaryView">
+        <div class="table-container">
+            <div class="table-scroll">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width:40px;"><input type="checkbox" id="chkAllConf" onchange="toggleConfAll()"></th>
+                            <th>操作</th>
+                            <th class="sortable" data-sort="conf_wh" onclick="sortTable('confPendingBody', 'conf_wh')">仓库</th>
+                            <th class="sortable" data-sort="conf_unit" onclick="sortTable('confPendingBody', 'conf_unit')">装卸单位</th>
+                            <th>执行数量</th>
+                            <th>机型种类</th>
+                            <th>车牌</th>
+                            <th>记录确认人</th>
+                            <th>签名查看</th>
+                            <th>确认时间</th>
+                            <th>最后更新人</th>
+                            <th>最后更新时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="confPendingBody">
+                        <tr data-id="CP001">
+                            <td class="check-cell"><input type="checkbox" class="row-chk-c" onchange="updateConfBatchCount()"></td>
+                            <td class="action-cell"><a class="cancel-link" href="javascript:void(0)" onclick="cancelConfirm('CP001', event)">取消确认</a></td>
+                            <td>c1</td>
+                            <td>fanxxxx</td>
+                            <td><span class="qty-primary">10</span></td>
+                            <td>1</td>
+                            <td>粤B12345</td>
+                            <td>范会100011</td>
+                            <td><a class="view-link" href="javascript:void(0)" onclick="openViewSign('CP001'); return false;">查看签名</a></td>
+                            <td>2025/2/4 11:11</td>
+                            <td>范会100011</td>
+                            <td>2025/2/4 11:11</td>
+                        </tr>
+                        <tr data-id="CP002">
+                            <td class="check-cell"><input type="checkbox" class="row-chk-c" onchange="updateConfBatchCount()"></td>
+                            <td class="action-cell"><a class="cancel-link" href="javascript:void(0)" onclick="cancelConfirm('CP002', event)">取消确认</a></td>
+                            <td>c2</td>
+                            <td>小红</td>
+                            <td><span class="qty-primary">10</span></td>
+                            <td>10</td>
+                            <td>粤B67890</td>
+                            <td>范会100011</td>
+                            <td><a class="view-link" href="javascript:void(0)" onclick="openViewSign('CP002'); return false;">查看签名</a></td>
+                            <td>2025/2/4 11:11</td>
+                            <td>范会100011</td>
+                            <td>2025/2/4 11:11</td>
+                        </tr>
+                        <tr data-id="CP003">
+                            <td class="check-cell"><input type="checkbox" class="row-chk-c" onchange="updateConfBatchCount()"></td>
+                            <td class="action-cell"><a class="cancel-link" href="javascript:void(0)" onclick="cancelConfirm('CP003', event)">取消确认</a></td>
+                            <td>c3</td>
+                            <td>小明</td>
+                            <td><span class="qty-primary">5</span></td>
+                            <td>--</td>
+                            <td>粤B11111</td>
+                            <td>范会100011</td>
+                            <td><a class="view-link" href="javascript:void(0)" onclick="openViewSign('CP003'); return false;">查看签名</a></td>
+                            <td>2025/2/4 11:11</td>
+                            <td>范会100011</td>
+                            <td>2025/2/4 11:11</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="bottom-hint">已确认汇总（出库完成之前可取消确认）</div>
+    </div>
+
+    <!-- 物料明细视图（只读） -->
+    <div class="sub-view" id="confDetailView">
+        <div class="table-container">
+            <div class="table-scroll">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-sort="conf_d_wh" onclick="sortTable('confDetailBody', 'conf_d_wh')">仓库</th>
+                            <th class="sortable" data-sort="conf_d_unit" onclick="sortTable('confDetailBody', 'conf_d_unit')">装卸单位</th>
+                            <th>物料编码</th>
+                            <th>条码头</th>
+                            <th>执行数量</th>
+                            <th>物料名称</th>
+                            <th>批次</th>
+                            <th>客户型号</th>
+                            <th>机型种类</th>
+                            <th>车牌</th>
+                            <th>记录确认人</th>
+                            <th>确认时间</th>
+                            <th>最后更新人</th>
+                            <th>最后更新时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="confDetailBody">
+                        <tr data-id="CD001">
+                            <td>c1</td>
+                            <td>fanxxxx</td>
+                            <td>MT20260511001</td>
+                            <td>TK001</td>
+                            <td><span class="qty-primary">5</span></td>
+                            <td>标准件A型</td>
+                            <td>PC2026051101</td>
+                            <td>XA-100</td>
+                            <td>1</td>
+                            <td>粤B12345</td>
+                            <td>范会100011</td>
+                            <td>2025/2/4 11:11</td>
+                            <td>范会100011</td>
+                            <td>2025/2/4 11:11</td>
+                        </tr>
+                        <tr data-id="CD002">
+                            <td>c1</td>
+                            <td>fanxxxx</td>
+                            <td>MT20260511002</td>
+                            <td>TK002</td>
+                            <td><span class="qty-primary">3</span></td>
+                            <td>连接件B型</td>
+                            <td>PC2026051102</td>
+                            <td>XB-200</td>
+                            <td>1</td>
+                            <td>粤B12345</td>
+                            <td>范会100011</td>
+                            <td>2025/2/4 11:11</td>
+                            <td>范会100011</td>
+                            <td>2025/2/4 11:11</td>
+                        </tr>
+                        <tr data-id="CD003">
+                            <td>c2</td>
+                            <td>小红</td>
+                            <td>MT20260511003</td>
+                            <td>TK003</td>
+                            <td><span class="qty-primary">10</span></td>
+                            <td>固定支架</td>
+                            <td>PC2026051103</td>
+                            <td>XC-300</td>
+                            <td>10</td>
+                            <td>粤B67890</td>
+                            <td>范会100011</td>
+                            <td>2025/2/4 11:11</td>
+                            <td>范会100011</td>
+                            <td>2025/2/4 11:11</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="bottom-hint">已确认物料明细（只读）</div>
+    </div>
+</div>
+
+
+<!-- ============================================================ -->
+<!--              签名确认弹框                                    -->
+<!-- ============================================================ -->
+<div class="overlay" id="signOverlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>签名确认</h3>
+            <button class="modal-close" onclick="closeSign()">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="sig-card">
+                <div class="sig-row"><span class="sig-label">单号</span><span class="sig-val" id="sId">--</span></div>
+                <div class="sig-row"><span class="sig-label">车次</span><span class="sig-val" id="sTrip">--</span></div>
+                <div class="sig-row"><span class="sig-label">仓库</span><span class="sig-val" id="sWh">--</span></div>
+                <div class="sig-row"><span class="sig-label">执行数量</span><span class="sig-val" id="sExec">--</span></div>
+            </div>
+            <p class="sig-tip">请签署姓名，确认以上装车数量属实</p>
+            <div class="canvas-wrap" id="canvasWrap">
+                <canvas id="sigCanvas"></canvas>
+                <span class="canvas-placeholder" id="sigPh">在此处签名...</span>
+            </div>
+            <div class="sig-actions">
+                <button class="btn-clear" onclick="clearSig()">清除</button>
+                <button class="btn-cancel" onclick="closeSign()">取消</button>
+                <button class="btn-confirm" onclick="submitSig()">确认提交</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!--              查看签名弹框（横屏适配）                          -->
+<!-- ============================================================ -->
+<div class="overlay" id="viewOverlay">
+    <div class="view-sig-modal-full">
+        <!-- 顶部标题栏 -->
+        <div class="vs-header">
+            <span class="vs-header-title">查看签名</span>
+            <button class="vs-header-close" onclick="closeViewSignature()">×</button>
+        </div>
+        
+        <!-- 信息栏 -->
+        <div class="vs-info-bar">
+            <div class="vs-info-item">
+                <span class="vs-info-label">车次</span>
+                <span class="vs-info-value" id="vsTripNo">100</span>
+            </div>
+            <div class="vs-info-item">
+                <span class="vs-info-label">车牌</span>
+                <span class="vs-info-value" id="vsPlateNo">0001</span>
+            </div>
+            <div class="vs-info-item">
+                <span class="vs-info-label">任务</span>
+                <span class="vs-info-value" id="vsTaskNo">20022</span>
+            </div>
+        </div>
+        
+        <!-- 主内容区 -->
+        <div class="vs-main-content">
+            <!-- 表格 -->
+            <div class="vs-table-container">
+                <div class="vs-table-scroll">
+                    <table class="vs-data-table">
+                        <thead>
+                            <tr>
+                                <th>装卸单位</th>
+                                <th>数量</th>
+                                <th>仓库</th>
+                                <th>物料编码</th>
+                                <th>条码头</th>
+                                <th>批次</th>
+                                <th>客户型号</th>
+                                <th>记录人</th>
+                                <th>确认时间</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vsDataBody">
+                            <tr>
+                                <td>fanxxxx</td>
+                                <td>10</td>
+                                <td>c4</td>
+                                <td>物料0001</td>
+                                <td>tr01</td>
+                                <td></td>
+                                <td></td>
+                                <td>pda登陆账户</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 签名区 -->
+            <div class="vs-signature-section">
+                <div class="vs-sig-header">
+                    <span class="vs-sig-label">确认人签名：</span>
+                    <div class="vs-sig-time">
+                        <span class="vs-sig-time-label">签名时间</span>
+                        <span class="vs-sig-time-value" id="vsSignTime">2026.4.12 13:15</span>
+                    </div>
+                </div>
+                <div class="vs-signature-box">
+                    <svg viewBox="0 0 200 60" width="200" height="60">
+                        <path d="M20 45 Q35 15 50 35 T80 25 T110 40 T140 20 T170 35" 
+                              stroke="#333" stroke-width="2" fill="none" stroke-linecap="round"/>
+                        <text x="100" y="55" text-anchor="middle" fill="#666" font-size="12">范会</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 底部按钮 -->
+        <div class="vs-footer">
+            <button class="vs-btn-close" onclick="closeViewSignature()">关闭</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!--              物料明细弹框                                    -->
+<!-- ============================================================ -->
+<div class="overlay" id="matOverlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>物料明细</h3>
+            <button class="modal-close" onclick="closeMat()">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="mat-info">
+                <div class="mat-info-row"><span>行号</span><span id="mId">--</span></div>
+                <div class="mat-info-row"><span>仓库</span><span id="mWh">--</span></div>
+                <div class="mat-info-row"><span>车次</span><span>车次01</span></div>
+                <div class="mat-info-row"><span>执行数量</span><span style="color:var(--primary)" id="mExec">--</span></div>
+            </div>
+            <div class="mat-table-wrap">
+                <table class="mat-table">
+                    <thead>
+                        <tr>
+                            <th>条码</th><th>物料编码</th><th>物料名称</th><th>批次</th>
+                            <th>客户型号</th><th>扫描人</th><th>扫描时间</th><th>仓库</th><th>库位</th>
+                        </tr>
+                    </thead>
+                    <tbody id="matBody">
+                        <tr><td>BAR20260511001</td><td>MTC20260511001</td><td>标准件A型</td><td>PC20260511</td><td>XA-100</td><td>范会100011</td><td>2025/2/4 11:11</td><td>c1</td><td>A-01</td></tr>
+                        <tr><td>BAR20260511002</td><td>MTC20260511002</td><td>连接件B型</td><td>PC20260510</td><td>XB-200</td><td>范会100011</td><td>2025/2/4 11:12</td><td>c1</td><td>A-02</td></tr>
+                        <tr><td>BAR20260511003</td><td>MTC20260511003</td><td>固定支架</td><td>PC20260509</td><td>XC-300</td><td>范会100011</td><td>2025/2/4 11:13</td><td>c2</td><td>B-01</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== 确认对话框 ==================== -->
+<div class="confirm-dialog" id="dlg">
+    <div class="dialog-box">
+        <p class="dialog-msg" id="dlgMsg">确定要提交吗？</p>
+        <div class="dialog-btns">
+            <button class="dialog-cancel" onclick="hideDlg()">取消</button>
+            <button class="dialog-ok" id="dlgOk" onclick="onDlgOk()">确定</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== 修改弹框 ==================== -->
+<div class="overlay" id="editOverlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>修改和批量修改</h3>
+            <button class="modal-close" onclick="closeEdit()">×</button>
+        </div>
+        <div class="modal-body">
+            <p class="edit-tip">修改装卸单位，单选</p>
+            <div class="edit-select-wrap">
+                <select class="edit-select" id="editUnit">
+                    <option value="801a">801a</option>
+                    <option value="802">802</option>
+                    <option value="803">803</option>
+                </select>
+            </div>
+            <div class="sig-actions">
+                <button class="btn-cancel" onclick="closeEdit()">取消</button>
+                <button class="btn-confirm" onclick="submitEdit()">确认</button>
+            </div>
+            <p class="edit-hint">更新人，更新时间需要更新</p>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ==================== 底部固定操作栏 ==================== -->
+<div class="bottom-bar" id="bottomBar">
+    <button class="btn-back" onclick="history.back()">返回</button>
+    <button class="btn-batch" id="bottomActionBtn" onclick="handleBottomAction()" style="display:none;"></button>
+</div>
+
+
+<!-- ==================== JavaScript ==================== -->
+<script>
+// ========== 数据 ==========
+const DB = {
+    P001: { wh:'c1', trip:'车次01', exec:10 },
+    P002: { wh:'c2', trip:'车次01', exec:10 },
+    P003: { wh:'c1', trip:'车次01', exec:10 },
+    P004: { wh:'c3', trip:'车次01', exec:10 },
+    CF001: { wh:'c1', trip:'车次01', exec:10 },
+    CF002: { wh:'c2', trip:'车次01', exec:10 },
+    CF003: { wh:'c3', trip:'车次01', exec:10 },
+    CF004: { wh:'c3', trip:'车次01', exec:10 },
+    CP001: { 
+        trip: '100', 
+        plate: '0001', 
+        task: '20022', 
+        signer: '范会',
+        signTime: '2026.4.12 13:15',
+        items: [
+            { unit: 'fanxxxx', qty: '10', wh: 'c4', material: '物料0001', barcode: 'tr01', batch: '', model: '', recorder: 'pda登陆账户', confirmTime: '' },
+            { unit: 'fanxxxx', qty: '10', wh: 'c4', material: '物料0001', barcode: 'tr01', batch: '', model: '', recorder: 'pda登陆账户', confirmTime: '' },
+            { unit: 'fanxxxx', qty: '10', wh: 'c4', material: '物料0001', barcode: 'tr01', batch: '', model: '', recorder: 'pda登陆账户', confirmTime: '' },
+            { unit: 'fanxxxx', qty: '30', wh: 'c4', material: '物料0001', barcode: 'tr01', batch: '', model: '', recorder: 'pda登陆账户', confirmTime: '' },
+            { unit: 'fanxxxx', qty: '40', wh: 'c4', material: '物料0001', barcode: 'tr01', batch: '', model: '', recorder: 'pda登陆账户', confirmTime: '' },
+            { unit: 'fanxxxx', qty: '50', wh: 'c4', material: '物料0001', barcode: 'tr01', batch: '', model: '', recorder: 'pda登陆账户', confirmTime: '' },
+            { unit: 'fanxxxx', qty: '46', wh: 'c4', material: '物料0001', barcode: 'tr01', batch: '', model: '', recorder: 'pda登陆账户', confirmTime: '' }
+        ]
+    },
+    CP002: { 
+        trip: '100', 
+        plate: '0002', 
+        task: '20023', 
+        signer: '小红',
+        signTime: '2026.4.12 14:30',
+        items: [
+            { unit: 'fanxxxx', qty: '20', wh: 'c5', material: '物料0002', barcode: 'tr02', batch: '', model: '', recorder: 'pda登陆账户', confirmTime: '' },
+            { unit: 'fanxxxx', qty: '25', wh: 'c5', material: '物料0002', barcode: 'tr02', batch: '', model: '', recorder: 'pda登陆账户', confirmTime: '' }
+        ]
+    },
+    CP003: { 
+        trip: '100', 
+        plate: '0003', 
+        task: '20024', 
+        signer: '小明',
+        signTime: '2026.4.12 15:00',
+        items: [
+            { unit: 'fanxxxx', qty: '15', wh: 'c6', material: '物料0003', barcode: 'tr03', batch: '', model: '', recorder: 'pda登陆账户', confirmTime: '' }
+        ]
+    }
+};
+
+let batchIds = [];
+
+let curId = '';
+let dlgCb = null;
+
+// ========== 主Tab切换 ==========
+document.getElementById('mainTab').addEventListener('click', function(e) {
+    const tab = e.target.closest('.tab-item');
+    if (!tab) return;
+    this.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const t = tab.dataset.tab;
+    document.getElementById('pendingView').classList.toggle('active', t === 'pending');
+    document.getElementById('confirmedView').classList.toggle('active', t === 'confirmed');
+    
+    // 根据当前子Tab状态，同步显示对应的子视图
+    const subTab = document.querySelector('.sub-tab.active');
+    const view = subTab ? subTab.dataset.view : 'summary';
+    if (t === 'pending') {
+        document.getElementById('summaryView').classList.toggle('active', view === 'summary');
+        document.getElementById('detailView').classList.toggle('active', view === 'detail');
+    } else {
+        document.getElementById('confSummaryView').classList.toggle('active', view === 'summary');
+        document.getElementById('confDetailView').classList.toggle('active', view === 'detail');
+    }
+    
+    updateBottomBar();
+});
+
+// ========== 子Tab切换（待确认和已确认共用） ==========
+document.querySelectorAll('.sub-tab').forEach(function(el) {
+    el.addEventListener('click', function() {
+        document.querySelectorAll('.sub-tab').forEach(s => s.classList.remove('active'));
+        this.classList.add('active');
+        
+        const view = this.dataset.view;
+        // 待确认视图切换
+        document.getElementById('summaryView').classList.toggle('active', view === 'summary');
+        document.getElementById('detailView').classList.toggle('active', view === 'detail');
+        // 已确认视图切换
+        document.getElementById('confSummaryView').classList.toggle('active', view === 'summary');
+        document.getElementById('confDetailView').classList.toggle('active', view === 'detail');
+        // 筛选区显示控制
+        document.getElementById('summaryFilter').style.display = view === 'summary' ? 'block' : 'none';
+        document.getElementById('detailFilter').style.display = view === 'detail' ? 'block' : 'none';
+        
+        updateBottomBar();
+    });
+});
+
+// ========== 更新底部按钮 ==========
+function updateBottomBar() {
+    const mainTab = document.querySelector('.tab-item.active');
+    const subTab = document.querySelector('.sub-tab.active');
+    const btn = document.getElementById('bottomActionBtn');
+    
+    if (mainTab && mainTab.dataset.tab === 'confirmed') {
+        // 已确认页面
+        if (subTab && subTab.dataset.view === 'summary') {
+            btn.style.display = 'inline-block';
+            btn.textContent = '批量取消';
+        } else {
+            // 已确认物料明细只读，不显示操作按钮
+            btn.style.display = 'none';
+        }
+    } else {
+        // 待确认页面
+        btn.style.display = 'inline-block';
+        if (subTab && subTab.dataset.view === 'summary') {
+            btn.textContent = '确认签名';
+        } else {
+            btn.textContent = '批量修改';
+        }
+    }
+}
+
+// ========== 底部按钮处理 ==========
+function handleBottomAction() {
+    const mainTab = document.querySelector('.tab-item.active');
+    const subTab = document.querySelector('.sub-tab.active');
+    const view = subTab ? subTab.dataset.view : 'summary';
+    
+    if (mainTab && mainTab.dataset.tab === 'confirmed') {
+        // 已确认页面
+        if (view === 'summary') {
+            openBatchCancel(); // 汇总确认：批量取消确认
+        } else {
+            // 已确认物料明细只读，无操作
+            return;
+        }
+    } else {
+        // 待确认页面
+        if (view === 'summary') {
+            openBatchSign();
+        } else {
+            openBatchEdit();
+        }
+    }
+}
+
+// ========== 汇总确认筛选 ==========
+function resetSummaryFilter() {
+    document.getElementById('fWarehouse').value = '';
+    document.getElementById('fUnit').value = '';
+    toast('已重置筛选');
+}
+function doSummaryQuery() {
+    toast('汇总确认查询成功');
+}
+
+// ========== 物料明细筛选 ==========
+function resetDetailFilter() {
+    document.getElementById('fWarehouseD').value = '';
+    document.getElementById('fUnitD').value = '';
+    document.getElementById('fMatCode').value = '';
+    document.getElementById('fBarcode').value = '';
+    toast('已重置筛选');
+}
+function doDetailQuery() {
+    toast('物料明细查询成功');
+}
+
+// ========== 批量Tab切换 ==========
+document.querySelectorAll('.batch-tab').forEach(function(el) {
+    el.addEventListener('click', function() {
+        this.parentElement.querySelectorAll('.batch-tab').forEach(s => s.classList.remove('active'));
+        this.classList.add('active');
+    });
+});
+
+// ========== 批量选择计数 ==========
+function updateBatchCount() {
+    const checked = document.querySelectorAll('#pendingBody .row-chk:checked').length;
+    document.getElementById('batchCount').textContent = checked;
+    batchIds = Array.from(document.querySelectorAll('#pendingBody .row-chk:checked')).map(cb => cb.closest('tr').dataset.id);
+}
+
+// 监听checkbox变化
+document.querySelector('#pendingBody').addEventListener('change', function(e) {
+    if (e.target.classList.contains('row-chk')) {
+        updateBatchCount();
+    }
+});
+
+// 监听已确认汇总checkbox变化
+document.querySelector('#confPendingBody').addEventListener('change', function(e) {
+    if (e.target.classList.contains('row-chk-c')) {
+        updateConfBatchCount();
+    }
+});
+
+// 全选
+function toggleAll(area) {
+    let chk, cls;
+    if (area === 'pending') {
+        chk = document.getElementById('chkAllPending').checked;
+        cls = '.row-chk';
+    } else if (area === 'confirmed') {
+        chk = document.getElementById('chkAllConfirmed').checked;
+        cls = '.row-chk-c';
+    } else if (area === 'detail') {
+        chk = document.getElementById('chkAllDetail').checked;
+        cls = '.row-chk-d';
+    }
+    document.querySelectorAll(cls).forEach(cb => cb.checked = chk);
+    if (area === 'pending') updateBatchCount();
+}
+
+// ========== 待确认汇总批量选择 ==========
+function togglePendingAll() {
+    const chk = document.getElementById('chkAllPending').checked;
+    document.querySelectorAll('.row-chk-p').forEach(cb => cb.checked = chk);
+    updatePendingBatchCount();
+}
+
+function updatePendingBatchCount() {
+    const checked = document.querySelectorAll('#pendingBody .row-chk-p:checked').length;
+    const allCount = document.querySelectorAll('#pendingBody .row-chk-p').length;
+    document.getElementById('chkAllPending').checked = checked === allCount && allCount > 0;
+}
+
+// ========== 已确认汇总批量选择 ==========
+function toggleConfAll() {
+    const chk = document.getElementById('chkAllConf').checked;
+    document.querySelectorAll('.row-chk-c').forEach(cb => cb.checked = chk);
+    updateConfBatchCount();
+}
+
+function updateConfBatchCount() {
+    const checked = document.querySelectorAll('#confPendingBody .row-chk-c:checked').length;
+    const allCount = document.querySelectorAll('#confPendingBody .row-chk-c').length;
+    document.getElementById('chkAllConf').checked = checked === allCount && allCount > 0;
+}
+
+// ========== 物料明细批量选择（待确认） ==========
+function toggleDetailAll() {
+    const chk = document.getElementById('chkAllDetail').checked;
+    document.querySelectorAll('#detailBody .row-chk-d:not(:disabled)').forEach(cb => cb.checked = chk);
+    updateDetailBatchCount();
+}
+
+function updateDetailBatchCount() {
+    const checked = document.querySelectorAll('#detailBody .row-chk-d:checked').length;
+    const allCount = document.querySelectorAll('#detailBody .row-chk-d:not(:disabled)').length;
+    document.getElementById('chkAllDetail').checked = checked === allCount && allCount > 0;
+}
+
+// 监听物料明细checkbox变化
+document.querySelector('#detailBody').addEventListener('change', function(e) {
+    if (e.target.classList.contains('row-chk-d')) {
+        updateDetailBatchCount();
+    }
+});
+
+// ========== 物料明细批量选择（已确认） ==========
+function toggleConfDetailAll() {
+    const chk = document.getElementById('chkAllConfDetail').checked;
+    document.querySelectorAll('#confDetailBody .row-chk-cd').forEach(cb => cb.checked = chk);
+    updateConfDetailBatchCount();
+}
+
+function updateConfDetailBatchCount() {
+    const checked = document.querySelectorAll('#confDetailBody .row-chk-cd:checked').length;
+    const allCount = document.querySelectorAll('#confDetailBody .row-chk-cd').length;
+    document.getElementById('chkAllConfDetail').checked = checked === allCount && allCount > 0;
+}
+
+// 监听已确认物料明细checkbox变化
+document.querySelector('#confDetailBody').addEventListener('change', function(e) {
+    if (e.target.classList.contains('row-chk-cd')) {
+        updateConfDetailBatchCount();
+    }
+});
+
+function openBatchCancel() {
+    const checked = document.querySelectorAll('#confPendingBody .row-chk-c:checked');
+    if (checked.length === 0) {
+        toast('请先勾选要取消的记录');
+        return;
+    }
+    const count = checked.length;
+    confirmDlg('确认取消 ' + count + ' 条记录的确认状态？', function() {
+        checked.forEach(cb => {
+            const row = cb.closest('tr');
+            const id = row.dataset.id;
+            row.querySelector('td:nth-child(2)').innerHTML = '<span style="color:#999">已取消确认</span>';
+            cb.checked = false;
+        });
+        updateConfBatchCount();
+        toast(count + ' 条记录已取消确认');
+    });
+}
+
+// ========== 批量确认签名 ==========
+function openBatchSign() {
+    const rows = document.querySelectorAll('#pendingBody tr');
+    const count = rows.length;
+    document.getElementById('sId').textContent = '批量 ' + count + ' 条';
+    document.getElementById('sTrip').textContent = '待确认';
+    document.getElementById('sWh').textContent = '多个仓库';
+    document.getElementById('sExec').textContent = count + ' 条';
+    pad.clear();
+    pad.resize();
+    document.getElementById('signOverlay').classList.add('show');
+}
+
+function submitSig() {
+    if (pad.isEmpty()) { toast('请先签名！'); return; }
+    
+    if (curId) {
+        // 单行签名确认
+        confirmDlg('确认提交签名？', function() {
+            pad.clear();
+            closeSign();
+            toast('签名确认成功');
+            const row = document.querySelector('#pendingBody tr[data-id="' + curId + '"]');
+            if (row) {
+                row.querySelector('td:nth-child(1)').innerHTML = '<a class="action-link disabled">已确认</a>';
+            }
+            curId = '';
+        });
+    } else {
+        // 批量签名确认
+        const rows = document.querySelectorAll('#pendingBody tr');
+        confirmDlg('确认提交 ' + rows.length + ' 条签名？', function() {
+            pad.clear();
+            closeSign();
+            toast('签名确认成功');
+            rows.forEach(row => {
+                row.querySelector('td:nth-child(1)').innerHTML = '<a class="action-link disabled">已确认</a>';
+            });
+        });
+    }
+}
+
+// ========== 签名画布 ==========
+class SigPad {
+    constructor(id) {
+        this.canvas = document.getElementById(id);
+        this.ctx = this.canvas.getContext('2d');
+        this.drawing = false;
+        this.hasContent = false;
+        this.lx = 0; this.ly = 0;
+        this.dpr = window.devicePixelRatio || 1;
+        this.bind();
+        this.resize();
+    }
+    resize() {
+        const p = this.canvas.parentElement;
+        const w = p.clientWidth || 280;
+        const h = p.clientHeight || 150;
+        this.canvas.width = w * this.dpr;
+        this.canvas.height = h * this.dpr;
+        this.canvas.style.width = w + 'px';
+        this.canvas.style.height = h + 'px';
+        this.ctx.scale(this.dpr, this.dpr);
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+        this.ctx.strokeStyle = '#1a1a2e';
+        this.ctx.lineWidth = 2.5;
+    }
+    pos(e) {
+        const r = this.canvas.getBoundingClientRect();
+        const t = e.touches ? e.touches[0] : e;
+        return { x: t.clientX - r.left, y: t.clientY - r.top };
+    }
+    start(e) { e.preventDefault(); this.drawing = true; const p = this.pos(e); this.lx = p.x; this.ly = p.y; }
+    move(e) {
+        if (!this.drawing) return; e.preventDefault();
+        const p = this.pos(e);
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.lx, this.ly);
+        this.ctx.lineTo(p.x, p.y);
+        this.ctx.stroke();
+        this.lx = p.x; this.ly = p.y;
+        if (!this.hasContent) {
+            this.hasContent = true;
+            document.getElementById('sigPh').classList.add('hidden');
+        }
+    }
+    end() { this.drawing = false; }
+    bind() {
+        const s = this;
+        this.canvas.addEventListener('mousedown', e => s.start(e));
+        this.canvas.addEventListener('mousemove', e => s.move(e));
+        this.canvas.addEventListener('mouseup', () => s.end());
+        this.canvas.addEventListener('mouseleave', () => s.end());
+        this.canvas.addEventListener('touchstart', e => s.start(e), { passive: false });
+        this.canvas.addEventListener('touchmove', e => s.move(e), { passive: false });
+        this.canvas.addEventListener('touchend', () => s.end());
+    }
+    clear() {
+        const w = this.canvas.clientWidth || 300;
+        const h = this.canvas.clientHeight || 150;
+        this.ctx.clearRect(0, 0, w / this.dpr, h / this.dpr);
+        this.hasContent = false;
+        document.getElementById('sigPh').classList.remove('hidden');
+    }
+    isEmpty() { return !this.hasContent; }
+}
+
+let pad = new SigPad('sigCanvas');
+
+// ========== 签名确认 ==========
+function openSign(id) {
+    console.log('openSign called with id:', id);
+    curId = id;
+    const d = DB[id] || {};
+    document.getElementById('sId').textContent = id;
+    document.getElementById('sTrip').textContent = d.trip || '--';
+    document.getElementById('sWh').textContent = d.wh || '--';
+    document.getElementById('sExec').textContent = d.exec || '--';
+    // 先显示弹框
+    document.getElementById('signOverlay').classList.add('show');
+    // 等弹框显示后再初始化画布
+    setTimeout(() => {
+        pad.resize();
+        pad.clear();
+    }, 50);
+    console.log('signOverlay classes:', document.getElementById('signOverlay').className);
+}
+function closeSign() { document.getElementById('signOverlay').classList.remove('show'); }
+function clearSig() { pad.clear(); }
+
+// ========== 查看签名 ==========
+function openViewSign(id, event) {
+    console.log('openViewSign called with id:', id);
+    if (event) event.stopPropagation();
+    const d = DB[id] || {};
+    console.log('Data found:', d);
+    
+    // 填充数据
+    document.getElementById('vsTripNo').textContent = d.trip || '100';
+    document.getElementById('vsPlateNo').textContent = d.plate || '0001';
+    document.getElementById('vsTaskNo').textContent = d.task || '20022';
+    document.getElementById('vsSignTime').textContent = d.signTime || '2026.4.12 13:15';
+    
+    // 加载表格数据
+    const tbody = document.getElementById('vsDataBody');
+    if (d.items) {
+        tbody.innerHTML = d.items.map(item => `
+            <tr>
+                <td>${item.unit || 'fanxxxx'}</td>
+                <td>${item.qty || '10'}</td>
+                <td>${item.wh || 'c4'}</td>
+                <td>${item.material || '物料0001'}</td>
+                <td>${item.barcode || 'tr01'}</td>
+                <td>${item.batch || ''}</td>
+                <td>${item.model || ''}</td>
+                <td>${item.recorder || 'pda登陆账户'}</td>
+                <td>${item.confirmTime || ''}</td>
+            </tr>
+        `).join('');
+    }
+    
+    const overlay = document.getElementById('viewOverlay');
+    console.log('Overlay element:', overlay);
+    overlay.classList.add('show');
+    console.log('Overlay classes after add:', overlay.className);
+}
+
+// 关闭查看签名弹框
+function closeViewSignature() {
+    document.getElementById('viewOverlay').classList.remove('show');
+}
+
+// ========== 物料明细 ==========
+function showMat(id) {
+    curId = id;
+    const d = DB[id] || {};
+    document.getElementById('mId').textContent = id;
+    document.getElementById('mWh').textContent = d.wh || '--';
+    document.getElementById('mExec').textContent = d.exec || '--';
+    document.getElementById('matOverlay').classList.add('show');
+}
+function closeMat() { document.getElementById('matOverlay').classList.remove('show'); }
+
+// ========== 取消确认 ==========
+function cancelConfirm(id, event) {
+    if (event) event.preventDefault();
+    confirmDlg('确定取消「' + id + '」的确认状态？', function() {
+        toast(id + ' 已取消确认');
+    });
+}
+function cancelBack(id) {
+    confirmDlg('确定将「' + id + '」退回到待确认？', function() {
+        toast(id + ' 已退回待确认');
+    });
+}
+
+// ========== 弹框 & Toast ==========
+function confirmDlg(msg, onOk) {
+    document.getElementById('dlgMsg').innerHTML = msg;
+    document.getElementById('dlg').classList.add('show');
+    dlgCb = onOk;
+}
+function hideDlg() { document.getElementById('dlg').classList.remove('show'); dlgCb = null; }
+function onDlgOk() { if (dlgCb) { dlgCb(); dlgCb = null; } hideDlg(); }
+function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+// ========== 窗口调整 ==========
+window.addEventListener('resize', () => { try { pad.resize(); } catch(e) {} });
+
+// ========== 排序 ==========
+let sortField = '';
+let sortDir = '';
+
+function sortTable(tbodyId, field) {
+    const tbody = document.getElementById(tbodyId);
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+
+    // 更新排序状态（只处理当前视图的 sortable）
+    const sortableEls = tbody.closest('.view-area').querySelectorAll('.sortable');
+    sortableEls.forEach(th => th.classList.remove('asc', 'desc'));
+
+    if (sortField === field) {
+        sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortField = field;
+        sortDir = 'asc';
+    }
+
+    const sortTh = tbody.closest('.view-area').querySelector(`.sortable[data-sort="${field}"]`);
+    if (sortTh) sortTh.classList.add(sortDir);
+
+    // 排序
+    rows.sort((a, b) => {
+        let aVal, bVal;
+        if (field === 'warehouse' || field === 'detail_wh') {
+            aVal = a.cells[2].textContent.trim();
+            bVal = b.cells[2].textContent.trim();
+        } else if (field === 'unit' || field === 'detail_unit') {
+            aVal = a.cells[3].textContent.trim();
+            bVal = b.cells[3].textContent.trim();
+        }
+        if (sortDir === 'asc') {
+            return aVal.localeCompare(bVal);
+        } else {
+            return bVal.localeCompare(aVal);
+        }
+    });
+
+    // 重新插入
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+// ========== 初始化 ==========
+updateBatchCount();
+updatePendingBatchCount();
+updateConfBatchCount();
+updateDetailBatchCount();
+updateConfDetailBatchCount();
+updateBottomBar();
+
+// ========== 修改功能 ==========
+let editType = '';
+let editRowId = '';
+
+function openEdit(id) {
+    editRowId = id;
+    editType = 'single';
+    document.getElementById('editOverlay').classList.add('show');
+}
+
+function closeEdit() {
+    document.getElementById('editOverlay').classList.remove('show');
+}
+
+function submitEdit() {
+    const unit = document.getElementById('editUnit').value;
+    if (editType === 'single') {
+        toast('单条修改装卸单位: ' + unit);
+    } else if (editType === 'batch') {
+        const checked = document.querySelectorAll('#detailBody .row-chk-d:checked').length;
+        toast('批量修改 ' + checked + ' 条装卸单位: ' + unit);
+    } else if (editType === 'single-conf') {
+        toast('已确认-单条修改装卸单位: ' + unit);
+    } else if (editType === 'batch-conf') {
+        const checked = document.querySelectorAll('#confDetailBody .row-chk-cd:checked').length;
+        toast('已确认-批量修改 ' + checked + ' 条装卸单位: ' + unit);
+    }
+    closeEdit();
+}
+
+// 批量Tab切换
+document.querySelectorAll('.batch-tab').forEach(function(el) {
+    el.addEventListener('click', function() {
+        this.parentElement.querySelectorAll('.batch-tab').forEach(s => s.classList.remove('active'));
+        this.classList.add('active');
+    });
+});
+
+// ========== 物料明细行操作 ==========
+function openSignDetail(id) {
+    const d = DB['P001'] || {};
+    document.getElementById('sId').textContent = id;
+    document.getElementById('sTrip').textContent = '车次01';
+    document.getElementById('sWh').textContent = 'c1';
+    document.getElementById('sExec').textContent = '5';
+    pad.clear();
+    pad.resize();
+    document.getElementById('signOverlay').classList.add('show');
+}
+
+function openEditDetail(id) {
+    editRowId = id;
+    editType = 'single';
+    document.getElementById('editOverlay').classList.add('show');
+}
+
+function openBatchEdit() {
+    const checked = document.querySelectorAll('#detailBody .row-chk-d:checked').length;
+    if (checked === 0) {
+        toast('请先勾选要修改的记录');
+        return;
+    }
+    editType = 'batch';
+    document.getElementById('editOverlay').classList.add('show');
+}
+
+// 已确认物料明细-单条修改
+function openEditConfDetail(id) {
+    editRowId = id;
+    editType = 'single-conf';
+    document.getElementById('editOverlay').classList.add('show');
+}
+
+// 已确认物料明细-批量修改
+function openBatchEditConf() {
+    const checked = document.querySelectorAll('#confDetailBody .row-chk-cd:checked').length;
+    if (checked === 0) {
+        toast('请先勾选要修改的记录');
+        return;
+    }
+    editType = 'batch-conf';
+    document.getElementById('editOverlay').classList.add('show');
+}
+</script>
+
+</body>
+</html>
