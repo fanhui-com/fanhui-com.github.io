@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>装卸工时确认页面</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --primary: #4a9d9c;
+            --primary-dark: #3d8b8a;
+            --primary-light: #e8f4f4;
+            --success: #52c41a;
+            --warning: #faad14;
+            --danger: #ff4d4f;
+            --bg-gray: #f2f4f7;
+            --bg-section: #ffffff;
+            --border-color: #e0e0e0;
+            --border-light: #f0f0f0;
+            --text-primary: #1d2129;
+            --text-secondary: #4b4b4b;
+            --text-light: #86909c;
+            --table-header-bg: #4a9d9c;
+            --table-header-text: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #1a1a2e;
+            font-size: 13px;
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* ========== PDA手机外壳 ========== */
+        .pda-frame {
+            width: 375px;
+            height: 812px;
+            background: #1a1a2e;
+            border-radius: 50px;
+            padding: 12px;
+            box-shadow: 0 0 0 3px #333, 0 0 0 6px #222, 0 25px 50px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        .pda-screen {
+            width: 100%;
+            height: 100%;
+            background: var(--bg-gray);
+            border-radius: 40px;
+            overflow: hidden;
+            position: relative;
+        }
+        .pda-notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 30px;
+            background: #1a1a2e;
+            border-radius: 0 0 20px 20px;
+            z-index: 100;
+        }
+        .pda-status-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            padding: 30px 20px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #fff;
+            z-index: 99;
+            background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%);
+        }
+        .pda-home-indicator {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 134px;
+            height: 5px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 3px;
+            z-index: 100;
+        }
+
+        /* ========== 页面内容容器 ========== */
+        .page-content {
+            height: 100%;
+            overflow-y: auto;
+            padding-top: 50px;
+            padding-bottom: 80px;
+        }
+        .page-content::-webkit-scrollbar { display: none; }
+
+        /* ========== 顶部任务信息区 ========== */
+        .task-info-bar {
+            background: #fff;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+        .trip-card {
+            background: linear-gradient(135deg, #4a9d9c, #5ab0af);
+            padding: 12px 14px;
+            color: #fff;
+        }
+        .trip-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .trip-card-title {
+            font-size: 16px;
+            font-weight: 700;
+        }
+        .trip-status {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.25);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .trip-status.partial { background: rgba(255,255,255,0.25); color: #fff; }
+        .trip-card-body {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 12px;
+            opacity: 0.95;
+        }
+        .task-task-no { color: rgba(255,255,255,0.95); }
+        .task-task-no strong { color: #fff; font-weight: 600; }
+
+        /* ========== 主Tab切换栏 ========== */
+        .tab-bar {
+            display: flex;
+            background: #fff;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .tab-item {
+            flex: 1;
+            text-align: center;
+            padding: 12px 0;
+            font-size: 14px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+            font-weight: 500;
+            user-select: none;
+        }
+        .tab-item.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* ========== 筛选区 ========== */
+        .filter-section {
+            background: #fff;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .filter-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .filter-group {
+            flex: 1;
+            display: flex;
+            gap: 8px;
+        }
+        .filter-select, .filter-input {
+            flex: 1;
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 12px;
+            background: #fff;
+            color: var(--text-primary);
+        }
+        .filter-btn {
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            border: none;
+        }
+        .filter-btn.reset {
+            background: #f5f5f5;
+            color: var(--text-secondary);
+        }
+        .filter-btn.search {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        /* ========== 视图区域 ========== */
+        .view-area { display: none; }
+        .view-area.active { display: block; }
+
+        /* ========== 数据表格 ========== */
+        .table-container {
+            background: #fff;
+            margin: 10px 0;
+        }
+        .table-scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        .data-table th {
+            background: var(--table-header-bg);
+            color: var(--table-header-text);
+            padding: 10px 6px;
+            text-align: left;
+            font-weight: 500;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .data-table td {
+            padding: 10px 6px;
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: middle;
+        }
+        .data-table tr:nth-child(odd) td { background: #fafcfc; }
+        .data-table tr:active td { background: var(--primary-light); }
+        .data-table .qty-cell {
+            color: var(--primary);
+            font-weight: 600;
+        }
+        .action-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        .cancel-link {
+            color: var(--danger);
+            text-decoration: none;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        .check-cell { width: 30px; }
+        .action-cell { width: 60px; }
+
+        /* ========== 排序列头 ========== */
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .sort-arrows {
+            display: flex;
+            flex-direction: column;
+            line-height: 1;
+            margin-left: 2px;
+        }
+        .sort-arrow-up, .sort-arrow-down {
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            opacity: 0.35;
+        }
+        .sort-arrow-up {
+            border-bottom: 6px solid #fff;
+            margin-bottom: 1px;
+        }
+        .sort-arrow-down {
+            border-top: 6px solid #fff;
+        }
+        th.sort-asc .sort-arrow-up { opacity: 1; }
+        th.sort-desc .sort-arrow-down { opacity: 1; }
+
+        /* ========== 底部固定操作栏 ========== */
+        .bottom-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            padding: 10px 14px;
+            padding-bottom: calc(10px + env(safe-area-inset-bottom, 0));
+            display: flex;
+            gap: 10px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+            z-index: 50;
+        }
+        .bottom-btn {
+            flex: 1;
+            padding: 12px 0;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        .bottom-btn:active {
+            transform: scale(0.97);
+        }
+        .bottom-btn.back {
+            background: #f5f5f5;
+            color: var(--text-secondary);
+        }
+        .bottom-btn.primary {
+            background: var(--primary);
+            color: #fff;
+        }
+        .bottom-btn.primary:active {
+            background: var(--primary-dark);
+        }
+        .bottom-btn.danger {
+            background: var(--danger);
+            color: #fff;
+        }
+        .bottom-btn.danger:active {
+            background: #e64545;
+        }
+        .btn-hidden { display: none !important; }
+
+        /* ========== Toast提示 ========== */
+        .toast {
+            position: fixed;
+            top: 38%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.75);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.25s;
+            pointer-events: none;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+
+        /* ========== 签名弹框 ========== */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+        .overlay.show { display: flex; }
+        .modal-box {
+            background: #fff;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 340px;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: modalIn 0.25s ease;
+        }
+        @keyframes modalIn { from{opacity:0;transform:scale(0.92)} to{opacity:1;transform:scale(1)} }
+        .modal-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            font-size: 15px;
+        }
+        .modal-close {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            color: var(--text-light);
+        }
+        .modal-body {
+            padding: 16px;
+        }
+        .sign-info {
+            background: #f8fafa;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .sign-info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 12px;
+        }
+        .sign-info-label { color: var(--text-light); }
+        .sign-info-value { color: var(--text-primary); font-weight: 500; }
+        .sign-tip {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-light);
+            margin-bottom: 12px;
+        }
+        .sign-canvas-wrap {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            cursor: crosshair;
+            position: relative;
+            overflow: hidden;
+        }
+        .sign-canvas-wrap canvas {
+            width: 100%;
+            height: 100%;
+        }
+        .sign-placeholder {
+            position: absolute;
+            color: #ccc;
+            font-size: 14px;
+            pointer-events: none;
+        }
+        .modal-footer {
+            padding: 12px 16px;
+            display: flex;
+            gap: 10px;
+            border-top: 1px solid var(--border-light);
+        }
+        .modal-btn {
+            flex: 1;
+            padding: 12px 0;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+        }
+        .modal-btn.cancel {
+            background: #f5f5f5;
+            color: var(--text-secondary);
+        }
+        .modal-btn.confirm {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        /* ========== 确认对话框 ========== */
+        .confirm-dialog {
+            background: #fff;
+            border-radius: 12px;
+            width: 280px;
+            padding: 24px;
+            text-align: center;
+        }
+        .confirm-dialog .message {
+            font-size: 15px;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+        .confirm-dialog .actions {
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ========== PDA外壳 ========== -->
+<div class="pda-frame">
+    <div class="pda-screen">
+        <div class="pda-notch"></div>
+        <div class="pda-status-bar">
+            <span>9:41</span>
+            <span>📶 📡 🔋</span>
+        </div>
+        
+        <div class="page-content">
+            <!-- 任务信息栏 -->
+            <div class="task-info-bar">
+                <div class="trip-card">
+                    <div class="trip-card-header">
+                        <span class="trip-card-title">🚛 车次 01</span>
+                    </div>
+                    <div class="trip-card-body">
+                        <span class="task-task-no">任务号: <strong>ts000001</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 主Tab -->
+            <div class="tab-bar" id="mainTab">
+                <div class="tab-item active" data-tab="pending" onclick="switchTab('pending')">待确认 (<span id="pendingCount">100</span>)</div>
+                <div class="tab-item" data-tab="confirmed" onclick="switchTab('confirmed')">已确认 (<span id="confirmedCount">30</span>)</div>
+            </div>
+
+            <!-- 筛选区 -->
+            <div class="filter-section">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <select class="filter-select" id="whFilter">
+                            <option value="">仓库</option>
+                            <option value="c1">c1</option>
+                            <option value="c2">c2</option>
+                        </select>
+                        <select class="filter-select" id="unitFilter">
+                            <option value="">装卸单位</option>
+                            <option value="fanxxxx">fanxxxx</option>
+                            <option value="小红">小红</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="filter-row" style="margin-top: 8px;">
+                    <div class="filter-group">
+                        <input type="text" class="filter-input" id="matFilter" placeholder="物料编码">
+                        <input type="text" class="filter-input" id="barcodeFilter" placeholder="条码头">
+                    </div>
+                </div>
+                <div class="filter-row" style="margin-top: 8px;">
+                    <button class="filter-btn reset" onclick="resetFilter()">重置</button>
+                    <button class="filter-btn search" onclick="doSearch()">查询</button>
+                </div>
+            </div>
+
+            <!-- 待确认视图 -->
+            <div class="view-area active" id="pendingView">
+                <div class="table-container">
+                    <div class="table-scroll">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th class="check-cell"><input type="checkbox" id="chkAllPending" onchange="toggleAllPending()"></th>
+                                    <th class="action-cell">操作</th>
+                                    <th data-sort="warehouse"><span class="sortable" onclick="sortTable('pending', 'warehouse')">仓库<span class="sort-arrows"><i class="sort-arrow-up"></i><i class="sort-arrow-down"></i></span></span></th>
+                                    <th data-sort="unit"><span class="sortable" onclick="sortTable('pending', 'unit')">装卸单位<span class="sort-arrows"><i class="sort-arrow-up"></i><i class="sort-arrow-down"></i></span></span></th>
+                                    <th data-sort="material"><span class="sortable" onclick="sortTable('pending', 'material')">物料编码<span class="sort-arrows"><i class="sort-arrow-up"></i><i class="sort-arrow-down"></i></span></span></th>
+                                    <th>执行数量</th>
+                                    <th>条码头</th>
+                                    <th>物料名称</th>
+                                    <th>批次</th>
+                                    <th>客户型号</th>
+                                    <th>机型种类</th>
+                                    <th>车牌</th>
+                                    <th>记录确认人</th>
+                                    <th>确认时间</th>
+                                    <th>最后更新人</th>
+                                    <th>最后更新时间</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pendingBody">
+                                <tr>
+                                    <td class="check-cell" onclick="event.stopPropagation()"><input type="checkbox" class="row-chk" data-id="P001"></td>
+                                    <td class="action-cell"><span class="action-link" onclick="openEditModal('P001')">修改</span></td>
+                                    <td>c1</td><td>fanxxxx</td><td>MT20260511001</td>
+                                    <td class="qty-cell">10</td><td>TK001</td><td>标准件A型</td>
+                                    <td>PC2026051101</td><td>XA-100</td><td>1</td>
+                                    <td>粤B12345</td><td>pda登陆账户</td>
+                                    <td>-</td><td>-</td><td>-</td>
+                                </tr>
+                                <tr>
+                                    <td class="check-cell" onclick="event.stopPropagation()"><input type="checkbox" class="row-chk" data-id="P002"></td>
+                                    <td class="action-cell"><span class="action-link" onclick="openEditModal('P002')">修改</span></td>
+                                    <td>c4</td><td>fanxxxx</td><td>MT20260511002</td>
+                                    <td class="qty-cell">20</td><td>TK002</td><td>连接件B型</td>
+                                    <td>PC2026051102</td><td>XB-200</td><td>1</td>
+                                    <td>粤B12345</td><td>pda登陆账户</td>
+                                    <td>-</td><td>-</td><td>-</td>
+                                </tr>
+                                <tr>
+                                    <td class="check-cell" onclick="event.stopPropagation()"><input type="checkbox" class="row-chk" data-id="P003"></td>
+                                    <td class="action-cell"><span class="action-link" onclick="openEditModal('P003')">修改</span></td>
+                                    <td>c2</td><td>小红</td><td>MT20260511003</td>
+                                    <td class="qty-cell">15</td><td>TK003</td><td>固定支架</td>
+                                    <td>PC2026051103</td><td>XC-300</td><td>10</td>
+                                    <td>粤B67890</td><td>pda登陆账户</td>
+                                    <td>-</td><td>-</td><td>-</td>
+                                </tr>
+                                <tr>
+                                    <td class="check-cell" onclick="event.stopPropagation()"><input type="checkbox" class="row-chk" data-id="P004"></td>
+                                    <td class="action-cell"><span class="action-link" onclick="openEditModal('P004')">修改</span></td>
+                                    <td>c1</td><td>fanxxxx</td><td>MT20260511004</td>
+                                    <td class="qty-cell">8</td><td>TK004</td><td>防护罩</td>
+                                    <td>PC2026051104</td><td>FH-400</td><td>5</td>
+                                    <td>粤C11111</td><td>pda登陆账户</td>
+                                    <td>-</td><td>-</td><td>-</td>
+                                </tr>
+                                <tr>
+                                    <td class="check-cell" onclick="event.stopPropagation()"><input type="checkbox" class="row-chk" data-id="P005"></td>
+                                    <td class="action-cell"><span class="action-link" onclick="openEditModal('P005')">修改</span></td>
+                                    <td>c2</td><td>小红</td><td>MT20260511005</td>
+                                    <td class="qty-cell">25</td><td>TK005</td><td>密封圈</td>
+                                    <td>PC2026051105</td><td>MF-500</td><td>3</td>
+                                    <td>粤D22222</td><td>pda登陆账户</td>
+                                    <td>-</td><td>-</td><td>-</td>
+                                </tr>
+                                <tr>
+                                    <td class="check-cell" onclick="event.stopPropagation()"><input type="checkbox" class="row-chk" data-id="P006"></td>
+                                    <td class="action-cell"><span class="action-link" onclick="openEditModal('P006')">修改</span></td>
+                                    <td>c3</td><td>小张小李</td><td>MT20260511006</td>
+                                    <td class="qty-cell">12</td><td>TK006</td><td>螺丝组</td>
+                                    <td>PC2026051106</td><td>LS-600</td><td>2</td>
+                                    <td>粤E33333</td><td>pda登陆账户</td>
+                                    <td>-</td><td>-</td><td>-</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 已确认视图 -->
+            <div class="view-area" id="confirmedView">
+                <div class="table-container">
+                    <div class="table-scroll">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th class="check-cell"><input type="checkbox" id="chkAllConfirmed" onchange="toggleAllConfirmed()"></th>
+                                    <th class="action-cell">操作</th>
+                                    <th data-sort="warehouse"><span class="sortable" onclick="sortTable('confirmed', 'warehouse')">仓库<span class="sort-arrows"><i class="sort-arrow-up"></i><i class="sort-arrow-down"></i></span></span></th>
+                                    <th data-sort="unit"><span class="sortable" onclick="sortTable('confirmed', 'unit')">装卸单位<span class="sort-arrows"><i class="sort-arrow-up"></i><i class="sort-arrow-down"></i></span></span></th>
+                                    <th data-sort="material"><span class="sortable" onclick="sortTable('confirmed', 'material')">物料编码<span class="sort-arrows"><i class="sort-arrow-up"></i><i class="sort-arrow-down"></i></span></span></th>
+                                    <th>执行数量</th>
+                                    <th>条码头</th>
+                                    <th>物料名称</th>
+                                    <th>批次</th>
+                                    <th>客户型号</th>
+                                    <th>机型种类</th>
+                                    <th>车牌</th>
+                                    <th>记录确认人</th>
+                                    <th>确认时间</th>
+                                    <th>最后更新人</th>
+                                    <th>最后更新时间</th>
+                                </tr>
+                            </thead>
+                            <tbody id="confirmedBody">
+                                <tr>
+                                    <td class="check-cell"><input type="checkbox" class="row-chk-c" data-id="C001"></td>
+                                    <td class="action-cell"><span class="cancel-link" onclick="cancelConfirm('C001')">取消确认</span></td>
+                                    <td>c1</td><td>范范范</td><td>MT20260512001</td>
+                                    <td class="qty-cell">30</td><td>T010</td><td>标准件A型</td>
+                                    <td>PC2026051201</td><td>XA-100</td><td>1</td>
+                                    <td>粤B12345</td><td>pda登陆账户</td>
+                                    <td>2025/2/4 11:11</td><td>pda登陆账户</td><td>2025/2/4 11:11</td>
+                                </tr>
+                                <tr>
+                                    <td class="check-cell"><input type="checkbox" class="row-chk-c" data-id="C002"></td>
+                                    <td class="action-cell"><span class="cancel-link" onclick="cancelConfirm('C002')">取消确认</span></td>
+                                    <td>c2</td><td>小张小李</td><td>MT20260512002</td>
+                                    <td class="qty-cell">25</td><td>T011</td><td>连接件B型</td>
+                                    <td>PC2026051202</td><td>XB-200</td><td>1</td>
+                                    <td>粤F44444</td><td>pda登陆账户</td>
+                                    <td>2025/2/4 11:15</td><td>pda登陆账户</td><td>2025/2/4 11:15</td>
+                                </tr>
+                                <tr>
+                                    <td class="check-cell"><input type="checkbox" class="row-chk-c" data-id="C003"></td>
+                                    <td class="action-cell"><span class="cancel-link" onclick="cancelConfirm('C003')">取消确认</span></td>
+                                    <td>c1</td><td>范范范</td><td>MT20260512003</td>
+                                    <td class="qty-cell">20</td><td>T012</td><td>固定支架</td>
+                                    <td>PC2026051203</td><td>XC-300</td><td>10</td>
+                                    <td>粤G55555</td><td>pda登陆账户</td>
+                                    <td>2025/2/4 12:00</td><td>pda登陆账户</td><td>2025/2/4 12:00</td>
+                                </tr>
+                                <tr>
+                                    <td class="check-cell"><input type="checkbox" class="row-chk-c" data-id="C004"></td>
+                                    <td class="action-cell"><span class="cancel-link" onclick="cancelConfirm('C004')">取消确认</span></td>
+                                    <td>c3</td><td>老王</td><td>MT20260512004</td>
+                                    <td class="qty-cell">15</td><td>T013</td><td>防护罩</td>
+                                    <td>PC2026051204</td><td>FH-400</td><td>5</td>
+                                    <td>粤H66666</td><td>pda登陆账户</td>
+                                    <td>2025/2/4 13:20</td><td>pda登陆账户</td><td>2025/2/4 13:20</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部操作栏 -->
+        <div class="bottom-bar">
+            <button class="bottom-btn back" onclick="goBack()">返回</button>
+            <button class="bottom-btn" id="batchBtn" onclick="handleBatchModify()">批量修改</button>
+            <button class="bottom-btn primary" id="signBtn" onclick="handleSign()">确认签名</button>
+        </div>
+
+        <div class="pda-home-indicator"></div>
+    </div>
+</div>
+
+<!-- Toast提示 -->
+<div class="toast" id="toast"></div>
+
+<!-- 签名弹框 -->
+<div class="overlay" id="signOverlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <span>签名确认</span>
+            <div class="modal-close" onclick="closeSignModal()">✕</div>
+        </div>
+        <div class="modal-body">
+            <div class="sign-info">
+                <div class="sign-info-row">
+                    <span class="sign-info-label">单号</span>
+                    <span class="sign-info-value" id="signId">P001</span>
+                </div>
+                <div class="sign-info-row">
+                    <span class="sign-info-label">车次</span>
+                    <span class="sign-info-value">车次01</span>
+                </div>
+                <div class="sign-info-row">
+                    <span class="sign-info-label">仓库</span>
+                    <span class="sign-info-value" id="signWh">c1</span>
+                </div>
+                <div class="sign-info-row">
+                    <span class="sign-info-label">执行数量</span>
+                    <span class="sign-info-value" id="signQty">10</span>
+                </div>
+            </div>
+            <div class="sign-tip">请签署姓名，确认以上装车数量属实</div>
+            <div class="sign-canvas-wrap" id="signCanvasWrap">
+                <canvas id="signCanvas"></canvas>
+                <span class="sign-placeholder" id="signPlaceholder">在此处签名</span>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn cancel" onclick="clearSign()">清除</button>
+            <button class="modal-btn cancel" onclick="closeSignModal()">取消</button>
+            <button class="modal-btn confirm" onclick="submitSign()">确认提交</button>
+        </div>
+    </div>
+</div>
+
+<!-- 确认对话框 -->
+<div class="overlay" id="confirmOverlay">
+    <div class="confirm-dialog">
+        <div class="message" id="confirmMessage">确定要提交吗？</div>
+        <div class="actions">
+            <button class="modal-btn cancel" onclick="closeConfirm()">取消</button>
+            <button class="modal-btn confirm" onclick="doConfirm()">确定</button>
+        </div>
+    </div>
+</div>
+
+<!-- 修改弹框 -->
+<div class="overlay" id="editOverlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <span>修改装卸单位</span>
+            <div class="modal-close" onclick="closeEditModal()">✕</div>
+        </div>
+        <div class="modal-body">
+            <div style="margin-bottom: 12px;">
+                <label style="font-size: 12px; color: var(--text-light); display: block; margin-bottom: 4px;">本次修改行数：<strong id="editCount">1</strong> 行</label>
+                <select class="filter-select" id="editUnit" style="width: 100%;">
+                    <option value="fanxxxx">fanxxxx</option>
+                    <option value="小红">小红</option>
+                    <option value="小张小李">小张小李</option>
+                    <option value="范范范">范范范</option>
+                    <option value="老王">老王</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-size: 12px; color: var(--text-light); display: block; margin-bottom: 4px;">数量</label>
+                <input type="number" class="filter-input" id="editQty" placeholder="请输入数量" style="width: 100%;">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn cancel" onclick="closeEditModal()">取消</button>
+            <button class="modal-btn confirm" onclick="submitEdit()">确定</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ========== Tab切换 ==========
+    function switchTab(tabName) {
+        // 更新Tab样式
+        document.querySelectorAll('#mainTab .tab-item').forEach(t => {
+            t.classList.remove('active');
+            if (t.dataset.tab === tabName) {
+                t.classList.add('active');
+            }
+        });
+        
+        // 切换视图
+        document.getElementById('pendingView').classList.toggle('active', tabName === 'pending');
+        document.getElementById('confirmedView').classList.toggle('active', tabName === 'confirmed');
+        
+        // 更新底部按钮
+        updateBottomBar();
+    }
+
+    // ========== 底部按钮 ==========
+    function updateBottomBar() {
+        const activeTab = document.querySelector('#mainTab .tab-item.active');
+        const batchBtn = document.getElementById('batchBtn');
+        const signBtn = document.getElementById('signBtn');
+        
+        if (!activeTab || !batchBtn || !signBtn) return;
+        
+        if (activeTab.dataset.tab === 'confirmed') {
+            // 已确认视图
+            batchBtn.style.display = 'none';
+            signBtn.textContent = '取消确认';
+            signBtn.classList.remove('primary');
+            signBtn.classList.add('danger');
+        } else {
+            // 待确认视图
+            batchBtn.style.display = 'block';
+            signBtn.textContent = '确认签名';
+            signBtn.classList.add('primary');
+            signBtn.classList.remove('danger');
+        }
+    }
+
+    function goBack() {
+        showToast('返回上一页');
+    }
+
+    // 批量修改
+    function handleBatchModify() {
+        const checked = document.querySelectorAll('#pendingBody .row-chk:checked');
+        if (checked.length === 0) {
+            showToast('请先勾选要修改的记录');
+            return;
+        }
+        openEditModal(checked[0].dataset.id);
+    }
+
+    // 确认签名 / 取消确认
+    function handleSign() {
+        const activeTab = document.querySelector('#mainTab .tab-item.active');
+        if (activeTab.dataset.tab === 'confirmed') {
+            // 取消确认
+            const checked = document.querySelectorAll('#confirmedBody .row-chk-c:checked');
+            if (checked.length === 0) {
+                showToast('请先勾选要取消的记录');
+                return;
+            }
+            showConfirm('确定要取消确认选中的 ' + checked.length + ' 条记录吗？', function() {
+                showToast('已取消确认');
+            });
+        } else {
+            // 确认签名
+            const checked = document.querySelectorAll('#pendingBody .row-chk:checked');
+            if (checked.length === 0) {
+                showToast('请先勾选要确认的记录');
+                return;
+            }
+            openSignModal(checked[0].dataset.id);
+        }
+    }
+
+    // ========== 全选 ==========
+    function toggleAllPending() {
+        const chk = document.getElementById('chkAllPending').checked;
+        document.querySelectorAll('#pendingBody .row-chk').forEach(c => c.checked = chk);
+    }
+
+    function toggleAllConfirmed() {
+        const chk = document.getElementById('chkAllConfirmed').checked;
+        document.querySelectorAll('#confirmedBody .row-chk-c').forEach(c => c.checked = chk);
+    }
+
+    // ========== 签名弹框 ==========
+    let currentSignId = '';
+    let signCtx = null;
+    let isDrawing = false;
+
+    function openSignModal(id) {
+        currentSignId = id;
+        document.getElementById('signId').textContent = id;
+        document.getElementById('signOverlay').classList.add('show');
+        clearSign();
+        
+        // 初始化画布
+        setTimeout(initCanvas, 100);
+    }
+
+    function closeSignModal() {
+        document.getElementById('signOverlay').classList.remove('show');
+    }
+
+    function clearSign() {
+        if (signCtx) {
+            signCtx.clearRect(0, 0, signCtx.canvas.width, signCtx.canvas.height);
+        }
+        document.getElementById('signPlaceholder').style.display = 'flex';
+    }
+
+    function initCanvas() {
+        const canvas = document.getElementById('signCanvas');
+        const wrap = document.getElementById('signCanvasWrap');
+        canvas.width = wrap.offsetWidth;
+        canvas.height = wrap.offsetHeight;
+        signCtx = canvas.getContext('2d');
+        signCtx.strokeStyle = '#333';
+        signCtx.lineWidth = 2;
+        signCtx.lineCap = 'round';
+        
+        canvas.onmousedown = startDraw;
+        canvas.onmousemove = draw;
+        canvas.onmouseup = endDraw;
+        canvas.onmouseleave = endDraw;
+        canvas.ontouchstart = startDraw;
+        canvas.ontouchmove = draw;
+        canvas.ontouchend = endDraw;
+    }
+
+    function startDraw(e) {
+        e.preventDefault();
+        isDrawing = true;
+        document.getElementById('signPlaceholder').style.display = 'none';
+        const rect = signCtx.canvas.getBoundingClientRect();
+        const x = (e.clientX || e.touches[0].clientX) - rect.left;
+        const y = (e.clientY || e.touches[0].clientY) - rect.top;
+        signCtx.beginPath();
+        signCtx.moveTo(x, y);
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const rect = signCtx.canvas.getBoundingClientRect();
+        const x = (e.clientX || e.touches[0].clientX) - rect.left;
+        const y = (e.clientY || e.touches[0].clientY) - rect.top;
+        signCtx.lineTo(x, y);
+        signCtx.stroke();
+    }
+
+    function endDraw() {
+        isDrawing = false;
+    }
+
+    function submitSign() {
+        showConfirm('确定要提交签名吗？', function() {
+            closeSignModal();
+            showToast('签名提交成功');
+        });
+    }
+
+    // ========== 修改弹框 ==========
+    function openEditModal(id) {
+        // 计算选中的行数
+        const checked = document.querySelectorAll('#pendingBody .row-chk:checked');
+        document.getElementById('editCount').textContent = checked.length || 1;
+        document.getElementById('editOverlay').classList.add('show');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editOverlay').classList.remove('show');
+    }
+
+    function submitEdit() {
+        const unit = document.getElementById('editUnit').value;
+        closeEditModal();
+        showToast('已将装卸单位修改为：' + unit);
+    }
+
+    // ========== 排序功能 ==========
+    let sortState = { pending: { col: '', dir: '' }, confirmed: { col: '', dir: '' } };
+    const sortColIndex = {
+        warehouse: 2, unit: 3, material: 4
+    };
+
+    function sortTable(view, colKey) {
+        const state = sortState[view];
+        const newDir = (state.col === colKey && state.dir === 'asc') ? 'desc' : 'asc';
+        state.col = colKey;
+        state.dir = newDir;
+
+        const theadId = view === 'pending' ? '#pendingView' : '#confirmedView';
+        document.querySelectorAll(theadId + ' th[data-sort]').forEach(th => {
+            th.classList.remove('sort-asc', 'sort-desc');
+        });
+        document.querySelector(theadId + ` th[data-sort="${colKey}"]`).classList.add(newDir === 'asc' ? 'sort-asc' : 'sort-desc');
+
+        const tbodyId = view === 'pending' ? 'pendingBody' : 'confirmedBody';
+        const tbody = document.getElementById(tbodyId);
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const idx = sortColIndex[colKey];
+
+        rows.sort((a, b) => {
+            const aVal = a.cells[idx].textContent.trim();
+            const bVal = b.cells[idx].textContent.trim();
+            if (newDir === 'asc') return aVal.localeCompare(bVal, 'zh-CN');
+            return bVal.localeCompare(aVal, 'zh-CN');
+        });
+        rows.forEach(r => tbody.appendChild(r));
+        showToast((colKey === 'warehouse' ? '仓库' : colKey === 'unit' ? '装卸单位' : '物料编码') + (newDir === 'asc' ? ' 升序' : ' 降序'));
+    }
+
+    // ========== 取消确认 ==========
+    function cancelConfirm(id) {
+        showConfirm('确定要取消确认吗？', function() {
+            showToast('已取消确认');
+        });
+    }
+
+    // ========== Toast提示 ==========
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    // ========== 确认对话框 ==========
+    let confirmCallback = null;
+    function showConfirm(msg, callback) {
+        document.getElementById('confirmMessage').textContent = msg;
+        confirmCallback = callback;
+        document.getElementById('confirmOverlay').classList.add('show');
+    }
+    function closeConfirm() {
+        document.getElementById('confirmOverlay').classList.remove('show');
+    }
+    function doConfirm() {
+        closeConfirm();
+        if (confirmCallback) confirmCallback();
+    }
+
+    // ========== 筛选功能 ==========
+    function resetFilter() {
+        document.getElementById('whFilter').value = '';
+        document.getElementById('unitFilter').value = '';
+        document.getElementById('matFilter').value = '';
+        document.getElementById('barcodeFilter').value = '';
+        showToast('已重置筛选条件');
+    }
+
+    function doSearch() {
+        const wh = document.getElementById('whFilter').value;
+        const unit = document.getElementById('unitFilter').value;
+        const mat = document.getElementById('matFilter').value;
+        const barcode = document.getElementById('barcodeFilter').value;
+        showToast('筛选条件：仓库=' + (wh || '全部') + '，单位=' + (unit || '全部') + '，物料=' + (mat || '全部') + '，条码=' + (barcode || '全部'));
+    }
+
+    // ========== 初始化 ==========
+    updateBottomBar();
+</script>
+
+</body>
+</html>
