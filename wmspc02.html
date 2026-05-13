@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>盘点分析看板</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Microsoft YaHei", sans-serif;
+    }
+    body {
+      background: #f5f7fa;
+      padding: 24px;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    /* 顶部 */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1d2129;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .setting {
+      font-size: 14px;
+      color: #4e5969;
+      cursor: pointer;
+    }
+    .week-tag {
+      background: #e8f3ff;
+      color: #0066ff;
+      padding: 6px 14px;
+      border-radius: 16px;
+      font-size: 14px;
+    }
+    /* 卡片区域 — 自动适配5列 */
+    .card-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .card-label {
+      font-size: 14px;
+      color: #4e5969;
+      margin-bottom: 8px;
+    }
+    .card-value {
+      font-size: 32px;
+      font-weight: 600;
+      color: #1d2129;
+      margin-bottom: 4px;
+    }
+    .card-desc {
+      font-size: 12px;
+      color: #86909c;
+    }
+    .down { color: #f53f3f; }
+    .up { color: #00b42a; }
+    .warn { color: #ff7d00; }
+
+    /* 模块 */
+    .module {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .module-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #1d2129;
+    }
+
+    /* 趋势条 */
+    .trend-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .trend-label {
+      width: 140px;
+      font-size: 14px;
+    }
+    .trend-bar {
+      flex: 1;
+      height: 24px;
+      background: #f2f3f5;
+      border-radius: 4px;
+      position: relative;
+      margin: 0 12px;
+    }
+    .trend-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: #0066ff;
+    }
+    .trend-fill.orange { background: #ff7d00; }
+    .trend-fill.green { background: #00b42a; }
+    .trend-text {
+      width: 160px;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* 热力分布 */
+    .heat-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .heat-label {
+      width: 140px;
+      font-size: 14px;
+    }
+    .heat-bar {
+      flex: 1;
+      height: 24px;
+      background: #f2f3f5;
+      border-radius: 4px;
+      margin: 0 12px;
+    }
+    .heat-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: #f53f3f;
+    }
+    .heat-fill.blue { background: #0066ff; }
+    .heat-fill.gray { background: #c9cdd4; }
+    .heat-num {
+      width: 120px;
+      font-size: 14px;
+    }
+    .tips {
+      background: #fff7e6;
+      border-left: 4px solid #ff7d00;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: #735600;
+      margin-top: 10px;
+    }
+
+    /* 表格 */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th {
+      background: #f7f8fa;
+      padding: 12px;
+      text-align: left;
+      color: #4e5969;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #f2f3f5;
+      color: #1d2129;
+      white-space: nowrap;
+    }
+    .blue { color: #0066ff; }
+
+    /* 查询条件样式 */
+    .query-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .query-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .query-item label {
+      font-size: 14px;
+      color: #4e5969;
+    }
+    .query-item select,
+    .query-item input {
+      height: 32px;
+      padding: 0 8px;
+      border: 1px solid #dcdfe6;
+      border-radius: 4px;
+      font-size: 14px;
+      outline: none;
+    }
+    .query-btn {
+      height: 32px;
+      padding: 0 16px;
+      background: #0066ff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .query-btn:hover {
+      background: #005ce6;
+    }
+	.export-btn {
+      height: 32px;
+      padding: 0 16px;
+      background: #00b42a;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .export-btn:hover {
+      background: #009a25;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <!-- 顶部 -->
+  <div class="header">
+    <div class="title">盘点分析</div>
+    <div class="header-right">
+      <div class="setting">设置</div>
+      <div class="week-tag">第20周 | 05.08-05.14</div>
+    </div>
+  </div>
+
+  <!-- 5个指标卡片 → 新增本周盘点差异率 -->
+  <div class="card-row">
+    <div class="card">
+      <div class="card-label">本周盘点完成率</div>
+      <div class="card-value">79%</div>
+      <div class="card-desc down">环比 -5%</div>
+    </div>
+    <div class="card">
+      <div class="card-label">逾期未盘库位</div>
+      <div class="card-value">10</div>
+      <div class="card-desc up">环比 +2</div>
+    </div>
+    <div class="card">
+      <div class="card-label">今日已盘</div>
+      <div class="card-value">30</div>
+      <div class="card-desc up">实时更新</div>
+    </div>
+    <div class="card">
+      <div class="card-label">今日未盘</div>
+      <div class="card-value">15</div>
+      <div class="card-desc down">待处理</div>
+    </div>
+    <!-- 新增：本周盘点差异率 -->
+    <div class="card">
+      <div class="card-label">本周盘点差异率</div>
+      <div class="card-value">4.1%</div>
+      <div class="card-desc warn">环比 +0.6%</div>
+    </div>
+  </div>
+
+  <!-- 盘点频率 vs 差异率趋势 -->
+  <div class="module">
+    <div class="module-title">盘点频率 vs 差异率趋势</div>
+    <div class="trend-item">
+      <div class="trend-label">W17 (周盘)</div>
+      <div class="trend-bar"><div class="trend-fill" style="width: 82%;"></div></div>
+      <div class="trend-text"><span>82次</span><span>差异3.2%</span></div>
+    </div>
+    <div class="trend-item">
+      <div class="trend-label">W18 (周盘)</div>
+      <div class="trend-bar"><div class="trend-fill" style="width: 78%;"></div></div>
+      <div class="trend-text"><span>78次</span><span>差异2.9%</span></div>
+    </div>
+    <div class="trend-item">
+      <div class="trend-label">W19 (周盘)</div>
+      <div class="trend-bar"><div class="trend-fill" style="width: 79%;"></div></div>
+      <div class="trend-text"><span>79次</span><span>差异3.5%</span></div>
+    </div>
+    <div class="trend-item">
+      <div class="trend-label">W20 本周</div>
+      <div class="trend-bar"><div class="trend-fill orange" style="width: 68%;"></div></div>
+      <div class="trend-text"><span>68次</span><span class="down">差异4.1%</span></div>
+    </div>
+    <div class="trend-item">
+      <div class="trend-label">A类库位(高频)</div>
+      <div class="trend-bar"><div class="trend-fill green" style="width: 94%;"></div></div>
+      <div class="trend-text"><span>周盘覆盖率94%</span></div>
+    </div>
+  </div>
+
+  <!-- 未盘点库位热力分布 -->
+  <div class="module">
+    <div class="module-title">未盘点库位热力分布 按仓库</div>
+    <div class="heat-item">
+      <div class="heat-label">A区 高位货架</div>
+      <div class="heat-bar"><div class="heat-fill" style="width: 70%;"></div></div>
+      <div class="heat-num">5个库位未盘</div>
+    </div>
+    <div class="heat-item">
+      <div class="heat-label">B区 地堆区</div>
+      <div class="heat-bar"><div class="heat-fill blue" style="width: 30%;"></div></div>
+      <div class="heat-num">2个库位未盘</div>
+    </div>
+    <div class="heat-item">
+      <div class="heat-label">C区 冷库</div>
+      <div class="heat-bar"><div class="heat-fill blue" style="width: 45%;"></div></div>
+      <div class="heat-num">3个库位未盘</div>
+    </div>
+    <div class="heat-item">
+      <div class="heat-label">D区 备件区</div>
+      <div class="heat-bar"><div class="heat-fill gray" style="width: 0%;"></div></div>
+      <div class="heat-num">0</div>
+    </div>
+    <div class="tips">💡 洞察：A区连续三周未盘库位占比最高，建议复核人员排班或库位标识。</div>
+  </div>
+
+  <!-- 未按时盘点明细表（升级字段） -->
+  <div class="module">
+    <div class="module-title">未按时盘点明细表 (超过应盘周期)</div>
+    
+    <div class="query-bar">
+      <div class="query-item">
+        <label>未盘天数：</label>
+        <select id="dayType">
+          <option value="gt">大于</option>
+          <option value="eq">等于</option>
+          <option value="lt">小于</option>
+        </select>
+        <input type="number" id="dayValue" placeholder="请输入天数" min="0" value="5">
+      </div>
+      <button class="query-btn" onclick="filterTable()">查询</button>
+      <button class="export-btn" onclick="exportTable()">导出列表</button>
+    </div>
+
+    <table id="dataTable">
+      <thead>
+        <tr>
+          <th>仓库</th>
+          <th>库位编码</th>
+          <th>未盘天数</th>
+          <th>上一次盘点时间</th>
+          <th>最后一次盘点时间</th>
+          <th>最后一次盘点间隔</th>
+          <th>本周盘点次数</th>
+          <th>盘点人</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>C1</td>
+          <td>40001</td>
+          <td class="blue days">3</td>
+          <td>2025/12/26 4:10</td>
+          <td>2026/1/2 5:13</td>
+          <td>7天</td>
+          <td>0</td>
+          <td>张强</td>
+        </tr>
+        <tr>
+          <td>C1</td>
+          <td>40005</td>
+          <td class="blue days">6</td>
+          <td>2026/4/25 8:30</td>
+          <td>2026/5/2 9:20</td>
+          <td>7天</td>
+          <td>1</td>
+          <td>李芳</td>
+        </tr>
+        <tr>
+          <td>A1</td>
+          <td>10023</td>
+          <td class="blue days">10</td>
+          <td>2026/4/21 15:20</td>
+          <td>2026/4/28 16:40</td>
+          <td>7天</td>
+          <td>0</td>
+          <td>王浩</td>
+        </tr>
+        <tr>
+          <td>A1</td>
+          <td>10056</td>
+          <td class="blue days">7</td>
+          <td>2026/4/28 10:05</td>
+          <td>2026/5/5 11:10</td>
+          <td>7天</td>
+          <td>0</td>
+          <td>王浩</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// 表格筛选功能
+function filterTable() {
+  const type = document.getElementById('dayType').value;
+  const val = parseInt(document.getElementById('dayValue').value) || 0;
+  const rows = document.querySelectorAll('#dataTable tbody tr');
+
+  rows.forEach(row => {
+    const dayCell = row.querySelector('.days');
+    if (!dayCell) { row.style.display = ''; return; }
+    
+    const day = parseInt(dayCell.textContent.trim());
+    let show = false;
+
+    if (type === 'gt') show = day > val;
+    if (type === 'eq') show = day === val;
+    if (type === 'lt') show = day < val;
+
+    row.style.display = show ? '' : 'none';
+  });
+}
+
+// 导出表格功能
+function exportTable() {
+  const table = document.getElementById('dataTable');
+  let csv = [];
+  
+  // 处理表头
+  const header = [];
+  const ths = table.querySelectorAll('th');
+  ths.forEach(th => header.push('"' + th.textContent.trim() + '"'));
+  csv.push(header.join(','));
+
+  // 处理行（只导出显示的行）
+  const rows = table.querySelectorAll('tbody tr');
+  rows.forEach(row => {
+    if (row.style.display === 'none') return;
+    
+    const rowData = [];
+    const tds = row.querySelectorAll('td');
+    tds.forEach(td => rowData.push('"' + td.textContent.trim() + '"'));
+    csv.push(rowData.join(','));
+  });
+
+  // 下载文件
+  const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '未按时盘点明细表_' + new Date().toLocaleDateString() + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+window.onload = function() {
+  filterTable();
+}
+</script>
+</body>
+</html>
