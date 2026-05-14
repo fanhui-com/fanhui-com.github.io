@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>wms范会产品设计稿访问地址对照表</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Microsoft YaHei", "PingFang SC", "SimSun", sans-serif;
+    }
+    body {
+      background: #f5f7fa;
+      font-size: 14px;
+      color: #333;
+    }
+    .header {
+      background: linear-gradient(90deg, #43989c 0%, #3a888c 100%);
+      height: 60px;
+      line-height: 60px;
+      padding: 0 24px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .logo {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .content {
+      padding: 24px;
+      max-width: 1920px;
+      margin: 0 auto;
+    }
+    .content-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .content-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #2f4050;
+      display: flex;
+      align-items: center;
+    }
+    .content-title::before {
+      content: "";
+      width: 4px;
+      height: 18px;
+      background: #43989c;
+      margin-right: 8px;
+      border-radius: 2px;
+    }
+    .addBtn {
+      background: #43989c;
+      color: #fff;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .addBtn:hover {
+      opacity: 0.9;
+    }
+    .table-container {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+      overflow: hidden;
+      border: 1px solid #e8e8e8;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .data-table thead th {
+      background: #f8f9fa;
+      height: 48px;
+      padding: 0 16px;
+      text-align: left;
+      color: #5e6d82;
+      font-weight: 500;
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .data-table tbody td {
+      height: 48px;
+      padding: 0 16px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .data-table tbody tr:hover {
+      background: #fafbfc;
+    }
+    .link-btn {
+      color: #43989c;
+      text-decoration: none;
+    }
+    .link-btn:hover {
+      text-decoration: underline;
+    }
+    input, select {
+      width: 100%;
+      height: 32px;
+      padding: 0 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .btn {
+      padding: 4px 10px;
+      border-radius: 3px;
+      border: none;
+      cursor: pointer;
+      margin: 0 3px;
+    }
+    .btn-save {
+      background: #43989c;
+      color: #fff;
+    }
+    .btn-cancel {
+      background: #999;
+      color: #fff;
+    }
+    .btn-del {
+      background: #f56c6c;
+      color: #fff;
+    }
+  </style>
+</head>
+
+<body>
+<div class="header">
+  <div class="logo">格力WMS系统 - 设计稿地址管理</div>
+</div>
+
+<div class="content">
+  <div class="content-header">
+    <div class="content-title">wms范会产品设计稿访问地址对照表</div>
+    <button class="addBtn" onclick="addOneRow()">➕ 新增一行</button>
+  </div>
+
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th width="240">设计稿名称</th>
+          <th width="100">版本号</th>
+          <th width="100">终端类型</th>
+          <th width="420">访问链接</th>
+          <th width="160">备注</th>
+          <th width="120">操作</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr>
+          <td>盘点分析看板设计稿</td>
+          <td>V1.0</td>
+          <td>PC</td>
+          <td><a href="https://链接1" target="_blank" class="link-btn">打开</a></td>
+          <td>主看板</td>
+          <td><button class="btn btn-del" onclick="delRow(this)">删除</button></td>
+        </tr>
+        <tr>
+          <td>库存报表设计稿</td>
+          <td>V1.0</td>
+          <td>PC</td>
+          <td><a href="https://链接2" target="_blank" class="link-btn">打开</a></td>
+          <td>明细报表</td>
+          <td><button class="btn btn-del" onclick="delRow(this)">删除</button></td>
+        </tr>
+        <tr>
+          <td>库位管理设计稿</td>
+          <td>V1.0</td>
+          <td>PC</td>
+          <td><a href="https://链接3" target="_blank" class="link-btn">打开</a></td>
+          <td>库位明细</td>
+          <td><button class="btn btn-del" onclick="delRow(this)">删除</button></td>
+        </tr>
+        <tr>
+          <td>PDA运单绑定</td>
+          <td>V1.0</td>
+          <td>PDA</td>
+          <td><a href="https://huilog.qzz.io/my-warehousehtml-page/PDAyundanbangdi.html" target="_blank" class="link-btn">打开</a></td>
+          <td>PDA页面</td>
+          <td><button class="btn btn-del" onclick="delRow(this)">删除</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// 新增一行（可编辑）
+function addOneRow() {
+  let tbody = document.getElementById("tableBody");
+  let tr = document.createElement("tr");
+  tr.innerHTML = `
+  <td><input type="text" placeholder="请输入设计稿名称"></td>
+  <td><input type="text" value="V1.0"></td>
+  <td>
+    <select>
+      <option>PC</option>
+      <option>PDA</option>
+    </select>
+  </td>
+  <td><input type="text" placeholder="请输入链接"></td>
+  <td><input type="text" placeholder="请输入备注"></td>
+  <td>
+    <button class="btn btn-save" onclick="saveRow(this)">保存</button>
+    <button class="btn btn-cancel" onclick="cancelRow(this)">取消</button>
+  </td>
+  `;
+  tbody.appendChild(tr);
+}
+
+// 保存行 → 变成不可编辑文本
+function saveRow(btn) {
+  let tr = btn.parentElement.parentElement;
+  let inputs = tr.querySelectorAll("input, select");
+  
+  let name = inputs[0].value;
+  let ver = inputs[1].value;
+  let type = inputs[2].value;
+  let url = inputs[3].value;
+  let remark = inputs[4].value;
+
+  tr.innerHTML = `
+  <td>${name}</td>
+  <td>${ver}</td>
+  <td>${type}</td>
+  <td><a href="${url}" target="_blank" class="link-btn">打开</a></td>
+  <td>${remark}</td>
+  <td><button class="btn btn-del" onclick="delRow(this)">删除</button></td>
+  `;
+}
+
+// 取消 → 删除当前行
+function cancelRow(btn) {
+  btn.parentElement.parentElement.remove();
+}
+
+// 删除行（修复版）
+function delRow(btn) {
+  if(confirm("确定删除该行？")){
+    btn.parentElement.parentElement.remove();
+  }
+}
+</script>
+</body>
+</html>
