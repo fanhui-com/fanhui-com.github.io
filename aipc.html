@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>AI 智能派仓 | 多仓库协同 · 库龄驱动分配</title>
+    <!-- Inter & 图标库 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #f1f5f9;
+            font-family: 'Inter', sans-serif;
+            padding: 28px 32px;
+            color: #0f172a;
+        }
+        .dashboard {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        /* 卡片设计 */
+        .card {
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.05);
+            margin-bottom: 28px;
+            border: 1px solid #e9edf2;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 18px 24px;
+            border-bottom: 1px solid #eef2f8;
+            background: #fefefe;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .card-header h2 {
+            font-size: 1.35rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .card-header h2 i {
+            color: #2c6e9e;
+        }
+        .badge {
+            background: #eef2ff;
+            color: #1e40af;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .rules-bar {
+            background: #f9fafc;
+            padding: 12px 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            border-bottom: 1px solid #eef2f6;
+            font-size: 0.85rem;
+        }
+        .rule-tag {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            padding: 4px 14px;
+            border-radius: 40px;
+            border: 1px solid #e2e8f0;
+        }
+        .stat-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 4px 0;
+        }
+        .stat-item {
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 6px 18px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .table-responsive {
+            overflow-x: auto;
+            padding: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            min-width: 900px;
+        }
+        th {
+            text-align: left;
+            padding: 14px 16px;
+            background: #f9fafb;
+            font-weight: 600;
+            color: #1e293b;
+            border-bottom: 1px solid #e9edf2;
+        }
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f0f4f9;
+            vertical-align: middle;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #e0f2e9;
+            color: #1f7840;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.75rem;
+            width: fit-content;
+        }
+        .status-warning {
+            background: #ffedd5;
+            color: #b45309;
+        }
+        .status-danger {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+        .warehouse-multi {
+            background: #eef2ff;
+            padding: 2px 10px;
+            border-radius: 24px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .subnote {
+            font-size: 0.7rem;
+            color: #5b6e8c;
+            margin-top: 6px;
+        }
+        .action-bar {
+            padding: 16px 24px;
+            background: #ffffff;
+            border-top: 1px solid #eef2f8;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+        }
+        .btn {
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            border: 1px solid #cbd5e1;
+        }
+        .btn-primary {
+            background: #1e4c8c;
+            border: none;
+            color: white;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .btn-primary:hover {
+            background: #0f3b6f;
+        }
+        .btn-outline:hover {
+            background: #f1f5f9;
+        }
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .order-highlight {
+            background: #fefce8;
+        }
+        .text-accent {
+            color: #2b6e9f;
+            font-weight: 600;
+        }
+        hr {
+            margin: 12px 0;
+            border-color: #ecf3f9;
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <!-- 顶部规则+多仓摘要 -->
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fas fa-building"></i> AI 多仓智能派仓 · 库龄驱动分配</h2>
+            <div class="badge"><i class="far fa-clock"></i> 实时快照: 2026-05-27 15:20:00</div>
+        </div>
+        <div class="rules-bar">
+            <div class="rule-tag"><i class="fas fa-calendar-week"></i> 按库龄从大到小 (先进先出)</div>
+            <div class="rule-tag"><i class="fas fa-warehouse"></i> <strong>多仓库协同</strong> · 智能分仓策略</div>
+            <div class="rule-tag"><i class="fas fa-layer-group"></i> 按物料集中分配 + 车次聚合</div>
+            <div class="rule-tag"><i class="fas fa-chart-line"></i> 清仓优化 + 库存水位平衡</div>
+        </div>
+        <div class="stat-grid" style="padding: 8px 24px 16px 24px;">
+            <span><i class="fas fa-truck"></i> 12 车次</span>
+            <span><i class="fas fa-file-invoice"></i> 50 订单</span>
+            <span><i class="fas fa-microchip"></i> 100 机型</span>
+            <span><i class="fas fa-boxes"></i> 310 物料行</span>
+            <span class="status-badge"><i class="fas fa-check-circle"></i> 298 物料充足</span>
+            <span class="status-badge status-warning"><i class="fas fa-exclamation-triangle"></i> 12 物料多仓拆单</span>
+            <span><i class="fas fa-code-branch"></i> 涉及仓库: C3 / C4 / C5 / C7</span>
+            <span><i class="fas fa-qrcode"></i> 已锁定条码: 64个</span>
+        </div>
+    </div>
+
+    <!-- 订单信息：展示多仓分配标识 -->
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fas fa-receipt"></i> 订单信息 · 跨仓需求拆解</h2>
+            <div class="badge"><i class="fas fa-map-marker-alt"></i> 多仓库备货/提货策略</div>
+        </div>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>订单号</th><th>车次</th><th>机型</th><th>物料编码</th><th>需求总量</th>
+                        <th>分配仓库(多仓)</th><th>库龄分配策略</th><th>分仓明细</th><th>状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>PO-241101</td><td>C01</td><td>机型A-X1</td><td>物料0001</td><td>100</td>
+                        <td><span class="warehouse-multi">C3</span> + <span class="warehouse-multi">C4</span></td>
+                        <td>先进先出(12m→6m)</td>
+                        <td>C3:50(12m) / C4:49(6m)</td>
+                        <td><span class="status-badge status-warning">缺1件调拨中</span></td>
+                    </tr>
+                    <tr>
+                        <td>PO-241102</td><td>C01</td><td>机型B-Pro</td><td>物料0002</td><td>3000</td>
+                        <td><span class="warehouse-multi">C4</span> (主仓)</td>
+                        <td>6个月批次优先</td>
+                        <td>C4:3000 (批次BATCH-MID-03)</td>
+                        <td><span class="status-badge">充足</span></td>
+                    </tr>
+                    <tr>
+                        <td>PO-241103</td><td>C02</td><td>机型C-S</td><td>物料0003</td><td>800</td>
+                        <td><span class="warehouse-multi">C5</span> + <span class="warehouse-multi">C7</span></td>
+                        <td>库龄由大到小</td>
+                        <td>C5:600(3m) / C7:200(2m)</td>
+                        <td><span class="status-badge">充足</span></td>
+                    </tr>
+                    <tr>
+                        <td>PO-241104</td><td>C02</td><td>机型D-Lite</td><td>物料0004</td><td>600</td>
+                        <td><span class="warehouse-multi">C4</span> + <span class="warehouse-multi">C3</span></td>
+                        <td>清仓+库龄混合</td>
+                        <td>C4:480(6m) / C3:120(12m)</td>
+                        <td><span class="status-badge">充足</span></td>
+                    </tr>
+                    <tr>
+                        <td>PO-241105</td><td>C03</td><td>机型E-Max</td><td>物料0005</td><td>220</td>
+                        <td><span class="warehouse-multi">C7</span> + <span class="warehouse-multi">C5</span></td>
+                        <td>优先清老库存</td>
+                        <td>C7:150(9m) / C5:70(6m)</td>
+                        <td><span class="status-badge">充足</span></td>
+                    </tr>
+                    <tr>
+                        <td colspan="9" class="subnote" style="background:#fafcff;"><i class="fas fa-chevron-circle-right"></i> 共50个订单，表格展示多仓典型订单。AI智能拆仓，基于就近、库龄与仓间库存水位动态分配。</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 物料明细 (核心：多仓库库存&库龄分布) -->
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fas fa-cubes"></i> 物料分配明细 · 多仓库龄利用全景</h2>
+            <div class="badge"><i class="fas fa-chart-pie"></i> 按仓库聚合 + 先进先出锁定</div>
+        </div>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>物料编码</th><th>需求总数</th><th>系统总可用</th><th>已分配</th>
+                        <th>库龄分配构成(仓库/批次)</th><th>分配备货仓(主/辅)</th><th>库存状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>物料0001</strong><div class="subnote">客户型号: M-100X</div></td>
+                        <td>100</td><td>99 ⚠️</td><td>99</td>
+                        <td>
+                            <span class="badge" style="background:#f1f5f9;">🏚️ C3:12个月 50pcs</span> + 
+                            <span class="badge">🏚️ C4:6个月 49pcs</span>
+                        </td>
+                        <td>C3(50), C4(49)</td>
+                        <td><span class="status-badge status-warning">短缺1件，待跨仓调拨</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>物料0002</strong><div class="subnote">客户型号: M-200Pro</div></td>
+                        <td>3000</td><td>50000</td><td>3000</td>
+                        <td><span class="badge">🏚️ C4:6个月批次 3000pcs</span></td>
+                        <td>C4 (单一主仓)</td>
+                        <td><span class="status-badge">充足</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>物料0003</strong><div class="subnote">客户型号: M-300S</div></td>
+                        <td>800</td><td>20000</td><td>800</td>
+                        <td><span class="badge">🏚️ C5:3个月 600pcs</span> + <span class="badge">🏚️ C7:2个月 200pcs</span></td>
+                        <td>C5(主) / C7(辅)</td>
+                        <td><span class="status-badge">充足</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>物料0004</strong><div class="subnote">客户型号: M-400T</div></td>
+                        <td>600</td><td>9999</td><td>600</td>
+                        <td><span class="badge">🏚️ C4:6个月 480pcs</span> + <span class="badge">🏚️ C3:12个月 120pcs</span></td>
+                        <td>C4(480), C3(120)</td>
+                        <td><span class="status-badge">充足 (清仓策略)</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>物料0007</strong><div class="subnote">客户型号: M-700R</div></td>
+                        <td>400</td><td>520</td><td>400</td>
+                        <td><span class="badge">🏚️ C7:9个月 280pcs</span> + <span class="badge">🏚️ C5:4个月 120pcs</span></td>
+                        <td>C7 / C5 组合</td>
+                        <td><span class="status-badge">充足</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="subnote" style="padding: 10px 24px 16px 24px;"><i class="fas fa-lightbulb"></i> AI 多仓分配原则：①优先满足库龄最老批次所在仓；②当单仓库存不足时自动切到次优仓（同物料）；③平衡各仓出库负载。</div>
+    </div>
+
+    <!-- 分配条码明细：多仓环境下锁定的真实条码+执行顺序 + 仓库区分 -->
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fas fa-qrcode"></i> 分配条码明细 · 多仓库执行锁定清单</h2>
+            <div class="badge"><i class="fas fa-sort-numeric-down"></i> 按仓库+库龄顺序出库</div>
+        </div>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>条码</th><th>物料</th><th>批次/库龄</th><th>仓库</th><th>库位</th>
+                        <th>分配数量</th><th>所属订单(车次聚合)</th><th>拣货顺序</th><th>来源策略</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="background:#fef9e5;">
+                        <td><span class="badge" style="background:#e6f0ff;">SN-C3-1201</span></td>
+                        <td>物料0001</td><td>批次V1.0 / 12个月</td><td><strong>C3</strong></td><td>A-01-03</td>
+                        <td>50</td><td>PO-241101(C01车次)</td><td>1 <i class="fas fa-arrow-down"></i></td><td>老库龄优先出库</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge">SN-C4-MID05</span></td>
+                        <td>物料0001</td><td>批次V2.3 / 6个月</td><td><strong>C4</strong></td><td>B-02-11</td>
+                        <td>49</td><td>PO-241101</td><td>2</td><td>次优库龄补充</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge">BATCH-C4-3000A</span></td>
+                        <td>物料0002</td><td>批次2401 / 6个月</td><td><strong>C4</strong></td><td>B-11-06</td>
+                        <td>3000</td><td>PO-241102(整批)</td><td>1</td><td>单仓足量</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge">LOT-C5-08</span></td>
+                        <td>物料0003</td><td>批次N08 / 3个月</td><td><strong>C5</strong></td><td>C-12-09</td>
+                        <td>600</td><td>PO-241103+其他</td><td>1</td><td>主仓分配</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge">LOT-C7-02M</span></td>
+                        <td>物料0003</td><td>批次C7Q2 / 2个月</td><td><strong>C7</strong></td><td>D-04-22</td>
+                        <td>200</td><td>PO-241103(辅仓)</td><td>2</td><td>跨仓协同</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge">C3-120M-STK</span></td>
+                        <td>物料0004</td><td>批次OLD12 / 12个月</td><td><strong>C3</strong></td><td>A-09-17</td>
+                        <td>120</td><td>PO-241104</td><td>1</td><td>清老库龄</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge">C4-6M-B480</span></td>
+                        <td>物料0004</td><td>批次2408 / 6个月</td><td><strong>C4</strong></td><td>E-02-15</td>
+                        <td>480</td><td>PO-241104+合并</td><td>2</td><td>主力出货</td>
+                    </tr>
+                    <tr style="background:#ecfdf5;">
+                        <td><span class="badge">C7-9M-280</span></td><td>物料0007</td><td>批次9M / 9个月</td><td><strong>C7</strong></td><td>F-03-08</td><td>280</td><td>PO-241105 车次C03</td><td>1</td><td>老化批次强制出</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge">C5-4M-120</span></td><td>物料0007</td><td>批次4M / 4个月</td><td><strong>C5</strong></td><td>F-03-12</td><td>120</td><td>PO-241105</td><td>2</td><td>补充</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="subnote" style="padding: 10px 24px 12px 24px; display: flex; gap: 24px; flex-wrap: wrap;">
+            <span><i class="fas fa-code-branch"></i> 多仓锁定条码总数64个，跨仓拣货任务已拆分为按仓库波次，防止执行冲突。</span>
+            <span><i class="fas fa-check-circle"></i> 每个条码均依据仓库实际库龄锁定，支持先进先出全局视图。</span>
+        </div>
+    </div>
+
+    <!-- 多仓库库存全景 + 车次备货建议 -->
+    <div class="card">
+        <div class="card-header">
+            <h2><i class="fas fa-warehouse"></i> 多仓库库存健康度 & 车次集中备货建议</h2>
+            <div class="badge"><i class="fas fa-hand-holding-usd"></i> 动态库存校正引擎</div>
+        </div>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>仓库代码</th><th>涉及订单数</th><th>锁定物料种类</th><th>锁定总数量</th><th>库龄最老占比</th><th>智能建议</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>C3</td><td>9</td><td>4</td><td>1,470</td><td>12个月占比38%</td><td>老批次压力较大，优先出清</td></tr>
+                    <tr><td>C4</td><td>27</td><td>12</td><td>8,920</td><td>6个月占比71%</td><td>主仓负载均衡，可继续承接订单</td></tr>
+                    <tr><td>C5</td><td>14</td><td>6</td><td>2,110</td><td>3~4个月为主</td><td>库龄健康，保持当前分配</td></tr>
+                    <tr><td>C7</td><td>11</td><td>5</td><td>1,250</td><td>9个月批次需关注</td><td><span class="badge status-warning">建议增加C7在下一波次出库比例</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="action-bar" style="border-top: 1px solid #eef2f8; background:#fafdff;">
+            <div class="flex-between" style="width: 100%;">
+                <div><i class="fas fa-chart-line"></i> <strong>库存校正提醒</strong> · 物料0001在C3与C4之间库龄不均衡，已生成跨仓调拨建议单。</div>
+                <button class="btn btn-outline" id="stockCorrectBtn" style="border-color:#b9d0f0;"><i class="fas fa-sync-alt"></i> 执行库存校正</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部操作栏 完全支持多仓确认与调整 -->
+    <div class="card">
+        <div class="action-bar">
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <button class="btn btn-primary" id="confirmMultiBtn"><i class="fas fa-check-double"></i> 确认多仓分配 & 推送WMS</button>
+                <button class="btn btn-outline" id="manualAdjustBtn"><i class="fas fa-pen"></i> 手工调整仓库/条码</button>
+                <button class="btn btn-outline" id="viewShipmentBtn"><i class="fas fa-map-marked-alt"></i> 车次-仓库拣货视图</button>
+                <button class="btn btn-outline" id="rebalanceBtn"><i class="fas fa-balance-scale"></i> 仓间负载重平衡</button>
+            </div>
+            <button class="btn btn-outline" id="cancelBtn"><i class="fas fa-times"></i> 暂存/取消</button>
+        </div>
+        <div style="padding: 12px 24px 20px 24px; font-size: 0.7rem; color: #5f6c84; border-top: 1px solid #eef3fc; display: flex; justify-content: space-between;">
+            <span><i class="fas fa-robot"></i> AI 派仓引擎 · 基于实时多仓库条码库存 + 库龄序列 + 车次聚合，自动分仓并保证无冲突。</span>
+            <span><i class="fas fa-shield-alt"></i> 跨仓锁库存: 已使用分布式库存锁，避免超卖。</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 模拟交互动作，提升演示感
+    const confirmBtn = document.getElementById('confirmMultiBtn');
+    const manualBtn = document.getElementById('manualAdjustBtn');
+    const stockCorrBtn = document.getElementById('stockCorrectBtn');
+    const viewShipBtn = document.getElementById('viewShipmentBtn');
+    const rebalanceBtn = document.getElementById('rebalanceBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+
+    function alertMsg(msg) {
+        alert(msg);
+    }
+    if(confirmBtn) confirmBtn.addEventListener('click', () => alertMsg('✅ 多仓分配已确认！锁定的64个条码分别推送至C3/C4/C5/C7，执行波次已按仓库拆分。'));
+    if(manualBtn) manualBtn.addEventListener('click', () => alertMsg('✏️ 手工调整: 支持修改物料0001的分配仓或变更条码锁定量，系统将重新计算库龄合规性。'));
+    if(stockCorrBtn) stockCorrBtn.addEventListener('click', () => alertMsg('🔄 库存校正模拟: 已释放物料0001虚假锁定，并从C3/C4重新拉取可用批次，当前账实已对齐。'));
+    if(viewShipBtn) viewShipBtn.addEventListener('click', () => alertMsg('📦 车次-仓库拣货视图：C01车次涉及C3/C4，已生成合并拣货单；C02涉及C5/C7分别拣货。'));
+    if(rebalanceBtn) rebalanceBtn.addEventListener('click', () => alertMsg('⚖️ 仓间负载重平衡: 将C4部分物料0002库存预留给紧急订单，动态调整30%至C5仓。'));
+    if(cancelBtn) cancelBtn.addEventListener('click', () => alertMsg('取消当前分配编辑，保留原有派仓策略草案。'));
+</script>
+</body>
+</html>
