@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智能问答 - WMS系统</title>
+<style>
+  /* ====== 全局变量（WMS系统风格） ====== */
+  :root {
+    --wms-teal: #1a9b9b;
+    --wms-teal-dark: #158686;
+    --wms-teal-light: #e6f4f4;
+    --bg: #f5f7fa;
+    --primary: #1a9b9b;
+    --primary-light: #e6f4f4;
+    --success: #52c41a;
+    --warning: #faad14;
+    --danger: #f5222d;
+    --text-primary: #262626;
+    --text-secondary: #595959;
+    --text-muted: #8c8c8c;
+    --border: #d9d9d9;
+    --border-light: #f0f0f0;
+    --radius: 6px;
+    --shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: var(--text-primary);
+  }
+
+  /* ====== 顶部系统导航栏 ====== */
+  .system-header {
+    height: 50px;
+    background: var(--wms-teal);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    flex-shrink: 0;
+    color: #fff;
+  }
+  .system-logo {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+  .system-nav-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 13px;
+  }
+  .system-nav-right a {
+    color: rgba(255,255,255,.85);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .system-nav-right a:hover { color: #fff; }
+
+  /* ====== 二级导航栏 ====== */
+  .sub-nav {
+    height: 42px;
+    background: #fff;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .sub-nav a {
+    padding: 0 14px;
+    height: 42px;
+    line-height: 42px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: all .2s;
+  }
+  .sub-nav a:hover { color: var(--primary); }
+  .sub-nav a.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    font-weight: 500;
+  }
+
+  /* ====== 面包屑 ====== */
+  .breadcrumb {
+    height: 36px;
+    background: #fff;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    font-size: 12px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .breadcrumb a { color: var(--text-muted); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--primary); }
+  .breadcrumb .sep { margin: 0 6px; }
+  .breadcrumb .current { color: var(--text-primary); }
+
+  /* ====== 主内容区（标签页 + 对话） ====== */
+  .main-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* 标签页 */
+  .tabs-bar {
+    height: 46px;
+    background: #fff;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 24px;
+    flex-shrink: 0;
+  }
+  .tab-item {
+    height: 46px;
+    line-height: 46px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all .2s;
+    position: relative;
+  }
+  .tab-item:hover { color: var(--primary); }
+  .tab-item.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    font-weight: 500;
+  }
+
+  /* ====== 对话区 ====== */
+  .chat-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #fff;
+    margin: 16px 20px 0;
+    border-radius: var(--radius) var(--radius) 0 0;
+    border: 1px solid var(--border-light);
+    border-bottom: none;
+  }
+
+  .chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    scroll-behavior: smooth;
+  }
+
+  /* 欢迎区 */
+  .welcome-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px 40px;
+    gap: 16px;
+  }
+  .welcome-avatar {
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, var(--wms-teal), #2db7b7);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(26,155,155,.25);
+  }
+  .welcome-text {
+    font-size: 15px;
+    color: var(--text-secondary);
+  }
+  .quick-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    max-width: 640px;
+    margin-top: 8px;
+  }
+  .chip {
+    padding: 7px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    background: #fafafa;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all .18s;
+  }
+  .chip:hover {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+
+  /* 消息行 */
+  .msg-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    animation: fadeUp .3s ease;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .msg-row.user { flex-direction: row-reverse; }
+
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .avatar.ai {
+    background: linear-gradient(135deg, var(--wms-teal), #2db7b7);
+    color: #fff;
+  }
+  .avatar.admin { background: #1890ff; color: #fff; }
+  .avatar.staff { background: #faad14; color: #fff; }
+
+  .bubble-wrap { display: flex; flex-direction: column; gap: 4px; max-width: 72%; }
+  .msg-row.user .bubble-wrap { align-items: flex-end; }
+
+  .bubble-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 0 4px;
+  }
+
+  .bubble {
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    line-height: 1.7;
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+  .bubble.ai-bubble {
+    background: #fff;
+    color: var(--text-primary);
+    border: 1px solid var(--border-light);
+    border-top-left-radius: 2px;
+  }
+  .bubble.user-bubble {
+    background: var(--primary);
+    color: #fff;
+    border-top-right-radius: 2px;
+  }
+
+  /* AI特殊组件 */
+  .thinking-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    padding: 6px 0 2px;
+  }
+  .thinking-dots span {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--primary);
+    animation: blink 1.2s infinite;
+  }
+  .thinking-dots span:nth-child(2) { animation-delay: .2s; }
+  .thinking-dots span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink {
+    0%,80%,100% { opacity: .3; transform: scale(1); }
+    40% { opacity: 1; transform: scale(1.3); }
+  }
+
+  /* 角色推荐卡片 */
+  .role-cards { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .role-card {
+    border: 1.5px solid var(--border-light);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all .2s;
+    background: #fafafa;
+  }
+  .role-card:hover { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,155,155,.08); }
+  .role-card.selected { border-color: var(--primary); background: var(--primary-light); }
+
+  .role-medal { font-size: 20px; width: 28px; text-align: center; }
+  .role-info { flex: 1; }
+  .role-name { font-size: 14px; font-weight: 600; }
+  .role-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .role-reason {
+    font-size: 11px;
+    background: #f6ffed;
+    color: #389e0d;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-top: 4px;
+    display: inline-block;
+  }
+  .role-score {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary);
+    background: var(--primary-light);
+    padding: 3px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+
+  /* 权限列表 */
+  .perm-list {
+    margin-top: 10px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .perm-module {
+    padding: 8px 14px;
+    background: #fafafa;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .perm-items { padding: 8px 14px 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .perm-tag {
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    background: #e6f7ff;
+    color: #096dd9;
+    border: 1px solid #bae0ff;
+  }
+  .perm-tag.readonly { background: #f6ffed; color: #389e0d; border-color: #b7eb8f; }
+
+  /* 确认区 */
+  .confirm-bar {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    padding: 7px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    border: none;
+    font-weight: 500;
+    transition: all .18s;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--wms-teal-dark); }
+  .btn-ghost { background: #f5f5f5; color: var(--text-secondary); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: #e8e8e8; }
+  .btn-danger { background: #fff2f0; color: #cf1322; border: 1px solid #ffccc7; }
+  .btn-danger:hover { background: #ffe6e4; }
+
+  /* 状态提示 */
+  .status-msg {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-top: 8px;
+  }
+  .status-msg.success { background: #f6ffed; border: 1px solid #b7eb8f; color: #389e0d; }
+  .status-msg.warning { background: #fffbe6; border: 1px solid #ffe58f; color: #d48806; }
+  .status-msg.info    { background: #e6f7ff; border: 1px solid #bae0ff; color: #096dd9; }
+  .status-msg.error   { background: #fff2f0; border: 1px solid #ffccc7; color: #cf1322; }
+  .status-icon { font-size: 16px; flex-shrink: 0; }
+
+  /* 候选菜单 */
+  .menu-candidates {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .menu-candidate-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    cursor: pointer;
+    background: #fafafa;
+    transition: all .18s;
+    font-size: 13px;
+  }
+  .menu-candidate-item:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+  /* 批量预览表格 */
+  .batch-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 8px;
+  }
+  .batch-table th {
+    background: #fafafa;
+    padding: 7px 12px;
+    text-align: left;
+    font-size: 12px;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-light);
+    font-weight: 600;
+  }
+  .batch-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-primary);
+  }
+  .batch-table tr:last-child td { border-bottom: none; }
+  .batch-table tr:hover td { background: #fafafa; }
+
+  /* 邮件预览 */
+  .email-preview {
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 10px;
+    font-size: 13px;
+  }
+  .email-header {
+    background: #fafafa;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .email-meta { color: var(--text-secondary); font-size: 12px; }
+  .email-subject { font-weight: 600; }
+  .email-body { padding: 12px 14px; line-height: 1.8; }
+
+  /* 临时授权 */
+  .temp-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    background: #fff7e6;
+    border: 1px solid #ffd591;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #d48806;
+  }
+
+  /* ====== 输入区 ====== */
+  .input-area {
+    padding: 14px 20px 18px;
+    background: #fff;
+    border-top: 1px solid var(--border-light);
+    flex-shrink: 0;
+  }
+  .input-wrap {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    background: #f5f7fa;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .input-wrap:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(26,155,155,.1);
+  }
+  .input-box {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    resize: none;
+    outline: none;
+    max-height: 100px;
+    line-height: 1.6;
+    font-family: inherit;
+    color: var(--text-primary);
+  }
+  .input-box::placeholder { color: #bfbfbf; }
+  .input-actions { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
+  .icon-btn {
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    color: var(--text-muted);
+    transition: all .18s;
+  }
+  .icon-btn:hover { background: #e8e8e8; color: var(--text-primary); }
+  .send-btn {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    border: none;
+    background: var(--primary);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    color: #fff;
+    transition: all .18s;
+  }
+  .send-btn:hover { background: var(--wms-teal-dark); }
+  .send-btn:disabled { background: #bfbfbf; cursor: not-allowed; }
+
+  /* 滚动条 */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #d9d9d9; border-radius: 4px; }
+
+  /* 高亮关键词 */
+  .hl { color: var(--primary); font-weight: 600; }
+  .hl-user { color: #1890ff; font-weight: 600; }
+  .hl-perm { color: #722ed1; font-weight: 600; }
+  .hl-warn { color: #d48806; font-weight: 600; }
+
+  /* 标签行 */
+  .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .tag {
+    padding: 2px 9px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .tag-blue { background: #e6f7ff; color: #096dd9; border: 1px solid #bae0ff; }
+  .tag-green { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }
+  .tag-purple { background: #f9f0ff; color: #722ed1; border: 1px solid #d3adf7; }
+  .tag-orange { background: #fff7e6; color: #d48806; border: 1px solid #ffd591; }
+
+  /* 右侧工具栏 */
+  .right-tools {
+    position: fixed;
+    right: 12px;
+    bottom: 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 10;
+  }
+  .tool-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    transition: all .2s;
+  }
+  .tool-btn:hover { background: var(--primary-light); border-color: var(--primary); }
+</style>
+</head>
+<body>
+
+<!-- 系统顶部栏 -->
+<div class="system-header">
+  <div class="system-logo">WMS仓储管理系统</div>
+  <div class="system-nav-right">
+    <a href="#"><span>📋</span> WMS需求池</a>
+    <a href="#"><span>📱</span> PDA端下载</a>
+  </div>
+</div>
+
+<!-- 二级导航 -->
+<div class="sub-nav">
+  <a href="#">主页</a>
+  <a href="#">盘点管理</a>
+  <a href="#">入库任务</a>
+  <a href="#">角色管理</a>
+  <a href="#">角色资源管理</a>
+  <a href="#">用户管理</a>
+  <a href="#">实时库存查询</a>
+  <a href="#" class="active">权限助手</a>
+</div>
+
+<!-- 面包屑 -->
+<div class="breadcrumb">
+  <a href="#">报表管理</a>
+  <span class="sep">/</span>
+  <span class="current">权限助手</span>
+</div>
+
+<!-- 主内容 -->
+<div class="main-wrap">
+  <!-- 标签页 -->
+  <div class="tabs-bar">
+    <div class="tab-item active" onclick="switchTab(this, 'chat')">权限助手</div>
+    <div class="tab-item" onclick="switchTab(this, 'qa-lib')">角色库</div>
+    <div class="tab-item" onclick="switchTab(this, 'qa-history')">授权记录</div>
+  </div>
+
+  <!-- 对话区 -->
+  <div class="chat-wrap" id="chatPanel">
+    <div class="chat-area" id="chatArea">
+      <!-- 欢迎 -->
+      <div class="welcome-block" id="welcome">
+        <div class="welcome-avatar">🤖</div>
+        <div class="welcome-text">你好，有什么可以帮您</div>
+        <div class="quick-chips">
+          <div class="chip" onclick="sendQuick('给张三开通库存盘点菜单权限')">🔑 给张三开通库存盘点权限</div>
+          <div class="chip" onclick="sendQuick('张三现在有什么权限？')">📋 查询张三的权限</div>
+          <div class="chip" onclick="sendQuick('给仓库部所有人开通库存盘点权限')">👥 批量授权仓库部</div>
+          <div class="chip" onclick="sendQuick('给张三开通盘点权限，3天后自动收回')">⏰ 临时授权3天</div>
+          <div class="chip" onclick="sendQuick('把张三的库存盘点权限收回')">🗑️ 撤销张三的权限</div>
+          <div class="chip" onclick="sendQuick('帮我开通库存盘点权限')">📧 申请权限（非管理员）</div>
+          <div class="chip" onclick="sendQuick('给张三开通报表导出权限')">🆕 菜单无角色授权</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 输入区 -->
+    <div class="input-area">
+      <div class="input-wrap">
+        <textarea class="input-box" id="inputBox" rows="1"
+          placeholder="请输入您的问题，例如：给张三开通库存盘点菜单权限…"
+          onkeydown="handleKey(event)"
+          oninput="autoResize(this)"></textarea>
+        <div class="input-actions">
+          <button class="icon-btn" title="上传附件">📎</button>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 右侧工具 -->
+<div class="right-tools">
+  <div class="tool-btn" title="清空对话" onclick="clearChat()">🗑️</div>
+  <div class="tool-btn" title="切换身份" onclick="toggleIdentity()">👤</div>
+  <div class="tool-btn" title="场景示例" onclick="showScenarios()">⚡</div>
+</div>
+
+<script>
+// ====== 状态 ======
+let isAdmin = true;
+let currentTab = 'chat';
+let isTyping = false;
+
+// ====== 场景数据 ======
+const SCENARIOS = [
+  // 0: 单人授权
+  [
+    { role: 'user', text: '给张三开通库存盘点菜单权限' },
+    { role: 'ai', type: 'role_recommend', user: '张三', menu: '库存盘点' }
+  ],
+  // 1: 批量授权
+  [
+    { role: 'user', text: '给仓库部所有人开通库存盘点权限' },
+    { role: 'ai', type: 'batch_authorize', dept: '仓库部', menu: '库存盘点' }
+  ],
+  // 2: 权限冲突
+  [
+    { role: 'user', text: '给李四开通库存盘点权限' },
+    { role: 'ai', type: 'conflict', user: '李四', menu: '库存盘点' }
+  ],
+  // 3: 临时权限
+  [
+    { role: 'user', text: '给张三开通库存盘点权限，3天后自动收回' },
+    { role: 'ai', type: 'temp_auth', user: '张三', menu: '库存盘点', days: 3 }
+  ],
+  // 4: 模糊输入
+  [
+    { role: 'user', text: '给张三点库存' },
+    { role: 'ai', type: 'fuzzy', user: '张三', keyword: '库存' }
+  ],
+  // 5: 查询权限
+  [
+    { role: 'user', text: '张三现在有什么权限？' },
+    { role: 'ai', type: 'query_perm', user: '张三' }
+  ],
+  // 6: 撤销权限
+  [
+    { role: 'user', text: '把张三的库存盘点权限收回' },
+    { role: 'ai', type: 'revoke', user: '张三', menu: '库存盘点' }
+  ],
+  // 7: 非管理员申请
+  [
+    { role: 'user', text: '帮我开通库存盘点权限', identity: 'staff' },
+    { role: 'ai', type: 'non_admin_apply', menu: '库存盘点' }
+  ],
+  // 8: 菜单无角色 - 新建 or 选择
+  [
+    { role: 'user', text: '给张三开通报表导出权限' },
+    { role: 'ai', type: 'no_role', user: '张三', menu: '报表导出' }
+  ],
+  // 9: 菜单无角色 - 输入角色名自动补全（匹配到现有角色）
+  [
+    { role: 'user', text: '给张三开通报表导出权限' },
+    { role: 'ai', type: 'no_role', user: '张三', menu: '报表导出' },
+    { role: 'user', text: '仓管员' },
+    { role: 'ai', type: 'role_autocomplete', user: '张三', menu: '报表导出', input: '仓管员', matched: '仓库管理员', isNew: false }
+  ],
+  // 10: 菜单无角色 - 输入角色名无匹配，建议新建
+  [
+    { role: 'user', text: '给张三开通报表导出权限' },
+    { role: 'ai', type: 'no_role', user: '张三', menu: '报表导出' },
+    { role: 'user', text: '报表专员' },
+    { role: 'ai', type: 'role_autocomplete', user: '张三', menu: '报表导出', input: '报表专员', matched: null, isNew: true }
+  ]
+];
+
+// ====== 工具函数 ======
+function getTime() {
+  const now = new Date();
+  return now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function scrollBottom() {
+  const area = document.getElementById('chatArea');
+  setTimeout(() => { area.scrollTop = area.scrollHeight; }, 100);
+}
+
+function hideWelcome() {
+  const w = document.getElementById('welcome');
+  if (w) w.style.display = 'none';
+}
+
+// ====== 标签切换 ======
+function switchTab(el, tab) {
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentTab = tab;
+  if (tab === 'chat') {
+    document.getElementById('chatPanel').style.display = 'flex';
+  } else {
+    // 其他标签占位
+    document.getElementById('chatArea').innerHTML = `
+      <div style="text-align:center;padding:80px 20px;color:var(--text-muted);">
+        <div style="font-size:48px;margin-bottom:16px;">📋</div>
+        <div style="font-size:15px;">${tab === 'qa-lib' ? '角色库' : '授权记录'} 功能开发中…</div>
+      </div>`;
+  }
+}
+
+// ====== 添加消息气泡 ======
+function addUserBubble(text) {
+  hideWelcome();
+  const area = document.getElementById('chatArea');
+  const who = isAdmin ? '范会' : '张三';
+  const cls = isAdmin ? 'admin' : 'staff';
+  const icon = isAdmin ? '👤' : '🙋';
+  const row = document.createElement('div');
+  row.className = 'msg-row user';
+  row.innerHTML = `
+    <div class="avatar ${cls}">${icon}</div>
+    <div class="bubble-wrap">
+      <div class="bubble-meta">${who} · ${getTime()}</div>
+      <div class="bubble user-bubble">${text}</div>
+    </div>`;
+  area.appendChild(row);
+  scrollBottom();
+}
+
+function addThinking() {
+  hideWelcome();
+  const area = document.getElementById('chatArea');
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+  row.id = 'thinking-row';
+  row.innerHTML = `
+    <div class="avatar ai">🤖</div>
+    <div class="bubble-wrap">
+      <div class="bubble-meta">AI 助手 · ${getTime()}</div>
+      <div class="bubble ai-bubble">
+        <div class="thinking-bar">
+          <div class="thinking-dots"><span></span><span></span><span></span></div>
+          <span>正在分析…</span>
+        </div>
+      </div>
+    </div>`;
+  area.appendChild(row);
+  scrollBottom();
+  return row;
+}
+
+function removeThinking() {
+  const row = document.getElementById('thinking-row');
+  if (row) row.remove();
+}
+
+function addAIBubble(html) {
+  const area = document.getElementById('chatArea');
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+  row.innerHTML = `
+    <div class="avatar ai">🤖</div>
+    <div class="bubble-wrap">
+      <div class="bubble-meta">AI 助手 · ${getTime()}</div>
+      <div class="bubble ai-bubble">${html}</div>
+    </div>`;
+  area.appendChild(row);
+  scrollBottom();
+}
+
+// ====== AI 回复模板 ======
+function genRoleRecommend(user, menu) {
+  return `
+    <p>已检测到 <span class="hl-user">「${user}」</span> 的授权请求，菜单：<span class="hl-perm">【${menu}】</span></p>
+    <br>
+    <p>📍 <strong>${user}</strong> 信息：岗位 <span class="hl">仓管员</span> · 部门 <span class="hl">仓储部</span> · 无该菜单权限</p>
+    <br>
+    <p>发现以下 <strong>3个角色</strong> 均包含【${menu}】菜单，请选择授予哪个角色：</p>
+    <div class="role-cards">
+      <div class="role-card selected" onclick="selectRole(this,'仓库盘点员')">
+        <div class="role-medal">🥇</div>
+        <div class="role-info">
+          <div class="role-name">仓库盘点员</div>
+          <div class="role-desc">仅拥有库存盘点权限（增/查）</div>
+          <div class="role-reason">✅ 权限最小 · 与岗位完全匹配</div>
+        </div>
+        <div class="role-score">+18分</div>
+      </div>
+      <div class="role-card" onclick="selectRole(this,'仓库主管')">
+        <div class="role-medal">🥈</div>
+        <div class="role-info">
+          <div class="role-name">仓库主管</div>
+          <div class="role-desc">盘点 + 审核权限</div>
+          <div class="role-reason">⚠️ 包含额外审核权限，权限过大</div>
+        </div>
+        <div class="role-score">+8分</div>
+      </div>
+      <div class="role-card" onclick="selectRole(this,'仓库经理')">
+        <div class="role-medal">🥉</div>
+        <div class="role-info">
+          <div class="role-name">仓库经理</div>
+          <div class="role-desc">盘点 + 审核 + 导出 + 删除</div>
+          <div class="role-reason">🚫 高级管理权限，超出需要</div>
+        </div>
+        <div class="role-score">+3分</div>
+      </div>
+    </div>
+    <div class="confirm-bar" id="confirm-bar">
+      <button class="btn btn-primary" onclick="doConfirmAuth('${user}','仓库盘点员')">✅ 确认授权选中角色</button>
+      <button class="btn btn-ghost" onclick="cancelAction()">取消</button>
+    </div>`;
+}
+
+function genBatchAuth(dept, menu) {
+  return `
+    <p>检测到 <strong>批量授权</strong> 意图，部门：<span class="hl">「${dept}」</span>，菜单：<span class="hl-perm">【${menu}】</span></p>
+    <br>
+    <p>🔍 正在查询 <span class="hl">${dept}</span> 成员…找到 <strong>12名员工</strong>，授权计划如下：</p>
+    <table class="batch-table" style="margin-top:10px;">
+      <thead>
+        <tr><th>员工</th><th>岗位</th><th>推荐角色</th><th>状态</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>张三</td><td>仓管员</td><td>仓库盘点员</td><td><span class="tag tag-green">待授权</span></td></tr>
+        <tr><td>李四</td><td>仓管员</td><td>仓库盘点员</td><td><span class="tag tag-blue">已有权限</span></td></tr>
+        <tr><td>王五</td><td>仓库主管</td><td>仓库主管</td><td><span class="tag tag-green">待授权</span></td></tr>
+        <tr><td>赵六</td><td>仓管员</td><td>仓库盘点员</td><td><span class="tag tag-green">待授权</span></td></tr>
+        <tr><td>小明</td><td>实习生</td><td>—</td><td><span class="tag tag-orange">需人工确认</span></td></tr>
+        <tr><td style="color:var(--text-muted)">…其余7人</td><td colspan="3" style="color:var(--text-muted)">均推荐仓库盘点员</td></tr>
+      </tbody>
+    </table>
+    <div class="status-msg info" style="margin-top:10px;">
+      <span class="status-icon">ℹ️</span>
+      共 <strong>10人</strong> 待授权 · 1人已有权限（跳过）· 1人需人工确认
+    </div>
+    <div class="confirm-bar">
+      <button class="btn btn-primary" onclick="doBatchAuth()">✅ 确认批量授权（10人）</button>
+      <button class="btn btn-ghost" onclick="cancelAction()">取消</button>
+    </div>`;
+}
+
+function genConflict(user, menu) {
+  return `
+    <div class="status-msg warning">
+      <span class="status-icon">⚠️</span>
+      <div>检测到<strong>权限重复</strong>，无需重复授权！</div>
+    </div>
+    <br>
+    <p><span class="hl-user">「${user}」</span> 已通过角色 <span class="hl-perm">【仓库主管】</span> 拥有 <span class="hl-perm">【${menu}】</span> 菜单权限。</p>
+    <br>
+    <p>📋 李四当前权限概览：</p>
+    <div class="perm-list" style="margin-top:8px;">
+      <div class="perm-module">📦 库存管理</div>
+      <div class="perm-items">
+        <span class="perm-tag">库存盘点</span>
+        <span class="perm-tag">盘点审核</span>
+        <span class="perm-tag readonly">库存查询</span>
+        <span class="perm-tag readonly">库存报表</span>
+      </div>
+    </div>
+    <div class="confirm-bar">
+      <button class="btn btn-ghost" onclick="addFollowup('查看李四所有权限')">📋 查看完整权限</button>
+      <button class="btn btn-ghost" onclick="addFollowup('撤销李四的库存盘点权限')">🗑️ 强制撤销重授</button>
+    </div>`;
+}
+
+function genTempAuth(user, menu, days) {
+  const expire = new Date();
+  expire.setDate(expire.getDate() + days);
+  const expireStr = expire.toLocaleDateString('zh-CN') + ' 23:59:59';
+  return `
+    <p>已识别 <strong>临时授权</strong> 意图 —— 有效期 <span class="hl-warn">${days}天</span></p>
+    <br>
+    <p>📍 授权对象：<span class="hl-user">「${user}」</span> → 角色 <span class="hl-perm">【仓库盘点员】</span></p>
+    <p style="margin-top:8px;">
+      菜单：<span class="hl-perm">【${menu}】</span>
+      &nbsp;&nbsp;
+      <span class="temp-badge">⏰ 自动回收：${expireStr}</span>
+    </p>
+    <div class="status-msg success" style="margin-top:12px;">
+      <span class="status-icon">✅</span>
+      <div>临时授权已就绪，系统将在 <strong>${expireStr}</strong> 自动回收角色权限</div>
+    </div>
+    <div class="confirm-bar">
+      <button class="btn btn-primary" onclick="doTempAuth('${user}', '${expireStr}')">✅ 确认临时授权</button>
+      <button class="btn btn-ghost" onclick="cancelAction()">取消</button>
+    </div>`;
+}
+
+function genFuzzy(user, keyword) {
+  return `
+    <p>输入不完整，检测到关键词 <span class="hl">「${keyword}」</span>，以下菜单均与之匹配：</p>
+    <div class="menu-candidates">
+      <div class="menu-candidate-item" onclick="selectMenu(this,'库存盘点')">
+        📦 <strong>库存盘点</strong> <span style="color:var(--text-muted);font-size:12px;margin-left:6px;">对库存进行盘点操作</span>
+      </div>
+      <div class="menu-candidate-item" onclick="selectMenu(this,'库存查询')">
+        🔍 <strong>库存查询</strong> <span style="color:var(--text-muted);font-size:12px;margin-left:6px;">查询当前库存详情</span>
+      </div>
+      <div class="menu-candidate-item" onclick="selectMenu(this,'库存报表')">
+        📊 <strong>库存报表</strong> <span style="color:var(--text-muted);font-size:12px;margin-left:6px;">导出库存统计报表</span>
+      </div>
+    </div>
+    <p style="margin-top:10px;font-size:13px;color:var(--text-secondary);">请点击选择您要为 <span class="hl-user">「${user}」</span> 开通的菜单 👆</p>`;
+}
+
+function genQueryPerm(user) {
+  return `
+    <p>📋 <span class="hl-user">「${user}」</span> 当前权限汇总（角色：<span class="hl">仓库盘点员</span>）：</p>
+    <div class="perm-list" style="margin-top:10px;">
+      <div class="perm-module">📦 库存管理</div>
+      <div class="perm-items">
+        <span class="perm-tag">库存盘点</span>
+        <span class="perm-tag readonly">库存查询</span>
+      </div>
+      <div class="perm-module">📋 出入库</div>
+      <div class="perm-items">
+        <span class="perm-tag readonly">入库查询</span>
+        <span class="perm-tag readonly">出库查询</span>
+      </div>
+    </div>
+    <div class="status-msg info" style="margin-top:10px;">
+      <span class="status-icon">ℹ️</span>
+      共 <strong>4个</strong> 菜单权限 · <strong>2个</strong> 可操作 · <strong>2个</strong> 只读
+    </div>
+    <div class="confirm-bar">
+      <button class="btn btn-ghost" onclick="addFollowup('给张三增加库存报表权限')">➕ 追加权限</button>
+      <button class="btn btn-danger" onclick="addFollowup('撤销张三的所有权限')">🗑️ 撤销全部</button>
+    </div>`;
+}
+
+function genRevoke(user, menu) {
+  return `
+    <p>⚠️ 即将撤销 <span class="hl-user">「${user}」</span> 的 <span class="hl-perm">【${menu}】</span> 菜单权限</p>
+    <br>
+    <p>分析：${user} 通过 <span class="hl-perm">【仓库盘点员】</span> 角色拥有该权限。</p>
+    <div class="status-msg warning" style="margin-top:8px;">
+      <span class="status-icon">⚠️</span>
+      <div>撤销角色将同时移除该角色下的 <strong>全部权限</strong>（包含库存查询）
+      <br>如需仅移除部分权限，请创建更精细的角色。</div>
+    </div>
+    <div class="confirm-bar">
+      <button class="btn btn-danger" onclick="doRevoke('${user}', '仓库盘点员')">✅ 确认撤销角色权限</button>
+      <button class="btn btn-ghost" onclick="cancelAction()">取消</button>
+    </div>`;
+}
+
+function genNonAdminApply(menu) {
+  return `
+    <div class="status-msg warning">
+      <span class="status-icon">🚫</span>
+      <div>当前用户 <strong>「张三」</strong> 不是管理员，无法直接授权，仅支持发送申请邮件。</div>
+    </div>
+    <br>
+    <p>📧 系统将向 <strong>权限管理员（范会）</strong> 发送申请邮件，内容预览如下：</p>
+    <div class="email-preview">
+      <div class="email-header">
+        <div class="email-meta">发件人：WMS权限助手 &lt;no-reply@gree.com&gt;</div>
+        <div class="email-meta">收件人：admin@gree.com（范会）</div>
+        <div class="email-subject">主题：【权限申请】张三 申请开通 ${menu} 权限</div>
+      </div>
+      <div class="email-body">
+        申请人：<strong>张三</strong>（工号 10086）<br>
+        部门：仓储部 &nbsp;|&nbsp; 岗位：仓管员<br>
+        申请权限：<strong>${menu}</strong><br>
+        推荐角色：仓库盘点员（根据岗位匹配）<br>
+        <br>
+        请登录 WMS 系统手工授权，或直接回复此邮件。
+      </div>
+    </div>
+    <div class="confirm-bar">
+      <button class="btn btn-primary" onclick="doSendEmail()">📧 确认发送申请邮件</button>
+      <button class="btn btn-ghost" onclick="cancelAction()">取消</button>
+    </div>`;
+}
+
+// 菜单无对应角色
+function genNoRole(user, menu) {
+  return `
+    <p>已识别授权意图：<span class="hl-user">「${user}」</span> → 菜单 <span class="hl-perm">【${menu}】</span></p>
+    <br>
+    <div class="status-msg warning">
+      <span class="status-icon">🔍</span>
+      <div>未找到包含 <span class="hl-perm">【${menu}】</span> 菜单的现有角色。请选择下一步操作：</div>
+    </div>
+    <br>
+    <div style="display:flex;gap:10px;margin-top:4px;">
+      <div style="flex:1;border:1.5px solid var(--border-light);border-radius:8px;padding:14px;cursor:pointer;transition:all .2s;text-align:center;background:#fafafa;" onclick="selectNoRoleOption(this,'create')" onmouseover="this.style.borderColor='var(--primary)';this.style.background='var(--primary-light)'" onmouseout="this.style.borderColor='var(--border-light)';this.style.background='#fafafa'">
+        <div style="font-size:22px;margin-bottom:6px;">➕</div>
+        <div style="font-size:13px;font-weight:600;">创建新角色</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">新建一个角色并把<br><span class="hl-perm">【${menu}】</span> 授权给它</div>
+      </div>
+      <div style="flex:1;border:1.5px solid var(--border-light);border-radius:8px;padding:14px;cursor:pointer;transition:all .2s;text-align:center;background:#fafafa;" onclick="selectNoRoleOption(this,'select')" onmouseover="this.style.borderColor='var(--primary)';this.style.background='var(--primary-light)'" onmouseout="this.style.borderColor='var(--border-light)';this.style.background='#fafafa'">
+        <div style="font-size:22px;margin-bottom:6px;">📋</div>
+        <div style="font-size:13px;font-weight:600;">选择现有角色</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">输入角色名，将菜单<br>追加到该角色下</div>
+      </div>
+    </div>
+    <p style="margin-top:12px;font-size:12px;color:var(--text-muted);">💡 也可以直接在下方输入角色名称，系统将自动匹配或提示新建</p>`;
+}
+
+// 角色名自动补全 - 匹配到现有角色
+function genRoleAutocomplete(user, menu, input, matched, isNew) {
+  if (!isNew && matched) {
+    return `
+    <p>检测到输入 <span class="hl">「${input}」</span>，已匹配到现有角色 <span class="hl-perm">【${matched}】</span></p>
+    <br>
+    <div class="status-msg info">
+      <span class="status-icon">💡</span>
+      <div>即将把 <span class="hl-perm">【${menu}】</span> 菜单追加到角色 <span class="hl-perm">【${matched}】</span> 下，然后将该角色分配给 <span class="hl-user">「${user}」</span></div>
+    </div>
+    <br>
+    <p>📌 操作预览：</p>
+    <div class="tag-row" style="margin-top:8px;">
+      <span class="tag tag-purple">角色：${matched}</span>
+      <span class="tag tag-blue">追加菜单：${menu}</span>
+      <span class="tag tag-green">授权用户：${user}</span>
+    </div>
+    <div class="perm-list" style="margin-top:10px;">
+      <div class="perm-module">📦 ${matched} · 更新后权限</div>
+      <div class="perm-items">
+        <span class="perm-tag">库存查询</span>
+        <span class="perm-tag">库存报表</span>
+        <span class="perm-tag" style="background:#fff7e6;color:#d48806;border-color:#ffd591;">${menu} 🆕</span>
+      </div>
+    </div>
+    <div class="confirm-bar">
+      <button class="btn btn-primary" onclick="doGrantToExistingRole('${user}','${matched}','${menu}')">✅ 确认追加菜单并授权</button>
+      <button class="btn btn-ghost" onclick="cancelAction()">取消</button>
+    </div>`;
+  } else {
+    // 无匹配，建议新建
+    return `
+    <p>检测到输入 <span class="hl">「${input}」</span>，未找到匹配的现有角色</p>
+    <br>
+    <div class="status-msg warning">
+      <span class="status-icon">🆕</span>
+      <div>系统中不存在 <span class="hl">「${input}」</span> 角色。是否创建一个新角色并将 <span class="hl-perm">【${menu}】</span> 菜单授权给它？</div>
+    </div>
+    <br>
+    <p>📌 新角色预览：</p>
+    <div class="tag-row" style="margin-top:8px;">
+      <span class="tag tag-orange">新角色：${input}</span>
+      <span class="tag tag-blue">包含菜单：${menu}</span>
+      <span class="tag tag-green">授权用户：${user}</span>
+    </div>
+    <div style="margin-top:12px;padding:12px;background:#fafafa;border:1px solid var(--border-light);border-radius:8px;">
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">新角色将包含以下权限：</div>
+      <table class="batch-table" style="margin:0;">
+        <thead><tr><th>角色名</th><th>菜单权限</th><th>操作类型</th></tr></thead>
+        <tbody>
+          <tr><td style="font-weight:600;">${input}</td><td>${menu}</td><td><span class="tag tag-green">增 · 查</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="confirm-bar">
+      <button class="btn btn-primary" onclick="doCreateAndGrant('${user}','${input}','${menu}')">✅ 确认创建角色并授权</button>
+      <button class="btn btn-ghost" onclick="cancelAction()">取消</button>
+    </div>`;
+  }
+}
+
+// ====== 事件处理 ======
+function selectRole(el, roleName) {
+  document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function selectMenu(el, menuName) {
+  document.querySelectorAll('.menu-candidate-item').forEach(c => {
+    c.style.background = ''; c.style.borderColor = ''; c.style.color = '';
+  });
+  el.style.background = 'var(--primary-light)';
+  el.style.borderColor = 'var(--primary)';
+  el.style.color = 'var(--primary)';
+  setTimeout(() => {
+    addUserBubble('给张三开通' + menuName + '菜单权限');
+    simulateAIReply('role_recommend', '张三', menuName);
+  }, 400);
+}
+
+function doConfirmAuth(user, role) {
+  addAIBubble(`
+    <div class="status-msg success">
+      <span class="status-icon">✅</span>
+      <div>授权成功！已将 <span class="hl-perm">【${role}】</span> 角色分配给 <span class="hl-user">「${user}」</span>
+      <br><small>生效时间：立即 · 操作日志已记录</small></div>
+    </div>
+    <div class="confirm-bar">
+      <button class="btn btn-ghost" onclick="addFollowup('查看张三的所有权限')">📋 查看权限详情</button>
+    </div>`);
+}
+
+function doBatchAuth() {
+  addAIBubble(`
+    <div class="status-msg success">
+      <span class="status-icon">✅</span>
+      <div>批量授权完成！成功授权 <strong>10人</strong>，1人跳过（已有权限）<br>
+      <small>操作日志已记录 · 通知邮件已发送至各员工</small></div>
+    </div>`);
+}
+
+function doTempAuth(user, expireStr) {
+  addAIBubble(`
+    <div class="status-msg success">
+      <span class="status-icon">✅</span>
+      <div>临时授权成功！<span class="hl-user">「${user}」</span> 已获得 <span class="hl-perm">【仓库盘点员】</span> 角色
+      <br><small>自动回收时间：${expireStr} · 到期前24小时将邮件提醒</small></div>
+    </div>`);
+}
+
+function doRevoke(user, role) {
+  addAIBubble(`
+    <div class="status-msg success">
+      <span class="status-icon">✅</span>
+      <div>已撤销 <span class="hl-user">「${user}」</span> 的 <span class="hl-perm">【${role}】</span> 角色权限
+      <br><small>操作日志已记录 · ${user} 的库存盘点及相关权限已全部移除</small></div>
+    </div>`);
+}
+
+function doSendEmail() {
+  addAIBubble(`
+    <div class="status-msg success">
+      <span class="status-icon">📧</span>
+      <div>申请邮件已发送至管理员（范会）
+      <br><small>您将在管理员处理后收到通知，通常1个工作日内回复</small></div>
+    </div>`);
+}
+
+function cancelAction() {
+  addAIBubble(`<p>已取消本次操作。如需重新发起，请直接输入指令。</p>`);
+}
+
+// 菜单无角色 - 选择操作
+function selectNoRoleOption(el, action) {
+  if (action === 'create') {
+    addAIBubble(`
+      <p>好的，请输入新角色名称：</p>
+      <p style="margin-top:8px;font-size:12px;color:var(--text-muted);">💡 在下方输入框中输入角色名称，例如：<span class="hl">报表管理员</span>、<span class="hl">导出专员</span></p>
+    `);
+  } else {
+    addAIBubble(`
+      <p>好的，请在下方输入框中输入角色名称，系统将自动匹配：</p>
+      <p style="margin-top:8px;font-size:12px;color:var(--text-muted);">💡 例如输入 <span class="hl">仓管员</span> → 自动补全为 <span class="hl-perm">【仓库管理员】</span></p>
+      <div style="margin-top:10px;">
+        <p style="font-size:13px;font-weight:600;margin-bottom:8px;">现有角色列表：</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <span class="perm-tag" style="cursor:pointer;" onclick="onSelectExistingRole(this,'仓库管理员')">仓库管理员</span>
+          <span class="perm-tag" style="cursor:pointer;" onclick="onSelectExistingRole(this,'仓库主管')">仓库主管</span>
+          <span class="perm-tag" style="cursor:pointer;" onclick="onSelectExistingRole(this,'仓库盘点员')">仓库盘点员</span>
+          <span class="perm-tag" style="cursor:pointer;" onclick="onSelectExistingRole(this,'仓库经理')">仓库经理</span>
+          <span class="perm-tag" style="cursor:pointer;" onclick="onSelectExistingRole(this,'物料管理员')">物料管理员</span>
+        </div>
+      </div>
+    `);
+  }
+}
+
+// 从列表选择现有角色
+function onSelectExistingRole(el, roleName) {
+  el.style.background = 'var(--primary)';
+  el.style.color = '#fff';
+  setTimeout(() => {
+    addUserBubble(roleName);
+    const thinkRow = addThinking();
+    setTimeout(() => {
+      removeThinking();
+      addAIBubble(`
+        <div class="status-msg info">
+          <span class="status-icon">💡</span>
+          <div>即将把 <span class="hl-perm">【报表导出】</span> 菜单追加到角色 <span class="hl-perm">【${roleName}】</span> 下，然后将该角色分配给 <span class="hl-user">「张三」</span></div>
+        </div>
+        <div class="confirm-bar">
+          <button class="btn btn-primary" onclick="doGrantToExistingRole('张三','${roleName}','报表导出')">✅ 确认追加菜单并授权</button>
+          <button class="btn btn-ghost" onclick="cancelAction()">取消</button>
+        </div>`);
+    }, 900);
+  }, 300);
+}
+
+// 追加菜单到现有角色并授权
+function doGrantToExistingRole(user, role, menu) {
+  addAIBubble(`
+    <div class="status-msg success">
+      <span class="status-icon">✅</span>
+      <div>操作成功！
+      <br>1️⃣ 已将 <span class="hl-perm">【${menu}】</span> 菜单追加到角色 <span class="hl-perm">【${role}】</span>
+      <br>2️⃣ 已将 <span class="hl-perm">【${role}】</span> 角色分配给 <span class="hl-user">「${user}」</span>
+      <br><small>操作日志已记录 · ${user} 现在可以访问 ${menu} 功能</small></div>
+    </div>
+    <div class="confirm-bar">
+      <button class="btn btn-ghost" onclick="addFollowup('查看${user}的所有权限')">📋 查看${user}权限详情</button>
+    </div>`);
+}
+
+// 创建新角色并授权
+function doCreateAndGrant(user, role, menu) {
+  addAIBubble(`
+    <div class="status-msg success">
+      <span class="status-icon">✅</span>
+      <div>新角色创建并授权成功！
+      <br>1️⃣ 已创建新角色 <span class="hl-perm">【${role}】</span>，包含菜单 <span class="hl-perm">【${menu}】</span>
+      <br>2️⃣ 已将 <span class="hl-perm">【${role}】</span> 角色分配给 <span class="hl-user">「${user}」</span>
+      <br><small>角色已加入角色管理列表 · 操作日志已记录</small></div>
+    </div>
+    <div class="confirm-bar">
+      <button class="btn btn-ghost" onclick="addFollowup('查看${user}的所有权限')">📋 查看${user}权限详情</button>
+      <button class="btn btn-ghost" onclick="addFollowup('给其他人也分配报表专员角色')">👥 批量分配此角色</button>
+    </div>`);
+}
+
+function addFollowup(text) {
+  addUserBubble(text);
+  simulateAIReply('text', null, null, '好的，正在处理您的请求… 功能演示中，实际场景将调用对应接口。');
+}
+
+// ====== 场景演示 ======
+function showScenarios() {
+  const idx = prompt('输入场景编号（0-10）:\n0-单人开通 1-批量授权 2-权限冲突 3-临时授权 4-模糊输入 5-查询权限 6-撤销权限 7-非管理员申请 8-菜单无角色(新建/选择) 9-角色名补全(匹配) 10-角色名补全(新建)');
+  if (idx !== null && idx >= '0' && idx <= '10') loadScenario(parseInt(idx));
+}
+
+function loadScenario(idx) {
+  const area = document.getElementById('chatArea');
+  area.innerHTML = `
+    <div class="welcome-block" id="welcome" style="display:none;"></div>`;
+
+  const scene = SCENARIOS[idx];
+  let delay = 0;
+
+  // 切换身份
+  if (scene[0].identity === 'staff') {
+    isAdmin = false;
+  } else {
+    isAdmin = true;
+  }
+
+  scene.forEach((msg) => {
+    delay += 300;
+    setTimeout(() => {
+      if (msg.role === 'user') {
+        addUserBubble(msg.text);
+      } else {
+        const thinkRow = addThinking();
+        setTimeout(() => {
+          removeThinking();
+          renderAIMsg(msg);
+        }, 900);
+      }
+    }, delay);
+    delay += 1200;
+  });
+}
+
+function renderAIMsg(msg) {
+  let html = '';
+  switch (msg.type) {
+    case 'role_recommend': html = genRoleRecommend(msg.user, msg.menu); break;
+    case 'batch_authorize': html = genBatchAuth(msg.dept, msg.menu); break;
+    case 'conflict': html = genConflict(msg.user, msg.menu); break;
+    case 'temp_auth': html = genTempAuth(msg.user, msg.menu, msg.days); break;
+    case 'fuzzy': html = genFuzzy(msg.user, msg.keyword); break;
+    case 'query_perm': html = genQueryPerm(msg.user); break;
+    case 'revoke': html = genRevoke(msg.user, msg.menu); break;
+    case 'non_admin_apply': html = genNonAdminApply(msg.menu); break;
+    case 'no_role': html = genNoRole(msg.user, msg.menu); break;
+    case 'role_autocomplete': html = genRoleAutocomplete(msg.user, msg.menu, msg.input, msg.matched, msg.isNew); break;
+    default: html = `<p>${msg.text || '（功能演示）'}</p>`;
+  }
+  addAIBubble(html);
+}
+
+function simulateAIReply(type, user, menu, text) {
+  const thinkRow = addThinking();
+  setTimeout(() => {
+    removeThinking();
+    if (type === 'text') {
+      addAIBubble(`<p>${text}</p>`);
+    } else {
+      renderAIMsg({ type, user, menu });
+    }
+  }, 900);
+}
+
+// ====== 发送消息 ======
+function sendMessage() {
+  const box = document.getElementById('inputBox');
+  const text = box.value.trim();
+  if (!text || isTyping) return;
+
+  box.value = '';
+  box.style.height = 'auto';
+  addUserBubble(text);
+  isTyping = true;
+
+  const thinkRow = addThinking();
+  setTimeout(() => {
+    removeThinking();
+    isTyping = false;
+    const t = text.toLowerCase();
+    let type = 'role_recommend', user = '张三', menu = '库存盘点';
+    if (t.includes('批量') || t.includes('部门')) { type = 'batch_authorize'; }
+    else if (t.includes('已有') || t.includes('李四')) { type = 'conflict'; user = '李四'; }
+    else if (t.includes('天后') || t.includes('临时')) { type = 'temp_auth'; }
+    else if (t.includes('什么权限') || t.includes('有哪些')) { type = 'query_perm'; }
+    else if (t.includes('收回') || t.includes('撤销')) { type = 'revoke'; }
+    else if (!isAdmin) { type = 'non_admin_apply'; }
+    else if (t.includes('报表导出') || t.includes('导出报表') || (t.includes('开通') && (t.includes('导出') || t.includes('报表')))) { type = 'no_role'; user = '张三'; menu = '报表导出'; }
+    else if (t.replace(/[\u4e00-\u9fa5]/g, '').length < 3 && t.includes('库存')) { type = 'fuzzy'; }
+
+    renderAIMsg({ type, user, menu, days: 3, dept: '仓库部', keyword: '库存' });
+  }, 1000);
+}
+
+function sendQuick(text) {
+  document.getElementById('inputBox').value = text;
+  sendMessage();
+}
+
+function clearChat() {
+  const area = document.getElementById('chatArea');
+  area.innerHTML = `
+    <div class="welcome-block" id="welcome">
+      <div class="welcome-avatar">🤖</div>
+      <div class="welcome-text">你好，有什么可以帮您</div>
+      <div class="quick-chips">
+        <div class="chip" onclick="sendQuick('给张三开通库存盘点菜单权限')">🔑 给张三开通库存盘点权限</div>
+        <div class="chip" onclick="sendQuick('张三现在有什么权限？')">📋 查询张三的权限</div>
+        <div class="chip" onclick="sendQuick('给仓库部所有人开通库存盘点权限')">👥 批量授权仓库部</div>
+        <div class="chip" onclick="sendQuick('给张三开通盘点权限，3天后自动收回')">⏰ 临时授权3天</div>
+        <div class="chip" onclick="sendQuick('把张三的库存盘点权限收回')">🗑️ 撤销张三的权限</div>
+        <div class="chip" onclick="sendQuick('帮我开通库存盘点权限')">📧 申请权限（非管理员）</div>
+        <div class="chip" onclick="sendQuick('给张三开通报表导出权限')">🆕 菜单无角色授权</div>
+      </div>
+    </div>`;
+}
+
+function toggleIdentity() {
+  isAdmin = !isAdmin;
+  const name = isAdmin ? '范会（管理员）' : '张三（普通用户）';
+  alert('已切换身份：' + name);
+}
+</script>
+</body>
+</html>
