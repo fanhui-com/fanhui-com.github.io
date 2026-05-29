@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI智能派仓 - WMS系统</title>
+<style>
+  :root {
+    --wms-teal: #1a9b9b;
+    --wms-teal-dark: #158686;
+    --wms-teal-light: #e6f4f4;
+    --bg: #f5f7fa;
+    --primary: #1a9b9b;
+    --primary-light: #e6f4f4;
+    --success: #52c41a;
+    --warning: #faad14;
+    --danger: #f5222d;
+    --info: #1890ff;
+    --text-primary: #262626;
+    --text-secondary: #595959;
+    --text-muted: #8c8c8c;
+    --border: #d9d9d9;
+    --border-light: #f0f0f0;
+    --radius: 6px;
+    --shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; color: var(--text-primary);
+  }
+
+  /* 顶部系统导航 */
+  .system-header { height: 50px; background: var(--wms-teal); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0; color: #fff; }
+  .system-logo { font-size: 16px; font-weight: 600; letter-spacing: 1px; }
+  .system-nav-right { display: flex; align-items: center; gap: 20px; font-size: 13px; }
+  .system-nav-right a { color: rgba(255,255,255,.85); text-decoration: none; display: flex; align-items: center; gap: 5px; }
+  .system-nav-right a:hover { color: #fff; }
+
+  /* 二级导航 */
+  .sub-nav { height: 42px; background: #fff; border-bottom: 1px solid var(--border-light); display: flex; align-items: center; padding: 0 20px; gap: 4px; flex-shrink: 0; }
+  .sub-nav a { padding: 0 14px; height: 42px; line-height: 42px; font-size: 13px; color: var(--text-secondary); text-decoration: none; border-bottom: 2px solid transparent; transition: all .2s; }
+  .sub-nav a:hover { color: var(--primary); }
+  .sub-nav a.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 500; }
+
+  /* 面包屑 */
+  .breadcrumb { padding: 10px 20px; font-size: 13px; color: var(--text-muted); flex-shrink: 0; background: #fff; border-bottom: 1px solid var(--border-light); }
+  .breadcrumb a { color: var(--text-muted); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--primary); }
+  .breadcrumb .current { color: var(--text-primary); font-weight: 500; }
+
+  /* 标签页 */
+  .tab-bar { display: flex; border-bottom: 1px solid var(--border-light); background: #fff; flex-shrink: 0; padding: 0 20px; }
+  .tab-item { padding: 10px 20px; font-size: 14px; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; transition: all .2s; }
+  .tab-item:hover { color: var(--primary); }
+  .tab-item.active { color: var(--primary); font-weight: 500; border-bottom-color: var(--primary); }
+
+  /* 聊天主区域 */
+  .chat-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .chat-area::-webkit-scrollbar { width: 6px; }
+  .chat-area::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
+
+  /* 消息气泡 */
+  .msg-row { display: flex; gap: 10px; max-width: 82%; animation: fadeIn .3s ease; }
+  .msg-row.user { align-self: flex-end; flex-direction: row-reverse; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .avatar { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .avatar.ai { background: var(--wms-teal-light); }
+  .avatar.user { background: #e8f4fd; }
+
+  .bubble { padding: 12px 16px; border-radius: 8px; font-size: 14px; line-height: 1.7; word-break: break-word; }
+  .msg-row:not(.user) .bubble { background: #fff; border: 1px solid var(--border-light); box-shadow: var(--shadow); }
+  .msg-row.user .bubble { background: var(--wms-teal); color: #fff; }
+
+  .bubble p { margin-bottom: 6px; }
+  .bubble p:last-child { margin-bottom: 0; }
+  .bubble .hl { background: rgba(26,155,155,.12); padding: 1px 6px; border-radius: 3px; font-weight: 500; color: var(--primary); }
+  .bubble .hl-user { background: rgba(24,144,255,.1); padding: 1px 6px; border-radius: 3px; color: var(--info); font-weight: 500; }
+  .msg-row.user .bubble .hl, .msg-row.user .bubble .hl-user { background: rgba(255,255,255,.2); color: #fff; }
+  .bubble .hl-warn { color: var(--warning); font-weight: 600; }
+  .bubble .hl-err { color: var(--danger); font-weight: 600; }
+  .bubble .hl-ok { color: var(--success); font-weight: 600; }
+
+  /* 状态消息 */
+  .status-msg { padding: 10px 14px; border-radius: 8px; font-size: 13px; line-height: 1.7; display: flex; gap: 10px; }
+  .status-msg.info { background: #e6f7ff; border: 1px solid #91d5ff; }
+  .status-msg.success { background: #f6ffed; border: 1px solid #b7eb8f; }
+  .status-msg.warning { background: #fffbe6; border: 1px solid #ffe58f; }
+  .status-msg.danger { background: #fff2f0; border: 1px solid #ffccc7; }
+  .status-icon { font-size: 16px; flex-shrink: 0; }
+
+  /* 标签 */
+  .tag { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 4px; font-size: 12px; font-weight: 500; margin: 2px; }
+  .tag-blue { background: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; }
+  .tag-green { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+  .tag-orange { background: #fff7e6; color: #fa8c16; border: 1px solid #ffd591; }
+  .tag-purple { background: #f9f0ff; color: #722ed1; border: 1px solid #d3adf7; }
+  .tag-red { background: #fff2f0; color: #f5222d; border: 1px solid #ffccc7; }
+  .tag-teal { background: var(--primary-light); color: var(--primary); border: 1px solid #b5e8e8; }
+  .tag-gray { background: #f5f5f5; color: #666; border: 1px solid #ddd; }
+
+  /* 按钮 */
+  .btn { padding: 7px 16px; border-radius: var(--radius); font-size: 13px; cursor: pointer; border: none; transition: all .2s; font-weight: 500; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--wms-teal-dark); }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
+  .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { background: #cf1322; }
+  .btn-warn { background: #faad14; color: #fff; }
+  .btn-warn:hover { background: #d48806; }
+
+  .confirm-bar { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+  /* 快捷Chip */
+  .chip { display: inline-flex; align-items: center; padding: 6px 14px; background: #fff; border: 1px solid var(--border-light); border-radius: 20px; font-size: 13px; color: var(--text-secondary); cursor: pointer; transition: all .2s; }
+  .chip:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+  /* 分配结果表格 */
+  .alloc-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; border: 1px solid var(--border-light); border-radius: 6px; overflow: hidden; }
+  .alloc-table thead { background: #fafafa; }
+  .alloc-table th { padding: 8px 10px; text-align: left; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border-light); }
+  .alloc-table td { padding: 8px 10px; border-bottom: 1px solid var(--border-light); }
+  .alloc-table tr:last-child td { border-bottom: none; }
+  .alloc-table tr:hover td { background: #fafafa; }
+  .alloc-table .num { font-weight: 600; font-family: 'Consolas', monospace; }
+  .alloc-table .badge-new { background: #fff7e6; color: #d48806; padding: 1px 6px; border-radius: 3px; font-size: 11px; }
+  .alloc-table .badge-changed { background: #e6f7ff; color: #1890ff; padding: 1px 6px; border-radius: 3px; font-size: 11px; }
+  .alloc-table .badge-same { background: #f5f5f5; color: #999; padding: 1px 6px; border-radius: 3px; font-size: 11px; }
+
+  /* 规则选项卡片 */
+  .rule-card { border: 1.5px solid var(--border-light); border-radius: 8px; padding: 12px; cursor: pointer; transition: all .2s; text-align: center; background: #fafafa; }
+  .rule-card:hover { border-color: var(--primary); background: var(--primary-light); }
+  .rule-card.selected { border-color: var(--primary); background: var(--primary-light); box-shadow: 0 0 0 2px rgba(26,155,155,.15); }
+  .rule-card .rc-icon { font-size: 24px; margin-bottom: 6px; }
+  .rule-card .rc-title { font-size: 13px; font-weight: 600; }
+  .rule-card .rc-desc { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  /* 进度指示 */
+  .step-bar { display: flex; align-items: center; gap: 0; margin: 12px 0; }
+  .step-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+  .step-item.active { color: var(--primary); font-weight: 600; }
+  .step-item.done { color: var(--success); }
+  .step-dot { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; border: 2px solid var(--border); color: var(--text-muted); background: #fff; }
+  .step-item.active .step-dot { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+  .step-item.done .step-dot { border-color: var(--success); color: #fff; background: var(--success); }
+  .step-line { flex: 1; height: 2px; background: var(--border-light); }
+  .step-line.done { background: var(--success); }
+
+  /* 欢迎区 */
+  .welcome { text-align: center; padding: 40px 20px; }
+  .welcome-avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--wms-teal-light); margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; font-size: 32px; }
+  .welcome h2 { font-size: 18px; color: var(--text-primary); margin-bottom: 6px; }
+  .welcome p { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+
+  /* 统计卡 */
+  .stat-row { display: flex; gap: 10px; margin: 10px 0; }
+  .stat-card { flex: 1; padding: 12px; background: #fafafa; border-radius: 8px; border: 1px solid var(--border-light); text-align: center; }
+  .stat-card .sc-num { font-size: 22px; font-weight: 700; font-family: 'Consolas', monospace; }
+  .stat-card .sc-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  /* 思考动画 */
+  .thinking { display: flex; gap: 4px; padding: 12px 16px; }
+  .thinking span { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); opacity: .3; animation: pulse 1.2s infinite; }
+  .thinking span:nth-child(2) { animation-delay: .2s; }
+  .thinking span:nth-child(3) { animation-delay: .4s; }
+  @keyframes pulse { 0%,100% { opacity: .3; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
+
+  /* 偏差标记 */
+  .deviation-tag { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .deviation-tag.high { background: #fff2f0; color: #f5222d; }
+  .deviation-tag.medium { background: #fff7e6; color: #fa8c16; }
+  .deviation-tag.low { background: #f6ffed; color: #52c41a; }
+
+  /* 浮动工具 */
+  .float-tools { position: fixed; right: 20px; bottom: 90px; display: flex; flex-direction: column; gap: 10px; z-index: 100; }
+  .float-btn { width: 42px; height: 42px; border-radius: 50%; background: #fff; border: 1px solid var(--border-light); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--shadow); font-size: 18px; transition: all .2s; }
+  .float-btn:hover { border-color: var(--primary); color: var(--primary); transform: scale(1.05); }
+
+  /* 输入区 */
+  .input-area { padding: 16px 20px; background: #fff; border-top: 1px solid var(--border-light); flex-shrink: 0; }
+  .input-box { display: flex; gap: 10px; }
+  .input-box input { flex: 1; height: 42px; border: 1px solid var(--border); border-radius: var(--radius); padding: 0 14px; font-size: 14px; outline: none; transition: border-color .2s; }
+  .input-box input:focus { border-color: var(--primary); }
+  .input-box .btn-send { width: 42px; height: 42px; border-radius: var(--radius); background: var(--primary); color: #fff; border: none; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+  .input-box .btn-send:hover { background: var(--wms-teal-dark); }
+</style>
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<div class="system-header">
+  <div class="system-logo">📦 WMS 需求池</div>
+  <div class="system-nav-right">
+    <a href="#">📋 备货计划</a>
+    <a href="#">📊 出库任务</a>
+    <a href="#">👤 管理员</a>
+  </div>
+</div>
+
+<!-- 二级导航 -->
+<div class="sub-nav">
+  <a href="#">主页</a>
+  <a href="#">盘点管理</a>
+  <a href="#">入库任务</a>
+  <a href="#">备货计划</a>
+  <a href="#">出库任务</a>
+  <a href="#" class="active">AI智能派仓</a>
+  <a href="#">报表管理</a>
+</div>
+
+<!-- 面包屑 -->
+<div class="breadcrumb">
+  <a href="#">出库任务</a> / <span class="current">AI智能派仓</span>
+</div>
+
+<!-- 标签页 -->
+<div class="tab-bar">
+  <div class="tab-item active" onclick="switchTab(this,'chat')">AI派仓</div>
+  <div class="tab-item" onclick="switchTab(this,'rules')">派仓规则库</div>
+  <div class="tab-item" onclick="switchTab(this,'history')">派仓记录</div>
+</div>
+
+<!-- 聊天区 -->
+<div class="chat-area" id="chatArea">
+  <div class="welcome" id="welcomeArea">
+    <div class="welcome-avatar">🤖</div>
+    <h2>你好，有什么可以帮您</h2>
+    <p>AI智能派仓助手，帮您快速完成备货计划的仓库分配</p>
+    <div class="chip-row">
+      <div class="chip" onclick="sendQuick('帮我分析这批订单的派仓方案')">🔍 智能派仓分析</div>
+      <div class="chip" onclick="sendQuick('按库龄从大到小分配')">📅 按库龄分配</div>
+      <div class="chip" onclick="sendQuick('把订单PO20260601-001指派到武汉仓')">🎯 人工指派仓库</div>
+      <div class="chip" onclick="sendQuick('查看上次派仓偏差记录')">📊 查看偏差记录</div>
+      <div class="chip" onclick="sendQuick('调整分配规则，按车次集中分配')">⚙️ 调整分配规则</div>
+    </div>
+  </div>
+</div>
+
+<!-- 浮动工具 -->
+<div class="float-tools">
+  <div class="float-btn" title="清空对话" onclick="clearChat()">🗑️</div>
+  <div class="float-btn" title="场景演示" onclick="showScenarios()">⚡</div>
+</div>
+
+<!-- 输入区 -->
+<div class="input-area">
+  <div class="input-box">
+    <input type="text" id="msgInput" placeholder="请输入您的问题，如：按库龄从大到小分配" onkeydown="if(event.key==='Enter')sendMessage()">
+    <button class="btn-send" onclick="sendMessage()">➤</button>
+  </div>
+</div>
+
+<script>
+// ====== 对话场景数据 ======
+const scenarios = [
+  // 0: 智能派仓分析（默认规则）
+  [
+    { role: 'user', text: '帮我分析这批订单的派仓方案' },
+    { role: 'ai', type: 'alloc_analysis' }
+  ],
+  // 1: 按库龄从大到小分配
+  [
+    { role: 'user', text: '按库龄从大到小分配' },
+    { role: 'ai', type: 'rule_age_desc' },
+    { role: 'ai', type: 'alloc_result', rule: '按库龄从大到小' }
+  ],
+  // 2: 按库存从大到小分配
+  [
+    { role: 'user', text: '按库存从大到小分配' },
+    { role: 'ai', type: 'rule_stock_desc' },
+    { role: 'ai', type: 'alloc_result', rule: '按库存从大到小' }
+  ],
+  // 3: 调整规则 - 按车次集中分配
+  [
+    { role: 'user', text: '调整分配规则，按车次集中分配' },
+    { role: 'ai', type: 'rule_adjust', rule: '按车次集中分配' }
+  ],
+  // 4: 人工指派仓库
+  [
+    { role: 'user', text: '把订单PO20260601-001指派到武汉仓' },
+    { role: 'ai', type: 'manual_assign', order: 'PO20260601-001', warehouse: '武汉仓' }
+  ],
+  // 5: 确认应用分配结果
+  [
+    { role: 'user', text: '帮我分析这批订单的派仓方案' },
+    { role: 'ai', type: 'alloc_analysis' },
+    { role: 'user', text: '应用这个方案' },
+    { role: 'ai', type: 'apply_result' }
+  ],
+  // 6: 偏差检测与矫正
+  [
+    { role: 'user', text: '查看上次派仓偏差记录' },
+    { role: 'ai', type: 'deviation_check' }
+  ],
+  // 7: 库存约束校验（超出总库存）
+  [
+    { role: 'user', text: '把这批订单全部分配到石家庄仓' },
+    { role: 'ai', type: 'stock_overflow' }
+  ],
+  // 8: 预设规则选项展示
+  [
+    { role: 'user', text: '有哪些分配规则可以选择？' },
+    { role: 'ai', type: 'rule_options' }
+  ]
+];
+
+let scenarioRunning = false;
+
+// ====== 生成函数 ======
+
+// 派仓分析结果
+function genAllocAnalysis() {
+  return `
+    <div class="step-bar">
+      <div class="step-item done"><div class="step-dot">✓</div><span>加载订单</span></div>
+      <div class="step-line done"></div>
+      <div class="step-item done"><div class="step-dot">✓</div><span>查询库存</span></div>
+      <div class="step-line done"></div>
+      <div class="step-item active"><div class="step-dot">3</div><span>分配计算</span></div>
+      <div class="step-line"></div>
+      <div class="step-item"><div class="step-dot">4</div><span>输出方案</span></div>
+    </div>
+    <br>
+    <p>📋 已加载 <span class="hl">3个待分配订单</span>，涉及 <span class="hl">4个仓库</span>，开始AI智能派仓分析…</p>
+    <br>
+    <div class="status-msg info">
+      <span class="status-icon">💡</span>
+      <div>当前使用默认规则：<span class="hl">提货仓=备货仓</span> · <span class="hl">按车次集中分配</span> · <span class="hl">库龄从大到小</span></div>
+    </div>
+    <br>
+    <p>📊 当前库存概况：</p>
+    <div class="stat-row">
+      <div class="stat-card"><div class="sc-num" style="color:var(--primary)">3</div><div class="sc-label">待分配订单</div></div>
+      <div class="stat-card"><div class="sc-num" style="color:var(--warning)">1,280</div><div class="sc-label">总需分配(台)</div></div>
+      <div class="stat-card"><div class="sc-num" style="color:var(--success)">3,450</div><div class="sc-label">基地总库存</div></div>
+      <div class="stat-card"><div class="sc-num" style="color:var(--info)">4</div><div class="sc-label">可用仓库</div></div>
+    </div>
+    <br>
+    <p>📌 AI推荐的分配方案：</p>
+    <table class="alloc-table">
+      <thead><tr><th>订单号</th><th>物料</th><th>数量</th><th>车次</th><th>分配仓库</th><th>库龄</th><th>状态</th></tr></thead>
+      <tbody>
+        <tr><td class="num">PO20260601-001</td><td>压缩机ZL-200</td><td class="num">500</td><td>C1025</td><td>石家庄仓</td><td>2025-08</td><td><span class="badge-new">推荐</span></td></tr>
+        <tr><td class="num">PO20260601-002</td><td>压缩机ZL-200</td><td class="num">380</td><td>C1025</td><td>石家庄仓</td><td>2025-08</td><td><span class="badge-new">推荐</span></td></tr>
+        <tr><td class="num">PO20260601-003</td><td>风机FN-100</td><td class="num">400</td><td>C1026</td><td>合肥仓</td><td>2025-11</td><td><span class="badge-new">推荐</span></td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:6px;font-size:12px;color:var(--text-muted);">💡 相同车次C1025分配到同一仓库（石家庄仓），优先出库高库龄物料(2025-08)</p>
+    <div class="confirm-bar">
+      <button class="btn btn-primary" onclick="applyAllocation()">✅ 应用此方案</button>
+      <button class="btn btn-ghost" onclick="sendQuick('按库龄从大到小重新分配')">🔄 重新分配</button>
+      <button class="btn btn-ghost" onclick="sendQuick('调整分配规则，按车次集中分配')">⚙️ 调整规则</button>
+      <button class="btn btn-ghost" onclick="cancelAction()">取消</button>
+    </div>`;
+}
+
+// 规则说明 - 库龄
+function genRuleAgeDesc() {
+  return `
+    <div class="status-msg info">
+      <span class="status-icon">📅</span>
+      <div>已切换规则为 <span class="hl">按库龄从大到小</span> 分配<br><small>优先出库库龄最长的物料，降低呆滞风险。物料锁定改为按库龄（年-月）锁定。</small></div>
+    </div>`;
+}
+
+// 规则说明 - 库存
+function genRuleStockDesc() {
+  return `
+    <div class="status-msg info">
+      <span class="status-icon">📊</span>
+      <div>已切换规则为 <span class="hl">按库存从大到小</span> 分配<br><small>优先从库存量大的仓库分配，减少跨仓搬运。</small></div>
+    </div>`;
+}
+
+// 分配结果
+function genAllocResult(rule) {
+  const rows = rule.includes('库存') ? `
+        <tr><td class="num">PO20260601-001</td><td>压缩机ZL-200</td><td class="num">500</td><td>C1025</td><td>合肥仓</td><td>库存1,200</td><td><span class="badge-changed">变更</span></td></tr>
+        <tr><td class="num">PO20260601-002</td><td>压缩机ZL-200</td><td class="num">380</td><td>C1025</td><td>合肥仓</td><td>库存1,200</td><td><span class="badge-changed">变更</span></td></tr>
+        <tr><td class="num">PO20260601-003</td><td>风机FN-100</td><td class="num">400</td><td>C1026</td><td>石家庄仓</td><td>库存980</td><td><span class="badge-changed">变更</span></td></tr>` : `
+        <tr><td class="num">PO20260601-001</td><td>压缩机ZL-200</td><td class="num">500</td><td>C1025</td><td>石家庄仓</td><td>2025-08</td><td><span class="badge-new">推荐</span></td></tr>
+        <tr><td class="num">PO20260601-002</td><td>压缩机ZL-200</td><td class="num">380</td><td>C1025</td><td>石家庄仓</td><td>2025-08</td><td><span class="badge-new">推荐</span></td></tr>
+        <tr><td class="num">PO20260601-003</td><td>风机FN-100</td><td class="num">400</td><td>C1026</td><td>合肥仓</td><td>2025-11</td><td><span class="badge-new">推荐</span></td></tr>`;
+  return `
+    <br>
+    <p>📋 按 <span class="hl">${rule}</span> 重新分配完成：</p>
+    <table class="alloc-table">
+      <thead><tr><th>订单号</th><th>物料</th><th>数量</th><th>车次</th><th>分配仓库</th><th>${rule.includes('库存') ? '仓库库存' : '库龄'}</th><th>状态</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="confirm-bar">
+      <button class="btn btn-primary" onclick="applyAllocation()">✅ 应用此方案</button>
+      <button class="btn btn-ghost" onclick="cancelAction()">取消</button>
+    </div>`;
+}
+
+// 调整规则 - 集中分配策略
+function genRuleAdjust(rule) {
+  return `
+    <p>当前集中分配策略已调整为 <span class="hl">${rule}</span></p>
+    <br>
+    <div class="status-msg info">
+      <span class="status-icon">💡</span>
+      <div><b>${rule}</b>：将相同车次的订单分配到同一仓库<br><small>如选择按库龄分配，有相同库龄但不同仓库的物料，会尽量分配到同一个仓</small></div>
+    </div>
+    <br>
+    <p>📌 可选的集中分配策略：</p>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <div class="rule-card selected" style="flex:1;" onclick="selectRuleCard(this)">
+        <div class="rc-icon">🚛</div>
+        <div class="rc-title">按车次集中</div>
+        <div class="rc-desc">相同车次→同一仓库</div>
+      </div>
+      <div class="rule-card" style="flex:1;" onclick="selectRuleCard(this)">
+        <div class="rc-icon">📦</div>
+        <div class="rc-title">按订单集中</div>
+        <div class="rc-desc">相同订单→同一仓库</div>
+      </div>
+      <div class="rule-card" style="flex:1;" onclick="selectRuleCard(this)">
+        <div class="rc-icon">🔩</div>
+        <div class="rc-title">按物料集中</div>
+        <div class="rc-desc">相同物料→同一仓库</div>
+      </div>
+    </div>
+    <br>
+    <p>排序规则：</p>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <div class="rule-card selected" style="flex:1;" onclick="selectRuleCard(this)">
+        <div class="rc-icon">📅</div>
+        <div class="rc-title">库龄从大到小</div>
+        <div class="rc-desc">优先出高库龄</div>
+      </div>
+      <div class="rule-card" style="flex:1;" onclick="selectRuleCard(this)">
+        <div class="rc-icon">📊</div>
+        <div class="rc-title">库存从大到小</div>
+        <div class="rc-desc">优先大库存仓</div>
+      </div>
+    </div>
+    <br>
+    <div class="confirm-bar">
+      <button class="btn btn-primary" onclick="sendQuick('帮我分析这批订单的派仓方案')">🔄 用新规则重新分析</button>
+      <button class="btn btn-ghost" onclick="cancelAction()">取消</button>
+    </div>`;
+}
+
+// 人工指派
+function genManualAssign(order, warehouse) {
+  return `
+    <p>收到，将对 <span class="hl-user">${order}</span> 进行人工指派：</p>
+    <br>
+    <div class="status-msg info">
+      <span class="status-icon">🎯</span>
+      <div>
+        <div>订单 <span class="hl-user">${order}</span> → <span class="hl">${warehouse}</span></div>
+        <div style="margin-top:6px;">📌 请确认以下信息：</div>
+      </div>
+    </div>
+    <br>
+    <table class="alloc-table">
+      <thead><tr><th>项目</th><th>当前值</th><th>修改为</th></tr></thead>
+      <tbody>
+        <tr><td>订单号</td><td class="num">${order}</td><td>—</td></tr>
+        <tr><td>提货仓</td><td>石家庄仓</td><td><span class="badge-changed">${warehouse}</span></td></tr>
+        <tr><td>备货仓</td><td>石家庄仓</td><td><span class="badge-changed">${warehouse}</span></td></tr>
+        <tr><td>物料</td><td>压缩机ZL-200 × 500台</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <div class="status-msg warning" style="margin-top:10px;">
+      <span class="status-icon">⚠️</span>
+      <div>人工指派后，系统将重新按您的指定分配，同车次其他订单不受影响</div>
+    </div>
+    <div class="confirm-bar">
+      <button class="btn btn-primary" onclick="doManualAssign('${order}','${warehouse}')">✅ 确认指派</button>
+      <button class="btn btn-ghost" onclick="cancelAction()">取消</button>
+    </div>`;
+}
+
+// 应用分配结果
+function genApplyResult() {
+  return `
+    <div class="status-msg success">
+      <span class="status-icon">✅</span>
+      <div>
+        <div>分配方案已成功应用！备货计划已更新。</div>
+        <div style="margin-top:8px;">📌 应用结果：</div>
+        <div style="margin-top:6px;">
+          <span class="tag tag-green">3个订单已分配</span>
+          <span class="tag tag-blue">石家庄仓 × 2单</span>
+          <span class="tag tag-purple">合肥仓 × 1单</span>
+        </div>
+        <div style="margin-top:6px;font-size:12px;color:var(--text-muted);">
+          锁定库存已更新 · 分配记录已保存 · ${new Date().toLocaleString()}
+        </div>
+      </div>
+    </div>
+    <div class="confirm-bar">
+      <button class="btn btn-ghost" onclick="sendQuick('查看备货计划详情')">📋 查看备货计划</button>
+      <button class="btn btn-ghost" onclick="sendQuick('查看上次派仓偏差记录')">📊 查看偏差记录</button>
+    </div>`;
+}
+
+// 偏差检测
+function genDeviationCheck() {
+  return `
+    <p>📋 正在检查派仓偏差记录…</p>
+    <br>
+    <div class="stat-row">
+      <div class="stat-card"><div class="sc-num" style="color:var(--danger)">2</div><div class="sc-label">偏差订单</div></div>
+      <div class="stat-card"><div class="sc-num" style="color:var(--warning)">1</div><div class="sc-label">待矫正</div></div>
+      <div class="stat-card"><div class="sc-num" style="color:var(--success)">1</div><div class="sc-label">已矫正</div></div>
+      <div class="stat-card"><div class="sc-num" style="color:var(--info)">85%</div><div class="sc-label">执行率</div></div>
+    </div>
+    <br>
+    <table class="alloc-table">
+      <thead><tr><th>订单号</th><th>系统分配</th><th>实际出库</th><th>偏差</th><th>状态</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="num">PO20260520-003</td>
+          <td>石家庄仓<br><small>条码:ZL-200-202508-001</small></td>
+          <td>合肥仓<br><small>条码:ZL-200-202511-005</small></td>
+          <td><span class="deviation-tag high">⚠️ 仓库不同</span><br><span class="deviation-tag medium">库龄差异3月</span></td>
+          <td><span class="tag tag-orange">待矫正</span></td>
+        </tr>
+        <tr>
+          <td class="num">PO20260520-005</td>
+          <td>武汉仓<br><small>条码:FN-100-202510-002</small></td>
+          <td>武汉仓<br><small>条码:FN-100-202510-002</small></td>
+          <td><span class="deviation-tag low">✓ 无偏差</span></td>
+          <td><span class="tag tag-green">已矫正</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <br>
+    <div class="status-msg warning">
+      <span class="status-icon">⚠️</span>
+      <div>
+        订单 <span class="hl-user">PO20260520-003</span> 存在偏差：
+        <br>• 系统分配石家庄仓(ZL-200-202508)，实际从合肥仓出库(ZL-200-202511)
+        <br>• 石家庄仓锁定物料未出库，需解锁并矫正锁定库存
+        <br>• 合肥仓额外消耗库存，需重新计算可用量
+      </div>
+    </div>
+    <div class="confirm-bar">
+      <button class="btn btn-warn" onclick="doCorrectDeviation()">🔧 矫正锁定库存</button>
+      <button class="btn btn-ghost" onclick="cancelAction()">暂不处理</button>
+    </div>`;
+}
+
+// 库存溢出
+function genStockOverflow() {
+  return `
+    <div class="status-msg danger">
+      <span class="status-icon">🚫</span>
+      <div>
+        <div>无法完成分配！石家庄仓库存不足</div>
+      </div>
+    </div>
+    <br>
+    <p>📌 当前需求与库存对比：</p>
+    <table class="alloc-table">
+      <thead><tr><th>仓库</th><th>总库存</th><th>已锁定</th><th>可用</th><th>本次需分配</th><th>差额</th></tr></thead>
+      <tbody>
+        <tr><td>石家庄仓</td><td class="num">980</td><td class="num">200</td><td class="num" style="color:var(--success)">780</td><td class="num" style="color:var(--danger)">1,280</td><td class="num" style="color:var(--danger)">-500</td></tr>
+        <tr><td>合肥仓</td><td class="num">1,200</td><td class="num">100</td><td class="num" style="color:var(--success)">1,100</td><td>—</td><td>—</td></tr>
+        <tr><td>武汉仓</td><td class="num">650</td><td class="num">50</td><td class="num" style="color:var(--success)">600</td><td>—</td><td>—</td></tr>
+        <tr><td>中山仓</td><td class="num">620</td><td class="num">0</td><td class="num" style="color:var(--success)">620</td><td>—</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <div class="status-msg warning" style="margin-top:10px;">
+      <span class="status-icon">💡</span>
+      <div>分配的库存不能超过 <span class="hl">基地总库存(3,450)</span> 和 <span class="hl">仓库总库存</span>。建议拆分到多个仓库分配。</div>
+    </div>
+    <div class="confirm-bar">
+      <button class="btn btn-primary" onclick="sendQuick('帮我分析这批订单的派仓方案')">🤖 AI自动分配</button>
+      <button class="btn btn-ghost" onclick="cancelAction()">取消</button>
+    </div>`;
+}
+
+// 规则选项
+function genRuleOptions() {
+  return `
+    <p>📋 系统支持以下分配规则，可以自由组合：</p>
+    <br>
+    <p><b>📦 集中分配策略</b>（选择一种）</p>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <div class="rule-card selected" style="flex:1;" onclick="selectRuleCard(this)">
+        <div class="rc-icon">🚛</div>
+        <div class="rc-title">按车次集中</div>
+        <div class="rc-desc">相同车次→同一仓库</div>
+      </div>
+      <div class="rule-card" style="flex:1;" onclick="selectRuleCard(this)">
+        <div class="rc-icon">📦</div>
+        <div class="rc-title">按订单集中</div>
+        <div class="rc-desc">相同订单→同一仓库</div>
+      </div>
+      <div class="rule-card" style="flex:1;" onclick="selectRuleCard(this)">
+        <div class="rc-icon">🔩</div>
+        <div class="rc-title">按物料集中</div>
+        <div class="rc-desc">相同物料→同一仓库</div>
+      </div>
+    </div>
+    <br>
+    <p><b>📊 排序规则</b>（选择一种）</p>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <div class="rule-card selected" style="flex:1;" onclick="selectRuleCard(this)">
+        <div class="rc-icon">📅</div>
+        <div class="rc-title">库龄从大到小</div>
+        <div class="rc-desc">优先出高库龄物料</div>
+      </div>
+      <div class="rule-card" style="flex:1;" onclick="selectRuleCard(this)">
+        <div class="rc-icon">📊</div>
+        <div class="rc-title">库存从大到小</div>
+        <div class="rc-desc">优先大库存仓库</div>
+      </div>
+    </div>
+    <br>
+    <p><b>⚙️ 其他选项</b></p>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <div class="rule-card selected" style="flex:1;" onclick="selectRuleCard(this)">
+        <div class="rc-icon">🏭</div>
+        <div class="rc-title">提货仓=备货仓</div>
+        <div class="rc-desc">默认相同</div>
+      </div>
+      <div class="rule-card" style="flex:1;" onclick="selectRuleCard(this)">
+        <div class="rc-icon">🔓</div>
+        <div class="rc-title">自动解锁偏差</div>
+        <div class="rc-desc">扫描不匹配时自动处理</div>
+      </div>
+    </div>
+    <br>
+    <p style="font-size:12px;color:var(--text-muted);">💡 也可以直接输入自然语言，如 <span class="hl">"按库龄从大到小，按订单集中分配"</span></p>
+    <div class="confirm-bar">
+      <button class="btn btn-primary" onclick="sendQuick('帮我分析这批订单的派仓方案')">🤖 开始分析</button>
+    </div>`;
+}
+
+// ====== 渲染AI消息 ======
+function renderAIMsg(msg) {
+  switch(msg.type) {
+    case 'alloc_analysis': return genAllocAnalysis();
+    case 'rule_age_desc': return genRuleAgeDesc();
+    case 'rule_stock_desc': return genRuleStockDesc();
+    case 'alloc_result': return genAllocResult(msg.rule);
+    case 'rule_adjust': return genRuleAdjust(msg.rule);
+    case 'manual_assign': return genManualAssign(msg.order, msg.warehouse);
+    case 'apply_result': return genApplyResult();
+    case 'deviation_check': return genDeviationCheck();
+    case 'stock_overflow': return genStockOverflow();
+    case 'rule_options': return genRuleOptions();
+    default: return `<p>${JSON.stringify(msg)}</p>`;
+  }
+}
+
+// ====== UI操作函数 ======
+function addAIBubble(html) {
+  const area = document.getElementById('chatArea');
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+  row.innerHTML = `<div class="avatar ai">🤖</div><div class="bubble">${html}</div>`;
+  area.appendChild(row);
+  area.scrollTop = area.scrollHeight;
+}
+
+function addUserBubble(text) {
+  const area = document.getElementById('chatArea');
+  const row = document.createElement('div');
+  row.className = 'msg-row user';
+  row.innerHTML = `<div class="avatar user">👤</div><div class="bubble">${text}</div>`;
+  area.appendChild(row);
+  area.scrollTop = area.scrollHeight;
+}
+
+function addThinking() {
+  const area = document.getElementById('chatArea');
+  const row = document.createElement('div');
+  row.className = 'msg-row'; row.id = 'thinkingRow';
+  row.innerHTML = `<div class="avatar ai">🤖</div><div class="bubble"><div class="thinking"><span></span><span></span><span></span></div></div>`;
+  area.appendChild(row);
+  area.scrollTop = area.scrollHeight;
+}
+
+function removeThinking() {
+  const el = document.getElementById('thinkingRow');
+  if (el) el.remove();
+}
+
+function addFollowup(text) { sendQuick(text); }
+
+function sendQuick(text) {
+  document.getElementById('welcomeArea').style.display = 'none';
+  addUserBubble(text);
+  addThinking();
+  setTimeout(() => { removeThinking(); processUserInput(text); }, 800);
+}
+
+function sendMessage() {
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  document.getElementById('welcomeArea').style.display = 'none';
+  addUserBubble(text);
+  addThinking();
+  setTimeout(() => { removeThinking(); processUserInput(text); }, 800);
+}
+
+function processUserInput(text) {
+  const t = text;
+  if (t.includes('分析') || t.includes('派仓方案')) { addAIBubble(genAllocAnalysis()); }
+  else if (t.includes('库龄') && t.includes('大')) { addAIBubble(genRuleAgeDesc()); setTimeout(()=>addAIBubble(genAllocResult('按库龄从大到小')), 500); }
+  else if (t.includes('库存') && t.includes('大')) { addAIBubble(genRuleStockDesc()); setTimeout(()=>addAIBubble(genAllocResult('按库存从大到小')), 500); }
+  else if (t.includes('集中分配') || t.includes('调整规则')) {
+    let rule = '按车次集中分配';
+    if (t.includes('订单')) rule = '按订单集中分配';
+    if (t.includes('物料')) rule = '按物料集中分配';
+    addAIBubble(genRuleAdjust(rule));
+  }
+  else if (t.includes('指派') || t.includes('指定')) {
+    let order = 'PO20260601-001', warehouse = '武汉仓';
+    const om = t.match(/PO[\w-]+/); if (om) order = om[0];
+    const wm = t.match(/(\w+仓)/); if (wm) warehouse = wm[0];
+    addAIBubble(genManualAssign(order, warehouse));
+  }
+  else if (t.includes('应用') || t.includes('确认')) { addAIBubble(genApplyResult()); }
+  else if (t.includes('偏差') || t.includes('执行率')) { addAIBubble(genDeviationCheck()); }
+  else if (t.includes('全部分配') || t.includes('石家庄仓') && t.includes('全部')) { addAIBubble(genStockOverflow()); }
+  else if (t.includes('规则') || t.includes('有哪些')) { addAIBubble(genRuleOptions()); }
+  else if (t.includes('备货计划') || t.includes('详情')) {
+    addAIBubble(`<p>📋 备货计划详情：</p><br><div class="status-msg info"><span class="status-icon">📄</span><div>计划编号 <span class="hl">BP-20260601</span><br>状态：<span class="hl-ok">已分配</span><br>订单数：<b>3</b><br>总数量：<b>1,280台</b><br>创建时间：2026-06-01 08:30</div></div>`);
+  }
+  else {
+    addAIBubble(`<p>抱歉，我暂时无法理解您的指令。</p><br><p style="font-size:13px;color:var(--text-muted);">您可以试试：<br>• <span class="hl">帮我分析这批订单的派仓方案</span><br>• <span class="hl">按库龄从大到小分配</span><br>• <span class="hl">把订单PO20260601-001指派到武汉仓</span><br>• <span class="hl">查看上次派仓偏差记录</span><br>• <span class="hl">有哪些分配规则可以选择？</span></p>`);
+  }
+}
+
+// ====== 操作回调 ======
+function applyAllocation() {
+  addAIBubble(genApplyResult());
+}
+
+function doManualAssign(order, warehouse) {
+  addAIBubble(`
+    <div class="status-msg success">
+      <span class="status-icon">✅</span>
+      <div>
+        人工指派成功！<br>
+        订单 <span class="hl-user">${order}</span> 已指定到 <span class="hl">${warehouse}</span><br>
+        <small>提货仓和备货仓均已更新 · 锁定库存已调整</small>
+      </div>
+    </div>
+    <div class="confirm-bar">
+      <button class="btn btn-ghost" onclick="sendQuick('帮我分析这批订单的派仓方案')">🔄 重新分析全部订单</button>
+    </div>`);
+}
+
+function doCorrectDeviation() {
+  addAIBubble(`
+    <p>🔧 正在矫正锁定库存…</p>
+    <br>
+    <div class="status-msg success">
+      <span class="status-icon">✅</span>
+      <div>
+        锁定库存矫正完成！<br>
+        <br>1️⃣ 石家庄仓：解锁 ZL-200-202508-001（500台）<br>
+        2️⃣ 合肥仓：扣减 ZL-200-202511-005（500台）可用量<br>
+        3️⃣ 偏差记录已标记为「已矫正」<br>
+        <br><small>分配总量仍在基地总库存范围内 · 操作日志已记录</small>
+      </div>
+    </div>`);
+}
+
+function cancelAction() {
+  addAIBubble(`<p>已取消本次操作。如需重新发起，请直接输入指令。</p>`);
+}
+
+function selectRuleCard(el) {
+  const parent = el.parentElement;
+  parent.querySelectorAll('.rule-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+// ====== 场景加载 ======
+function loadScenario(idx) {
+  scenarioRunning = true;
+  clearChat();
+  const steps = scenarios[idx];
+  let i = 0;
+  function next() {
+    if (i >= steps.length) { scenarioRunning = false; return; }
+    const step = steps[i];
+    if (step.role === 'user') {
+      addUserBubble(step.text);
+      i++;
+      setTimeout(next, 500);
+    } else {
+      addThinking();
+      setTimeout(() => {
+        removeThinking();
+        addAIBubble(renderAIMsg(step));
+        i++;
+        setTimeout(next, 300);
+      }, 1000);
+    }
+  }
+  next();
+}
+
+function showScenarios() {
+  const idx = prompt('输入场景编号（0-8）：\n0-智能派仓分析 1-按库龄分配 2-按库存分配\n3-调整集中分配规则 4-人工指派仓库\n5-应用分配方案 6-偏差检测矫正\n7-库存约束校验 8-规则选项展示');
+  if (idx !== null && idx >= '0' && idx <= '8') loadScenario(parseInt(idx));
+}
+
+function switchTab(el, tab) {
+  el.parentElement.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const area = document.getElementById('chatArea');
+  if (tab !== 'chat') {
+    area.innerHTML = `<div class="welcome"><div class="welcome-avatar">🤖</div><h2>${tab === 'rules' ? '派仓规则库' : '派仓记录'}</h2><p style="margin-top:16px;font-size:14px;color:var(--text-muted);">功能开发中…</p></div>`;
+  }
+}
+
+function clearChat() {
+  const area = document.getElementById('chatArea');
+  area.innerHTML = `<div class="welcome" id="welcomeArea"><div class="welcome-avatar">🤖</div><h2>你好，有什么可以帮您</h2><p>AI智能派仓助手，帮您快速完成备货计划的仓库分配</p><div class="chip-row"><div class="chip" onclick="sendQuick('帮我分析这批订单的派仓方案')">🔍 智能派仓分析</div><div class="chip" onclick="sendQuick('按库龄从大到小分配')">📅 按库龄分配</div><div class="chip" onclick="sendQuick('把订单PO20260601-001指派到武汉仓')">🎯 人工指派仓库</div><div class="chip" onclick="sendQuick('查看上次派仓偏差记录')">📊 查看偏差记录</div><div class="chip" onclick="sendQuick('调整分配规则，按车次集中分配')">⚙️ 调整分配规则</div></div></div>`;
+}
+</script>
+</body>
+</html>
