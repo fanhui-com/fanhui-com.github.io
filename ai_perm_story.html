@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 权限助手 · WMS 奇点计划</title>
+<style>
+  :root {
+    --blue: #2563eb;
+    --blue-light: #eff6ff;
+    --purple: #7c3aed;
+    --purple-light: #f5f3ff;
+    --green: #059669;
+    --green-light: #ecfdf5;
+    --orange: #d97706;
+    --orange-light: #fffbeb;
+    --red: #dc2626;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-400: #9ca3af;
+    --gray-600: #4b5563;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --radius: 12px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+    background: #f0f4ff;
+    color: var(--gray-800);
+    line-height: 1.6;
+  }
+
+  /* ─── NAV ─────────────────────────────── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--gray-200);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 32px; height: 56px;
+  }
+  .nav-logo { font-weight: 700; font-size: 15px; color: var(--blue); display:flex;align-items:center;gap:8px;}
+  .nav-logo span { background:var(--blue);color:#fff;border-radius:6px;padding:2px 8px;font-size:12px;}
+  .nav-links { display:flex;gap:24px; }
+  .nav-links a { text-decoration:none;color:var(--gray-600);font-size:13px;transition:color .2s; }
+  .nav-links a:hover { color:var(--blue); }
+
+  /* ─── HERO ─────────────────────────────── */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 80px 24px 40px;
+    background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 40%, #7c3aed 100%);
+    position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content:''; position:absolute; inset:0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .hero-badge {
+    background: rgba(255,255,255,0.15); color:#fff;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 999px; padding: 4px 16px; font-size: 12px; margin-bottom: 24px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; color: #fff;
+    line-height: 1.15; margin-bottom: 20px; position: relative;
+  }
+  .hero h1 em { font-style:normal; color:#93c5fd; }
+  .hero p { font-size: 1.1rem; color:rgba(255,255,255,0.8); max-width: 600px; margin-bottom: 48px; }
+  .hero-cards {
+    display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+    position: relative; z-index: 1;
+  }
+  .hero-card {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    border-radius: var(--radius); padding: 16px 24px; color: #fff;
+    backdrop-filter: blur(8px); font-size: 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .hero-card .ico { font-size: 24px; }
+  .scroll-hint {
+    position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+    color: rgba(255,255,255,0.5); font-size: 12px; display:flex;flex-direction:column;align-items:center;gap:6px;
+    animation: bounce 2s infinite;
+  }
+  @keyframes bounce { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
+  .scroll-hint svg { opacity: 0.6; }
+
+  /* ─── SECTION ─────────────────────────────── */
+  section { padding: 80px 24px; }
+  .container { max-width: 1000px; margin: 0 auto; }
+  .section-label {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--blue-light); color: var(--blue);
+    border-radius: 999px; padding: 4px 14px; font-size: 12px; font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 800; color: var(--gray-900);
+    margin-bottom: 12px;
+  }
+  .section-sub { color: var(--gray-600); font-size: 15px; margin-bottom: 48px; max-width: 600px; }
+
+  /* ─── PROBLEM SECTION ─────────────────────────────── */
+  #problem { background: #fff; }
+  .pain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+  .pain-card {
+    background: var(--gray-50); border-radius: var(--radius); padding: 24px;
+    border-left: 4px solid var(--red);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .pain-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+  .pain-icon { font-size: 32px; margin-bottom: 12px; }
+  .pain-card h3 { font-size: 15px; font-weight: 700; color: var(--gray-900); margin-bottom: 8px; }
+  .pain-card p { font-size: 13px; color: var(--gray-600); line-height: 1.7; }
+
+  /* ─── SOLUTION SECTION ─────────────────────────────── */
+  #solution { background: var(--gray-50); }
+  .solution-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+  @media(max-width:700px){ .solution-layout{ grid-template-columns:1fr; } }
+  .solution-text h3 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+  .feature-list { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+  .feature-list li {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: #fff; border-radius: 10px; padding: 14px 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  .feature-list .fi { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .feature-list .ft { font-size: 14px; font-weight: 600; color: var(--gray-900); }
+  .feature-list .fd { font-size: 12px; color: var(--gray-600); margin-top: 2px; }
+
+  /* ─── CHAT DEMO SECTION ─────────────────────────────── */
+  #demo { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); }
+  #demo .section-label { background: rgba(147,197,253,0.15); color: #93c5fd; }
+  #demo .section-title { color: #fff; }
+  #demo .section-sub { color: rgba(255,255,255,0.6); }
+  .demo-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+  .demo-tab {
+    padding: 8px 18px; border-radius: 999px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.6); background: transparent; transition: all .2s;
+  }
+  .demo-tab.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .chat-window {
+    background: #fff; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  .chat-header {
+    background: #1f2937; padding: 14px 20px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .chat-header .dots { display:flex;gap:6px; }
+  .chat-header .dot { width:12px;height:12px;border-radius:50%; }
+  .dot-r{background:#ff5f57} .dot-y{background:#febc2e} .dot-g{background:#28c840}
+  .chat-header .title { color: rgba(255,255,255,0.8); font-size: 13px; margin-left: 8px; }
+  .chat-body { padding: 20px; display: flex; flex-direction: column; gap: 12px; background: #f8fafc; min-height: 380px; }
+  
+  .msg { display: flex; gap: 10px; align-items: flex-end; }
+  .msg.bot { flex-direction: row; }
+  .msg.user { flex-direction: row-reverse; }
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+  }
+  .avatar.ai { background: linear-gradient(135deg,#6366f1,#8b5cf6); }
+  .avatar.hu { background: linear-gradient(135deg,#0ea5e9,#2563eb); }
+  .bubble {
+    max-width: 70%; padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.6;
+    position: relative;
+  }
+  .msg.bot .bubble { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-bottom-left-radius: 4px; }
+  .msg.user .bubble { background: var(--blue); color: #fff; border-bottom-right-radius: 4px; }
+  .bubble .tag { display:inline-block; background:var(--blue-light); color:var(--blue); border-radius:4px; padding:1px 6px; font-size:11px; font-weight:600; }
+  .bubble .tag.green { background:var(--green-light); color:var(--green); }
+  .bubble .tag.orange { background:var(--orange-light); color:var(--orange); }
+  .bubble .tag.purple { background:var(--purple-light); color:var(--purple); }
+  .bubble ul { padding-left: 16px; margin-top: 6px; }
+  .bubble ul li { margin-bottom: 4px; }
+  .bubble .card-options { display:flex;gap:8px;flex-wrap:wrap;margin-top:10px; }
+  .bubble .opt-btn {
+    border: 1px solid var(--blue); color: var(--blue); border-radius: 6px;
+    padding: 4px 12px; font-size: 12px; cursor:pointer; background:#fff; transition:all .15s;
+  }
+  .bubble .opt-btn:hover { background:var(--blue); color:#fff; }
+  .bubble .opt-btn.confirm { background:var(--green); color:#fff; border-color:var(--green); }
+
+  /* 权限表格 */
+  .perm-table {
+    width: 100%; border-collapse: collapse; font-size: 12px;
+    border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;
+    background: #fff;
+  }
+  .perm-table th {
+    background: #f3f4f6; color: #374151; font-weight: 600;
+    padding: 7px 10px; text-align: left; border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap;
+  }
+  .perm-table td {
+    padding: 7px 10px; border-bottom: 1px solid #f3f4f6;
+    color: #374151; vertical-align: middle;
+  }
+  .perm-table tr:last-child td { border-bottom: none; }
+  .perm-table tr:hover td { background: #f9fafb; }
+
+  /* 组织架构层级图 */
+  .org-chart {
+    display: flex; flex-direction: column; align-items: center; gap: 0;
+    padding: 16px 10px;
+    background: #fafbfc; border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    overflow-x: auto;
+  }
+  .org-node {
+    background: #fff; border: 1.5px solid #d1d5db; border-radius: 10px;
+    padding: 8px 14px; text-align: center; min-width: 110px;
+    transition: all .2s;
+  }
+  .org-node.org-root {
+    border-color: #2563eb; background: #eff6ff;
+    box-shadow: 0 2px 8px rgba(37,99,235,.15);
+  }
+  .org-node.org-level1 { border-color: #7c3aed; background: #f5f3ff; }
+  .org-node.org-level2 { border-color: #e5e7eb; font-size: 12px; }
+  .org-node.org-level3 { border-color: #f3f4f6; background: #f9fafb; font-size: 11px; min-width: 80px; }
+  .org-node.org-base { border-color: #10b981; background: #ecfdf5; }
+  .org-node.org-highlight { border-style: dashed; }
+  .org-node .org-label {
+    font-weight: 700; color: #111827; font-size: 13px;
+    margin-bottom: 2px; white-space: nowrap;
+  }
+  .org-node .org-member {
+    font-size: 11px; color: #6b7280;
+  }
+  .org-line-v {
+    width: 2px; height: 16px; background: #d1d5db; margin: 0 auto;
+  }
+  .org-line-h {
+    height: 2px; background: #d1d5db;
+    margin: 0 auto;
+  }
+  .org-branch {
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .org-connector {
+    width: 2px; height: 10px; background: #d1d5db;
+  }
+
+  .typing { display:flex;gap:4px;align-items:center; padding: 12px 16px; }
+  .typing .dot { width:6px;height:6px;border-radius:50%;background:#9ca3af;animation:typing 1.2s infinite; }
+  .typing .dot:nth-child(2){animation-delay:.2s} .typing .dot:nth-child(3){animation-delay:.4s}
+  @keyframes typing { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+  /* 场景面板切换 */
+  .scene-panel { display: none; }
+  .scene-panel.active { display: flex; flex-direction: column; gap: 12px; }
+
+  /* chat 底部输入框 */
+  .chat-input-bar {
+    border-top: 1px solid var(--gray-200); background:#fff;
+    padding: 12px 16px; display:flex; gap:10px; align-items:center;
+  }
+  .chat-input {
+    flex:1; border:1px solid var(--gray-200); border-radius:8px; padding:8px 12px;
+    font-size:13px; outline:none; color:var(--gray-800);
+  }
+  .chat-input:focus { border-color:var(--blue); }
+  .chat-send {
+    background:var(--blue); color:#fff; border:none; border-radius:8px;
+    padding:8px 16px; font-size:13px; cursor:pointer; font-weight:600;
+    transition:background .2s;
+  }
+  .chat-send:hover { background:#1d4ed8; }
+
+  /* ─── FLOW SECTION ─────────────────────────────── */
+  #flow { background: #fff; }
+  .flow-wrapper { display:flex; align-items:flex-start; gap:0; position:relative; flex-wrap:wrap; justify-content:center; }
+  .flow-step {
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+    width: 140px; position:relative;
+  }
+  .flow-step .circle {
+    width: 64px; height: 64px; border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size: 24px; font-weight: 700; box-shadow: var(--shadow);
+  }
+  .flow-step .step-label { font-size: 12px; font-weight: 600; color:var(--gray-700); text-align:center; }
+  .flow-step .step-desc { font-size: 11px; color:var(--gray-500); text-align:center; line-height:1.5; }
+  .flow-arrow {
+    width: 40px; height: 40px; display:flex; align-items:center; justify-content:center;
+    margin-top: 12px; color:var(--gray-400); font-size:20px;
+  }
+  .step-1 .circle { background:var(--blue-light); color:var(--blue); }
+  .step-2 .circle { background:var(--purple-light); color:var(--purple); }
+  .step-3 .circle { background:var(--orange-light); color:var(--orange); }
+  .step-4 .circle { background:var(--green-light); color:var(--green); }
+  .step-5 .circle { background:#fce7f3; color:#db2777; }
+
+  /* ─── ROLE TABLE ─────────────────────────────── */
+  #roles { background: var(--gray-50); }
+  .role-table-wrapper { border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .role-table { width:100%; border-collapse: collapse; font-size: 13px; }
+  .role-table thead { background: var(--blue); color:#fff; }
+  .role-table th { padding: 12px 16px; text-align:left; font-weight: 600; }
+  .role-table td { padding: 12px 16px; border-bottom: 1px solid var(--gray-200); vertical-align:top; }
+  .role-table tr:last-child td { border-bottom: none; }
+  .role-table tr:nth-child(even) td { background: #f9fafb; }
+  .role-table tr:hover td { background: var(--blue-light); }
+  .pri-badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; }
+  .pri-1 { background:#fee2e2; color:#dc2626; }
+  .pri-2 { background:#fef3c7; color:#d97706; }
+  .pri-3 { background:#d1fae5; color:#059669; }
+
+  /* ─── CAPABILITY SECTION ─────────────────────────────── */
+  #capability { background: #fff; }
+  .cap-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+  .cap-card {
+    border-radius: var(--radius); padding: 24px;
+    border: 1px solid var(--gray-200);
+    transition: transform .2s, box-shadow .2s, border-color .2s;
+  }
+  .cap-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color:var(--blue); }
+  .cap-icon { font-size: 32px; margin-bottom: 12px; }
+  .cap-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; color:var(--gray-900); }
+  .cap-card p { font-size: 12px; color:var(--gray-600); line-height: 1.7; }
+  .cap-card .cap-badge { 
+    display:inline-block; margin-top:10px; font-size:10px; font-weight:700;
+    padding:2px 8px; border-radius:4px;
+  }
+
+  /* ─── ACCESS FLOW ─────────────────────────────── */
+  #access { background: var(--gray-50); }
+  .access-layout { display:grid; grid-template-columns:1fr 1fr; gap:32px; }
+  @media(max-width:700px){ .access-layout{ grid-template-columns:1fr; } }
+  .access-box { background:#fff; border-radius:var(--radius); padding:24px; box-shadow: var(--shadow); }
+  .access-box h3 { font-size:15px; font-weight:700; margin-bottom:16px; display:flex;align-items:center;gap:8px; }
+  .access-steps { display:flex; flex-direction:column; gap:12px; }
+  .access-step {
+    display:flex; gap:12px; align-items:flex-start;
+  }
+  .step-num {
+    width:24px; height:24px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:700; color:#fff;
+    background: var(--blue); margin-top:2px;
+  }
+  .step-num.green { background:var(--green); }
+  .access-step .st { font-size:13px; font-weight:600; color:var(--gray-900); }
+  .access-step .sd { font-size:12px; color:var(--gray-600); margin-top:2px; }
+
+  /* ─── FOOTER ─────────────────────────────── */
+  footer {
+    background: #0f172a; color:rgba(255,255,255,0.6); 
+    text-align:center; padding: 32px 24px; font-size: 13px;
+  }
+  footer strong { color:#fff; }
+
+  /* ─── ANIMATIONS ─────────────────────────────── */
+  .fade-in { opacity:0; transform:translateY(20px); transition:opacity .6s ease, transform .6s ease; }
+  .fade-in.visible { opacity:1; transform:translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <span>WMS</span> 奇点计划 · AI 权限助手
+  </div>
+  <div class="nav-links">
+    <a href="#problem">痛点</a>
+    <a href="#solution">方案</a>
+    <a href="#demo">对话演示</a>
+    <a href="#flow">流程</a>
+    <a href="#capability">能力矩阵</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">🤖 WMS 奇点计划 · 2026年6月版本 · 需求 #64708</div>
+  <h1>
+    用<em>一句话</em><br>
+    搞定权限管理
+  </h1>
+  <p>AI Agent 权限助手 —— 告别繁琐的权限工单，用自然语言对话完成授权、查询、申请，让每个人都能轻松管理权限。</p>
+  <div class="hero-cards">
+    <div class="hero-card"><span class="ico">💬</span><span>自然语言对话</span></div>
+    <div class="hero-card"><span class="ico">🧠</span><span>智能角色推荐</span></div>
+    <div class="hero-card"><span class="ico">⚡</span><span>秒级授权执行</span></div>
+    <div class="hero-card"><span class="ico">🔒</span><span>权限校验前置</span></div>
+    <div class="hero-card"><span class="ico">📧</span><span>自动申请通知</span></div>
+  </div>
+  <div class="scroll-hint">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 10.586L2.707 5.293 1.293 6.707 8 13.414l6.707-6.707-1.414-1.414L8 10.586z"/></svg>
+    向下探索
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section id="problem">
+  <div class="container">
+    <div class="section-label fade-in">😤 现状痛点</div>
+    <h2 class="section-title fade-in">权限管理，为什么这么烦？</h2>
+    <p class="section-sub fade-in">每次要开通一个菜单权限，都要经历一次"大型沟通马拉松"</p>
+    <div class="pain-grid">
+      <div class="pain-card fade-in">
+        <div class="pain-icon">🤷</div>
+        <h3>不知道找谁</h3>
+        <p>新员工不知道权限在哪里、应该申请什么角色，只能挨个找人问。</p>
+      </div>
+      <div class="pain-card fade-in">
+        <div class="pain-icon">📝</div>
+        <h3>流程繁琐</h3>
+        <p>提工单 → 等审批 → 找管理员 → 逐条配置，一个权限要耗费半天时间。</p>
+      </div>
+      <div class="pain-card fade-in">
+        <div class="pain-icon">🎭</div>
+        <h3>角色混乱</h3>
+        <p>系统里有几十个角色，管理员也不一定清楚哪个角色对应哪些菜单。</p>
+      </div>
+      <div class="pain-card fade-in">
+        <div class="pain-icon">⏰</div>
+        <h3>临时权限没有时限</h3>
+        <p>项目结束了权限还在，越堆越乱，存在安全隐患。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SOLUTION -->
+<section id="solution">
+  <div class="container">
+    <div class="section-label fade-in">✨ 解决方案</div>
+    <h2 class="section-title fade-in">AI 来帮你，一句话搞定</h2>
+    <p class="section-sub fade-in">不用记角色、不用走流程，直接说你要干什么，AI 理解意图并自动处理</p>
+    <div class="solution-layout">
+      <div class="solution-text fade-in">
+        <h3>🎯 核心理念</h3>
+        <ul class="feature-list">
+          <li>
+            <span class="fi">🗣️</span>
+            <div>
+              <div class="ft">自然语言输入</div>
+              <div class="fd">"给张三开通库存盘点权限" — 直接说，不需要学习任何系统术语</div>
+            </div>
+          </li>
+          <li>
+            <span class="fi">🔍</span>
+            <div>
+              <div class="ft">智能意图解析</div>
+              <div class="fd">AI 自动识别：操作类型 × 目标用户 × 目标菜单/功能</div>
+            </div>
+          </li>
+          <li>
+            <span class="fi">🏷️</span>
+            <div>
+              <div class="ft">角色智能推荐</div>
+              <div class="fd">结合用户当前角色、组织、职责，推荐最合适的角色方案</div>
+            </div>
+          </li>
+          <li>
+            <span class="fi">✅</span>
+            <div>
+              <div class="ft">执行 or 转发</div>
+              <div class="fd">有权限：直接执行授权。无权限：自动邮件通知管理员</div>
+            </div>
+          </li>
+        </ul>
+      </div>
+      <div class="fade-in" style="display:flex;flex-direction:column;gap:16px;">
+        <div style="background:#fff;border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);">
+          <div style="font-size:13px;font-weight:700;color:var(--gray-900);margin-bottom:16px;">🧑‍💻 适用人群</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;gap:10px;align-items:center;background:var(--blue-light);border-radius:8px;padding:10px 14px;">
+              <span style="font-size:20px;">👩‍💼</span>
+              <div>
+                <div style="font-size:13px;font-weight:600;">权限管理员</div>
+                <div style="font-size:12px;color:var(--gray-600);">可直接执行授权、批量开通、查询任意用户权限</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;background:var(--green-light);border-radius:8px;padding:10px 14px;">
+              <span style="font-size:20px;">👨‍🏭</span>
+              <div>
+                <div style="font-size:13px;font-weight:600;">普通员工</div>
+                <div style="font-size:12px;color:var(--gray-600);">可查询自身权限，发起权限申请，AI 自动转发给管理员</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="background:linear-gradient(135deg,#eff6ff,#f0fdf4);border-radius:var(--radius);padding:20px;border:1px solid #bfdbfe;">
+          <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px;">⚠️ 前置安全校验</div>
+          <div style="font-size:13px;color:var(--gray-700);line-height:1.7;">
+            当前用户 <strong>必须具备</strong> WMS 授权权限，<br>
+            否则只能 <strong>查询 & 申请</strong>，不能执行授权操作
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section id="demo">
+  <div class="container">
+    <div class="section-label fade-in">💬 对话演示</div>
+    <h2 class="section-title fade-in">看看它能做什么</h2>
+    <p class="section-sub fade-in">选择一个场景，看 AI 权限助手如何处理</p>
+    
+    <div class="demo-tabs">
+      <button class="demo-tab active" onclick="switchScene('grant')">给用户授权</button>
+      <button class="demo-tab" onclick="switchScene('query')">查询权限</button>
+      <button class="demo-tab" onclick="switchScene('batch')">批量开通</button>
+      <button class="demo-tab" onclick="switchScene('apply')">申请权限</button>
+      <button class="demo-tab" onclick="switchScene('temp')">临时权限</button>
+      <button class="demo-tab" onclick="switchScene('config')">权限配置</button>
+    </div>
+
+    <div class="chat-window fade-in">
+      <div class="chat-header">
+        <div class="dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+        <div class="title">🤖 WMS 权限助手 · AI Agent</div>
+      </div>
+      <div class="chat-body" id="chat-body">
+        <!-- 场景1：授权 -->
+        <div id="scene-grant" class="scene-panel active">
+          <div class="msg bot">
+            <div class="avatar ai">🤖</div>
+            <div class="bubble">你好！我是 WMS 权限助手，有什么可以帮你？ 💡<br><span style="color:#9ca3af;font-size:12px;">你可以说：给某人开通权限 / 查询某人权限 / 申请某权限...</span></div>
+          </div>
+          <div class="msg user">
+            <div class="avatar hu">👩‍💼</div>
+            <div class="bubble">给张三开通【库存盘点】菜单权限</div>
+          </div>
+          <div class="msg bot">
+            <div class="avatar ai">🤖</div>
+            <div class="bubble">
+              🔍 正在分析……<br><br>
+              找到 <span class="tag">库存盘点</span> 菜单，当前由以下角色拥有：<br>
+              <ul style="margin-top:8px;">
+                <li>📋 仓库主管 <span class="tag green">推荐 ★★★</span></li>
+                <li>👁️ 库存专员 <span class="tag">推荐 ★★</span></li>
+                <li>🔧 系统管理员 <span class="tag orange">权限过高</span></li>
+              </ul>
+              <br>
+              结合张三当前角色（<span class="tag purple">仓库操作员</span>）和所在部门，建议授予 <strong>库存专员</strong> 角色。
+              <div class="card-options">
+                <button class="opt-btn">授予 库存专员</button>
+                <button class="opt-btn">授予 仓库主管</button>
+                <button class="opt-btn">单独配置</button>
+              </div>
+            </div>
+          </div>
+          <div class="msg user">
+            <div class="avatar hu">👩‍💼</div>
+            <div class="bubble">授予 库存专员</div>
+          </div>
+          <div class="msg bot">
+            <div class="avatar ai">🤖</div>
+            <div class="bubble">
+              ✅ <strong>授权成功！</strong><br><br>
+              张三 已被授予 <span class="tag green">库存专员</span> 角色<br>
+              生效时间：即刻起<br>
+              包含菜单：库存盘点、库存查询、差异报告<br><br>
+              <button class="opt-btn confirm">完成 ✓</button>
+              <button class="opt-btn" style="margin-left:6px;">撤销该操作</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 场景2：查询 -->
+        <div id="scene-query" class="scene-panel">
+          <div class="msg bot">
+            <div class="avatar ai">🤖</div>
+            <div class="bubble">你好！有什么可以帮你？ 💡</div>
+          </div>
+          <div class="msg user">
+            <div class="avatar hu">👩‍💼</div>
+            <div class="bubble">张三现在有哪些权限？</div>
+          </div>
+          <div class="msg bot">
+            <div class="avatar ai">🤖</div>
+            <div class="bubble">
+              🔎 查询 <strong>张三（工号 1002311）</strong> 的权限信息……<br><br>
+              以下是<strong>张三</strong>当前所有权限明细：<br><br>
+              <!-- 权限列表表格 -->
+              <div style="overflow-x:auto;margin-top:4px;">
+                <table class="perm-table">
+                  <thead>
+                    <tr>
+                      <th>用户</th>
+                      <th>所属基地</th>
+                      <th>当前角色</th>
+                      <th>可访问菜单</th>
+                      <th>备注</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>张三<br><span style="font-size:11px;color:#9ca3af;">1002311</span></strong></td>
+                      <td>珠海基地</td>
+                      <td><span class="tag">管理员</span></td>
+                      <td style="font-size:12px;">库存查询，XXXX，XXXX</td>
+                      <td><span class="tag green" style="font-size:11px;">已有盘点分析权限</span></td>
+                    </tr>
+                    <tr>
+                      <td></td>
+                      <td></td>
+                      <td><span class="tag purple">角色3</span></td>
+                      <td style="font-size:12px;color:#6b7280;">盘点分析，XXXX，XXXX</td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td></td>
+                      <td></td>
+                      <td><span class="tag orange">角色4</span></td>
+                      <td style="font-size:12px;color:#6b7280;">盘点分析，XXXX，XXXX</td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <br>
+              <span style="font-size:12px;color:#6b7280;">💡 张三共持有 <strong>3 个角色</strong>，其中"管理员"已包含盘点分析权限，其余角色为附加角色。</span>
+            </div>
+          </div>
+          <div class="msg user">
+            <div class="avatar hu">👩‍💼</div>
+            <div class="bubble">他为什么没有【报表导出】权限？帮我给他加上</div>
+          </div>
+          <div class="msg bot">
+            <div class="avatar ai">🤖</div>
+            <div class="bubble">
+              🔍 检索哪些角色包含 <span class="tag purple">报表导出</span> 菜单权限……<br><br>
+              <strong>⚠️ 未找到包含「报表导出」菜单的现有角色。</strong><br><br>
+              有两种方案可以解决：<br><br>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+                <div style="flex:1;min-width:160px;background:#eff6ff;border:1.5px solid #2563eb;border-radius:10px;padding:12px;">
+                  <div style="font-weight:700;color:#2563eb;margin-bottom:6px;">方案 A · 创建新角色</div>
+                  <div style="font-size:12px;color:#374151;">专门为"报表导出"需求创建一个新角色，适合该权限未来会给多人使用的情况</div>
+                  <button class="opt-btn confirm" style="margin-top:8px;width:100%;" onclick="showNewRole()">新增角色</button>
+                </div>
+                <div style="flex:1;min-width:160px;background:#f5f3ff;border:1.5px solid #7c3aed;border-radius:10px;padding:12px;">
+                  <div style="font-weight:700;color:#7c3aed;margin-bottom:6px;">方案 B · 修改现有角色</div>
+                  <div style="font-size:12px;color:#374151;">在张三现有角色（如"管理员"或"角色3"）中追加报表导出菜单</div>
+                  <button class="opt-btn" style="margin-top:8px;width:100%;background:#7c3aed;color:#fff;" onclick="showEditRole()">在现有角色中添加</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- 分支A：新增角色 -->
+          <div id="branch-new-role" style="display:none;">
+            <div class="msg user">
+              <div class="avatar hu">👩‍💼</div>
+              <div class="bubble">新增角色</div>
+            </div>
+            <div class="msg bot">
+              <div class="avatar ai">🤖</div>
+              <div class="bubble">
+                📝 好的，将为「报表导出」创建新角色，请确认以下信息：<br><br>
+                <div style="overflow-x:auto;">
+                  <table class="perm-table">
+                    <thead>
+                      <tr><th>角色名称</th><th>角色编码</th><th>包含菜单（管理员可见）</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><strong>盘点分析</strong></td>
+                        <td><span class="tag" style="font-family:monospace;">RO0001</span></td>
+                        <td style="font-size:12px;">盘点分析-查询，导出</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <br>
+                <span style="font-size:12px;color:#6b7280;">💡 系统已自动建议角色编码和名称，可修改后确认</span>
+                <div class="card-options" style="margin-top:10px;">
+                  <button class="opt-btn confirm">✅ 确认创建并授予张三</button>
+                  <button class="opt-btn">✏️ 修改角色信息</button>
+                  <button class="opt-btn">取消</button>
+                </div>
+              </div>
+            </div>
+            <div class="msg bot">
+              <div class="avatar ai">🤖</div>
+              <div class="bubble">
+                ✅ <strong>新角色已创建，并已授予张三！</strong><br><br>
+                新角色：<span class="tag green">盘点分析（RO0001）</span><br>
+                包含菜单：盘点分析-查询、导出<br>
+                张三权限已更新，即刻生效 🎉
+              </div>
+            </div>
+          </div>
+          <!-- 分支B：修改现有角色 -->
+          <div id="branch-edit-role" style="display:none;">
+            <div class="msg user">
+              <div class="avatar hu">👩‍💼</div>
+              <div class="bubble">在现有角色中添加</div>
+            </div>
+            <div class="msg bot">
+              <div class="avatar ai">🤖</div>
+              <div class="bubble">
+                请选择要追加「报表导出」菜单的角色：<br><br>
+                <div class="card-options" style="flex-direction:column;align-items:flex-start;">
+                  <button class="opt-btn" style="width:100%;text-align:left;">📋 管理员 &nbsp;<span style="color:#9ca3af;font-size:11px;">（当前包含：库存查询、XXXX 等）</span></button>
+                  <button class="opt-btn" style="width:100%;text-align:left;">🟣 角色3 &nbsp;<span style="color:#9ca3af;font-size:11px;">（当前包含：盘点分析、XXXX 等）</span></button>
+                  <button class="opt-btn" style="width:100%;text-align:left;">🟠 角色4 &nbsp;<span style="color:#9ca3af;font-size:11px;">（当前包含：盘点分析、XXXX 等）</span></button>
+                </div>
+                <span style="font-size:11px;color:#ef4444;">⚠️ 注意：修改现有角色将影响所有持有该角色的用户</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 场景3：批量 -->
+        <div id="scene-batch" class="scene-panel">
+          <div class="msg bot">
+            <div class="avatar ai">🤖</div>
+            <div class="bubble">你好！有什么可以帮你？ 💡</div>
+          </div>
+          <div class="msg user">
+            <div class="avatar hu">👩‍💼</div>
+            <div class="bubble">把武汉仓库的所有仓管员都开通【出库审核】权限</div>
+          </div>
+          <div class="msg bot">
+            <div class="avatar ai">🤖</div>
+            <div class="bubble">
+              🔍 查询武汉仓库仓管员……<br><br>
+              找到 <strong>8 名</strong> 符合条件的用户：<br>
+              <span style="font-size:12px;color:#9ca3af;">李磊、王芳、赵明、陈华… 等</span><br><br>
+              出库审核菜单由 <span class="tag">出库审核员</span> 角色包含。<br><br>
+              ⚡ 将为以上 <strong>8 人</strong> 批量授予该角色，是否确认？
+              <div class="card-options">
+                <button class="opt-btn confirm">确认批量授权</button>
+                <button class="opt-btn">查看名单</button>
+                <button class="opt-btn">取消</button>
+              </div>
+            </div>
+          </div>
+          <div class="msg user">
+            <div class="avatar hu">👩‍💼</div>
+            <div class="bubble">确认</div>
+          </div>
+          <div class="msg bot">
+            <div class="avatar ai">🤖</div>
+            <div class="bubble">
+              ✅ <strong>批量授权完成！</strong><br><br>
+              成功：8 人 | 失败：0 人<br>
+              授予角色：<span class="tag green">出库审核员</span><br>
+              操作记录已存档，可随时审计 📋
+            </div>
+          </div>
+        </div>
+
+        <!-- 场景4：申请（无权限用户） -->
+        <div id="scene-apply" class="scene-panel">
+          <div class="msg bot">
+            <div class="avatar ai">🤖</div>
+            <div class="bubble">你好！有什么可以帮你？ 💡</div>
+          </div>
+          <div class="msg user">
+            <div class="avatar hu">👨‍🏭</div>
+            <div class="bubble">我想要报表导出权限</div>
+          </div>
+          <div class="msg bot">
+            <div class="avatar ai">🤖</div>
+            <div class="bubble">
+              🔐 检测到你当前 <strong>没有</strong> 执行授权的权限。<br><br>
+              不过我可以帮你 <strong>发起申请</strong> 👇<br><br>
+              申请信息：<br>
+              • 申请人：<span class="tag">你（当前用户）</span><br>
+              • 需求权限：<span class="tag purple">报表导出</span><br>
+              • 对应角色建议：数据分析员 / 仓库主管<br><br>
+              是否发送邮件通知权限管理员？
+              <div class="card-options">
+                <button class="opt-btn confirm">发送申请邮件</button>
+                <button class="opt-btn">修改申请内容</button>
+              </div>
+            </div>
+          </div>
+          <div class="msg user">
+            <div class="avatar hu">👨‍🏭</div>
+            <div class="bubble">发送</div>
+          </div>
+          <div class="msg bot">
+            <div class="avatar ai">🤖</div>
+            <div class="bubble">
+              📧 申请邮件已发送！<br><br>
+              管理员（范会）已收到通知，审批完成后你会收到邮件提醒。<br><br>
+              <span style="font-size:12px;color:#9ca3af;">通常 1 个工作日内处理完毕</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 场景5：临时权限 -->
+        <div id="scene-temp" class="scene-panel">
+          <div class="msg bot">
+            <div class="avatar ai">🤖</div>
+            <div class="bubble">你好！有什么可以帮你？ 💡</div>
+          </div>
+          <div class="msg user">
+            <div class="avatar hu">👩‍💼</div>
+            <div class="bubble">给李四开通【成本报表】权限，3天后自动取消</div>
+          </div>
+          <div class="msg bot">
+            <div class="avatar ai">🤖</div>
+            <div class="bubble">
+              ⏰ <strong>临时权限模式</strong><br><br>
+              • 授权对象：<span class="tag">李四</span><br>
+              • 权限范围：<span class="tag purple">成本报表</span>（含成本中心查询、导出）<br>
+              • 有效期：<strong>3天</strong>（至 2026-06-04 23:59）<br>
+              • 到期动作：自动撤销，系统通知李四<br><br>
+              确认创建临时权限？
+              <div class="card-options">
+                <button class="opt-btn confirm">确认创建</button>
+                <button class="opt-btn">调整有效期</button>
+              </div>
+            </div>
+          </div>
+          <div class="msg user">
+            <div class="avatar hu">👩‍💼</div>
+            <div class="bubble">确认创建</div>
+          </div>
+          <div class="msg bot">
+            <div class="avatar ai">🤖</div>
+            <div class="bubble">
+              ✅ <strong>临时权限已创建！</strong><br><br>
+              李四 即刻起可访问 <span class="tag green">成本报表</span><br>
+              到期时间：<strong>2026-06-04 23:59</strong><br>
+              ⏰ 到期前 24小时 将自动提醒李四<br><br>
+              <span style="font-size:12px;color:#9ca3af;">💡 提前撤销：说"撤销李四的临时权限"</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 场景6：权限配置（基地层级授权） -->
+        <div id="scene-config" class="scene-panel">
+          <div class="msg bot">
+            <div class="avatar ai">🤖</div>
+            <div class="bubble">你好！有什么可以帮你？ 💡</div>
+          </div>
+          <div class="msg user">
+            <div class="avatar hu">👩‍💼</div>
+            <div class="bubble">给长沙基地的刘军开通【入库管理】权限</div>
+          </div>
+          <div class="msg bot">
+            <div class="avatar ai">🤖</div>
+            <div class="bubble">
+              ⚠️ <strong>权限不足，无法直接授权</strong><br><br>
+              你的权限组无法为 <span class="tag">长沙基地</span> 员工直接授权，各基地人员只能由归属基地管理员授权或总部授权。<br><br>
+              <strong>权限管理规则说明：</strong><br><br>
+              <!-- 组织架构层级图 -->
+              <div class="org-chart">
+                <div class="org-node org-root">
+                  <div class="org-label">🏢 总部管理员</div>
+                  <div class="org-member">聂工</div>
+                </div>
+                <div class="org-line-v"></div>
+                <div style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap;">
+                  <div class="org-branch">
+                    <div class="org-line-h"></div>
+                    <div class="org-node org-level1">
+                      <div class="org-label">📦 总部成品库</div>
+                      <div class="org-member">张三（权限管理员）</div>
+                    </div>
+                    <div class="org-line-v"></div>
+                    <div class="org-node org-level2">
+                      <div class="org-label">👤 总部员工</div>
+                    </div>
+                  </div>
+                  <div class="org-branch">
+                    <div class="org-line-h"></div>
+                    <div class="org-node org-level1 org-highlight">
+                      <div class="org-label">🏭 分子公司授权</div>
+                    </div>
+                    <div class="org-line-v"></div>
+                    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+                      <!-- 各基地 -->
+                      <div class="org-branch">
+                        <div class="org-connector"></div>
+                        <div class="org-node org-level2 org-base">
+                          <div class="org-label">🏗️ 长沙基地</div>
+                          <div class="org-member">张娟_XXX（基地管理员）</div>
+                        </div>
+                        <div class="org-line-v"></div>
+                        <div class="org-node org-level3">
+                          <div class="org-label">👤 本基地员工</div>
+                        </div>
+                      </div>
+                      <div class="org-branch">
+                        <div class="org-connector"></div>
+                        <div class="org-node org-level2 org-base">
+                          <div class="org-label">🏗️ 郑州基地</div>
+                          <div class="org-member">XXX（基地管理员）</div>
+                        </div>
+                        <div class="org-line-v"></div>
+                        <div class="org-node org-level3">
+                          <div class="org-label">👤 本基地员工</div>
+                        </div>
+                      </div>
+                      <div class="org-branch">
+                        <div class="org-connector"></div>
+                        <div class="org-node org-level2 org-base">
+                          <div class="org-label">🏗️ 合肥基地</div>
+                          <div class="org-member">刘灿（基地管理员）</div>
+                        </div>
+                        <div class="org-line-v"></div>
+                        <div class="org-node org-level3">
+                          <div class="org-label">👤 本基地员工</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px;">
+                      <div class="org-branch">
+                        <div class="org-connector"></div>
+                        <div class="org-node org-level2">
+                          <div class="org-label">🚚 外仓管理员</div>
+                        </div>
+                      </div>
+                      <div class="org-branch">
+                        <div class="org-connector"></div>
+                        <div class="org-node org-level2">
+                          <div class="org-label">🏢 销司管理员</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="msg user">
+            <div class="avatar hu">👩‍💼</div>
+            <div class="bubble">那我能看到各个基地都有谁在管理权限吗？</div>
+          </div>
+          <div class="msg bot">
+            <div class="avatar ai">🤖</div>
+            <div class="bubble">
+              📋 以下是当前各单位的<strong>权限管理配置表</strong>：<br><br>
+              <div style="overflow-x:auto;">
+                <table class="perm-table">
+                  <thead>
+                    <tr>
+                      <th>单位</th>
+                      <th>角色</th>
+                      <th>成员</th>
+                      <th>权限</th>
+                      <th>说明</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>🏢 总部</strong></td>
+                      <td><span class="tag">超级管理员</span></td>
+                      <td>聂工</td>
+                      <td><span class="tag blue">全部基地</span></td>
+                      <td rowspan="4" style="font-size:11px;color:#6b7280;vertical-align:middle;">该人员首先需要<br>有这个基地权限<br>才能授权</td>
+                    </tr>
+                    <tr>
+                      <td><strong>🏗️ 长沙</strong></td>
+                      <td><span class="tag green">基地管理员</span></td>
+                      <td><strong>张娟_XXX</strong> <span style="font-size:10px;color:#f59e0b;">👈 刘军归属</span></td>
+                      <td><span class="tag">本地</span></td>
+                    </tr>
+                    <tr>
+                      <td><strong>🏗️ 郑州</strong></td>
+                      <td><span class="tag green">基地管理员</span></td>
+                      <td>XXX</td>
+                      <td><span class="tag">本地</span></td>
+                    </tr>
+                    <tr>
+                      <td><strong>🏗️ 合肥</strong></td>
+                      <td><span class="tag green">基地管理员</span></td>
+                      <td>刘灿</td>
+                      <td><span class="tag">本地</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <br>
+              <div style="background:#fef3c7;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400e;">
+                ⚠️ <strong>刘军归属长沙基地</strong>，请联系 <span class="tag green">张娟_XXX（基地管理员）</span> 为其授权。<br>
+                💡 你也可以说 <em>"帮我把申请转给长沙基地张娟"</em> 由我自动转发。
+              </div>
+            </div>
+          </div>
+          <div class="msg user">
+            <div class="avatar hu">👩‍💼</div>
+            <div class="bubble">帮我把刘军的授权申请转给长沙基地张娟</div>
+          </div>
+          <div class="msg bot">
+            <div class="avatar ai">🤖</div>
+            <div class="bubble">
+              ✅ <strong>授权申请已自动转发！</strong><br><br>
+              📤 收件人：<span class="tag green">长沙基地 · 张娟_XXX（基地管理员）</span><br>
+              📋 申请内容：为刘军 开通「入库管理」权限<br>
+              🕐 发送时间：2026-06-01 11:22<br><br>
+              <span style="font-size:12px;color:#9ca3af;">
+                💡 张娟将在企微/系统通知中收到此申请，处理结果将同步通知你。<br>
+                📌 你也可以在「我的申请记录」中随时查看进度。
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="chat-input-bar">
+        <input class="chat-input" type="text" placeholder="试试说：给王五开通入库管理权限…" readonly>
+        <button class="chat-send">发送</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FLOW -->
+<section id="flow">
+  <div class="container">
+    <div class="section-label fade-in">🔄 执行流程</div>
+    <h2 class="section-title fade-in">从一句话到权限生效，5步搞定</h2>
+    <p class="section-sub fade-in">AI Agent 在背后完成所有复杂逻辑，用户只需一句话</p>
+    <div class="flow-wrapper fade-in">
+      <div class="flow-step step-1">
+        <div class="circle">💬</div>
+        <div class="step-label">① 用户输入</div>
+        <div class="step-desc">自然语言描述需求，无需了解系统概念</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step step-2">
+        <div class="circle">🧠</div>
+        <div class="step-label">② 意图解析</div>
+        <div class="step-desc">AI 识别操作类型、目标用户、目标权限</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step step-3">
+        <div class="circle">🏷️</div>
+        <div class="step-label">③ 角色推荐</div>
+        <div class="step-desc">结合用户画像，计算推荐分，排序展示</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step step-4">
+        <div class="circle">🔐</div>
+        <div class="step-label">④ 权限校验</div>
+        <div class="step-desc">校验当前用户是否有授权资格</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step step-5">
+        <div class="circle">✅</div>
+        <div class="step-label">⑤ 执行/转发</div>
+        <div class="step-desc">有权限直接执行，无权限自动发申请邮件</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROLES -->
+<section id="roles">
+  <div class="container">
+    <div class="section-label fade-in">🏆 智能推荐策略</div>
+    <h2 class="section-title fade-in">不只是推荐，而是最优推荐</h2>
+    <p class="section-sub fade-in">AI 按优先级顺序评估多个维度，给出最合理的角色建议</p>
+    <div class="role-table-wrapper fade-in">
+      <table class="role-table">
+        <thead>
+          <tr>
+            <th>优先级</th>
+            <th>判断条件</th>
+            <th>推荐逻辑</th>
+            <th>示例</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="pri-badge pri-1">P1 最高</span></td>
+            <td>用户已有相似角色</td>
+            <td>在现有角色基础上追加菜单，减少角色数量</td>
+            <td>已是"仓库主管" → 追加盘点菜单至该角色</td>
+          </tr>
+          <tr>
+            <td><span class="pri-badge pri-1">P1 最高</span></td>
+            <td>同组织同岗位有先例</td>
+            <td>参照同类人员已有角色，直接推荐</td>
+            <td>武汉仓同职位 80% 都有"出库审核员" → 推荐</td>
+          </tr>
+          <tr>
+            <td><span class="pri-badge pri-2">P2 中</span></td>
+            <td>角色包含目标菜单</td>
+            <td>找到所有包含该菜单的角色，按权限最小化排序</td>
+            <td>"库存专员" < "仓库主管" → 优先推荐前者</td>
+          </tr>
+          <tr>
+            <td><span class="pri-badge pri-2">P2 中</span></td>
+            <td>模糊匹配</td>
+            <td>用户输入不准确时，AI 自动补全并确认</td>
+            <td>"盘点" → 匹配 "库存盘点" "盘点差异报告"</td>
+          </tr>
+          <tr>
+            <td><span class="pri-badge pri-3">P3 低</span></td>
+            <td>无匹配角色</td>
+            <td>建议创建新角色或联系管理员</td>
+            <td>全新业务菜单，现有角色无覆盖</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- CAPABILITY -->
+<section id="capability">
+  <div class="container">
+    <div class="section-label fade-in">⚡ 能力矩阵</div>
+    <h2 class="section-title fade-in">它能做什么</h2>
+    <p class="section-sub fade-in">8大核心能力，覆盖权限管理全场景</p>
+    <div class="cap-grid">
+      <div class="cap-card fade-in">
+        <div class="cap-icon">🎯</div>
+        <h3>单点授权</h3>
+        <p>指定用户 + 指定权限，AI 推荐角色，一步执行</p>
+        <div class="cap-badge" style="background:var(--blue-light);color:var(--blue);">管理员</div>
+      </div>
+      <div class="cap-card fade-in">
+        <div class="cap-icon">📦</div>
+        <h3>批量授权</h3>
+        <p>按部门/仓库/角色批量开通，支持百人级操作</p>
+        <div class="cap-badge" style="background:var(--blue-light);color:var(--blue);">管理员</div>
+      </div>
+      <div class="cap-card fade-in">
+        <div class="cap-icon">⏰</div>
+        <h3>临时权限</h3>
+        <p>设置有效期，自动到期撤销，无需人工跟踪</p>
+        <div class="cap-badge" style="background:var(--blue-light);color:var(--blue);">管理员</div>
+      </div>
+      <div class="cap-card fade-in">
+        <div class="cap-icon">🔍</div>
+        <h3>权限查询</h3>
+        <p>查询任意用户当前角色、可访问菜单、历史变更</p>
+        <div class="cap-badge" style="background:var(--green-light);color:var(--green);">全员</div>
+      </div>
+      <div class="cap-card fade-in">
+        <div class="cap-icon">🛡️</div>
+        <h3>冲突检测</h3>
+        <p>发现高危角色组合，提醒审慎操作，规避安全风险</p>
+        <div class="cap-badge" style="background:var(--orange-light);color:var(--orange);">自动</div>
+      </div>
+      <div class="cap-card fade-in">
+        <div class="cap-icon">🔤</div>
+        <h3>模糊理解</h3>
+        <p>输入"盘点"自动识别为"库存盘点"，无需精确用词</p>
+        <div class="cap-badge" style="background:var(--orange-light);color:var(--orange);">自动</div>
+      </div>
+      <div class="cap-card fade-in">
+        <div class="cap-icon">📧</div>
+        <h3>申请代发</h3>
+        <p>普通员工无授权资格时，AI 代为生成申请邮件发给管理员</p>
+        <div class="cap-badge" style="background:var(--green-light);color:var(--green);">全员</div>
+      </div>
+      <div class="cap-card fade-in">
+        <div class="cap-icon">👤</div>
+        <h3>用户创建</h3>
+        <p>授权对象不存在系统中，可询问是否自动创建用户</p>
+        <div class="cap-badge" style="background:var(--blue-light);color:var(--blue);">管理员</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ACCESS -->
+<section id="access">
+  <div class="container">
+    <div class="section-label fade-in">🔑 权限控制</div>
+    <h2 class="section-title fade-in">安全始终是第一位</h2>
+    <p class="section-sub fade-in">不同角色有不同能力边界，AI 自动识别并做正确的事</p>
+    <div class="access-layout">
+      <div class="access-box fade-in">
+        <h3>👩‍💼 <span style="color:var(--blue)">权限管理员</span> 能做什么</h3>
+        <div class="access-steps">
+          <div class="access-step">
+            <div class="step-num green">✓</div>
+            <div><div class="st">执行授权指令</div><div class="sd">直接开通/关闭/修改任意用户权限</div></div>
+          </div>
+          <div class="access-step">
+            <div class="step-num green">✓</div>
+            <div><div class="st">批量操作</div><div class="sd">按组织/职位批量授权</div></div>
+          </div>
+          <div class="access-step">
+            <div class="step-num green">✓</div>
+            <div><div class="st">临时授权管理</div><div class="sd">创建带时效的临时权限</div></div>
+          </div>
+          <div class="access-step">
+            <div class="step-num green">✓</div>
+            <div><div class="st">查询任意用户权限</div><div class="sd">全局权限视图</div></div>
+          </div>
+          <div class="access-step">
+            <div class="step-num green">✓</div>
+            <div><div class="st">创建新角色</div><div class="sd">AI 辅助设计角色权限集合</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="access-box fade-in">
+        <h3>👨‍🏭 <span style="color:var(--green)">普通员工</span> 能做什么</h3>
+        <div class="access-steps">
+          <div class="access-step">
+            <div class="step-num green">✓</div>
+            <div><div class="st">查询自身权限</div><div class="sd">查看自己当前角色和可访问菜单</div></div>
+          </div>
+          <div class="access-step">
+            <div class="step-num green">✓</div>
+            <div><div class="st">发起权限申请</div><div class="sd">AI 代为起草并发送申请邮件</div></div>
+          </div>
+          <div class="access-step">
+            <div class="step-num" style="background:#dc2626;">✗</div>
+            <div><div class="st" style="color:#dc2626">执行授权操作</div><div class="sd">系统拒绝，提示申请流程</div></div>
+          </div>
+          <div class="access-step">
+            <div class="step-num" style="background:#dc2626;">✗</div>
+            <div><div class="st" style="color:#dc2626">查询他人权限</div><div class="sd">隐私保护，禁止越权查询</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div><strong>AI 权限助手</strong> · WMS 奇点计划</div>
+  <div style="margin-top:8px;">需求 #64708 · 优先级 P1 · 2026年6月版本 · 指派：孟奇 · 提出：范会</div>
+  <div style="margin-top:8px;font-size:11px;opacity:0.5;">本文档由 WorkBuddy AI 生成 · 2026-06-01</div>
+</footer>
+
+<script>
+  // Scene switching
+  function switchScene(name) {
+    document.querySelectorAll('.scene-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('scene-' + name).classList.add('active');
+    event.target.classList.add('active');
+    // 重置查询场景的分支
+    var bNew = document.getElementById('branch-new-role');
+    var bEdit = document.getElementById('branch-edit-role');
+    if (bNew) bNew.style.display = 'none';
+    if (bEdit) bEdit.style.display = 'none';
+  }
+
+  function showNewRole() {
+    document.getElementById('branch-new-role').style.display = '';
+    document.getElementById('branch-edit-role').style.display = 'none';
+    setTimeout(function(){
+      var el = document.getElementById('branch-new-role');
+      el.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }, 100);
+  }
+
+  function showEditRole() {
+    document.getElementById('branch-edit-role').style.display = '';
+    document.getElementById('branch-new-role').style.display = 'none';
+    setTimeout(function(){
+      var el = document.getElementById('branch-edit-role');
+      el.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }, 100);
+  }
+
+  // Fade-in on scroll
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        // stagger siblings
+        const siblings = e.target.parentElement.querySelectorAll('.fade-in');
+        siblings.forEach((s, i) => {
+          setTimeout(() => s.classList.add('visible'), i * 80);
+        });
+      }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
