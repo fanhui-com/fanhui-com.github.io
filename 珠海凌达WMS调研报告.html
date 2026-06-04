@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>珠海凌达压缩机 WMS 调研报告</title>
+<style>
+  :root {
+    --primary: #1a3a5c;
+    --primary-light: #2a5a8c;
+    --primary-dark: #0f2440;
+    --accent: #e8872a;
+    --accent-light: #f5a855;
+    --success: #2a9d5c;
+    --warning: #e6a817;
+    --danger: #d64045;
+    --bg: #f0f2f5;
+    --card: #ffffff;
+    --text: #2c2c2a;
+    --text-secondary: #6b7280;
+    --text-light: #9ca3af;
+    --border: #e5e7eb;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05);
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 14px;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-light) 100%);
+    color: #fff;
+    padding: 40px 0 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.03);
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: -60%;
+    left: -5%;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.02);
+  }
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+  .header h1 { font-size: 28px; font-weight: 700; letter-spacing: 0.5px; }
+  .header h1 span { color: var(--accent-light); }
+  .header .meta { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+  .header .meta-item { font-size: 13px; opacity: 0.85; }
+  .header .meta-item strong { color: var(--accent-light); }
+  .header .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(232,135,42,0.2); border: 1px solid rgba(232,135,42,0.4);
+    border-radius: 20px; padding: 4px 14px; font-size: 12px; color: var(--accent-light);
+  }
+  .header .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* Summary bar */
+  .summary-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-top: -20px;
+    position: relative;
+    z-index: 2;
+  }
+  .summary-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow-md);
+    text-align: center;
+    transition: transform 0.2s;
+  }
+  .summary-card:hover { transform: translateY(-2px); }
+  .summary-card .num { font-size: 32px; font-weight: 700; line-height: 1.2; }
+  .summary-card .num.blue { color: var(--primary); }
+  .summary-card .num.orange { color: var(--accent); }
+  .summary-card .num.red { color: var(--danger); }
+  .summary-card .num.green { color: var(--success); }
+  .summary-card .label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+  /* Section */
+  .section { padding: 32px 0; }
+  .section-title {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 20px; font-weight: 700; color: var(--primary);
+    margin-bottom: 20px; padding-bottom: 12px;
+    border-bottom: 2px solid var(--primary);
+  }
+  .section-title .icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .section-title .icon.blue { background: rgba(26,58,92,0.1); color: var(--primary); }
+  .section-title .icon.orange { background: rgba(232,135,42,0.1); color: var(--accent); }
+  .section-title .icon.red { background: rgba(214,64,69,0.1); color: var(--danger); }
+  .section-title .icon.green { background: rgba(42,157,92,0.1); color: var(--success); }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .card h3 { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--primary); }
+
+  /* Grid */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 768px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: var(--primary); color: #fff; padding: 10px 14px; text-align: left; font-weight: 500; white-space: nowrap; }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:hover td { background: #f8f9fa; }
+  .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500;
+  }
+  .tag-red { background: rgba(214,64,69,0.1); color: var(--danger); }
+  .tag-orange { background: rgba(232,135,42,0.1); color: var(--accent); }
+  .tag-green { background: rgba(42,157,92,0.1); color: var(--success); }
+  .tag-blue { background: rgba(26,58,92,0.1); color: var(--primary); }
+  .tag-gray { background: #f3f4f6; color: var(--text-secondary); }
+
+  /* Flow */
+  .flow {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+    padding: 16px; background: #f8f9fb; border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+  }
+  .flow-step {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 12px; background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 12px; white-space: nowrap;
+  }
+  .flow-step.auto { border-color: var(--success); background: rgba(42,157,92,0.05); }
+  .flow-step.manual { border-color: var(--warning); background: rgba(230,168,23,0.05); }
+  .flow-step.none { border-color: var(--danger); background: rgba(214,64,69,0.05); }
+  .flow-step.system { border-color: var(--primary); background: rgba(26,58,92,0.05); }
+  .flow-arrow { color: var(--text-light); font-size: 16px; flex-shrink: 0; }
+  .flow-legend { display: flex; gap: 16px; margin-top: 8px; font-size: 12px; color: var(--text-secondary); flex-wrap: wrap; }
+  .flow-legend span::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: middle; }
+  .flow-legend .l-auto::before { background: var(--success); }
+  .flow-legend .l-manual::before { background: var(--warning); }
+  .flow-legend .l-none::before { background: var(--danger); }
+  .flow-legend .l-system::before { background: var(--primary); }
+
+  /* Pain point cards */
+  .pain-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 768px) { .pain-grid { grid-template-columns: 1fr; } }
+  .pain-card {
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    border-left: 4px solid;
+    background: var(--card);
+    box-shadow: var(--shadow);
+  }
+  .pain-card.high { border-left-color: var(--danger); }
+  .pain-card.medium { border-left-color: var(--warning); }
+  .pain-card .pain-id { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; }
+  .pain-card .pain-title { font-size: 14px; font-weight: 600; margin: 6px 0; }
+  .pain-card .pain-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+  .pain-card .pain-tags { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+
+  /* Decision section */
+  .decision-box {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+    color: #fff; border-radius: var(--radius); padding: 24px; margin-bottom: 16px;
+  }
+  .decision-box h3 { color: #fff; font-size: 16px; margin-bottom: 12px; }
+  .decision-box p { font-size: 13px; line-height: 1.7; opacity: 0.9; }
+
+  /* Compare */
+  .compare-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  @media (max-width: 768px) { .compare-wrap { grid-template-columns: 1fr; } }
+  .compare-col {
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow-md);
+  }
+  .compare-col.a { background: var(--card); border-top: 3px solid var(--success); }
+  .compare-col.b { background: var(--card); border-top: 3px solid var(--primary); }
+  .compare-col h4 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+  .compare-col.a h4 { color: var(--success); }
+  .compare-col.b h4 { color: var(--primary); }
+  .compare-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .compare-item:last-child { border-bottom: none; }
+  .compare-item .label { color: var(--text-secondary); flex-shrink: 0; }
+  .compare-item .value { font-weight: 500; text-align: right; max-width: 60%; }
+
+  /* Question list */
+  .question-group { margin-bottom: 20px; }
+  .question-group h4 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+  .question-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 14px; border-radius: var(--radius-sm);
+    background: #f8f9fb; margin-bottom: 6px; font-size: 13px;
+    border-left: 3px solid var(--border);
+  }
+  .question-item.high { border-left-color: var(--danger); }
+  .question-item.medium { border-left-color: var(--warning); }
+  .question-item.low { border-left-color: var(--success); }
+  .question-item .q-id { font-weight: 700; color: var(--text-secondary); flex-shrink: 0; font-size: 12px; }
+
+  /* Footer */
+  .footer {
+    text-align: center; padding: 24px; color: var(--text-secondary);
+    font-size: 12px; border-top: 1px solid var(--border); margin-top: 16px;
+  }
+
+  /* System list chips */
+  .sys-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .sys-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 20px; font-size: 12px;
+  }
+  .sys-chip .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .sys-chip .dot.green { background: var(--success); }
+  .sys-chip .dot.orange { background: var(--accent); }
+  .sys-chip .dot.red { background: var(--danger); }
+  .sys-chip .dot.blue { background: var(--primary); }
+  .sys-chip .dot.gray { background: var(--text-light); }
+
+  /* Status indicator */
+  .status-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+  .status-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 500;
+  }
+  .status-item.ok { background: rgba(42,157,92,0.08); color: var(--success); }
+  .status-item.warn { background: rgba(230,168,23,0.08); color: var(--warning); }
+  .status-item.err { background: rgba(214,64,69,0.08); color: var(--danger); }
+  .status-item .s-icon { font-size: 16px; }
+
+  /* Print */
+  @media print {
+    body { background: #fff; }
+    .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .summary-card, .card, .compare-col { box-shadow: none; border: 1px solid var(--border); }
+    .pain-card { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="container">
+    <div class="header-top">
+      <div>
+        <h1>珠海凌达压缩机 <span>WMS 调研报告</span></h1>
+        <div class="meta" style="margin-top:12px;">
+          <span class="meta-item">调研日期：<strong>2026年6月3日</strong></span>
+          <span class="meta-item">调研对象：凌达五家子公司</span>
+          <span class="meta-item">调研范围：成品库存管理系统</span>
+        </div>
+      </div>
+      <div class="badge">初稿 · 待明日补充</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Summary cards -->
+  <div class="summary-bar">
+    <div class="summary-card">
+      <div class="num blue">5</div>
+      <div class="label">覆盖子公司</div>
+    </div>
+    <div class="summary-card">
+      <div class="num blue">8</div>
+      <div class="label">现有信息系统</div>
+    </div>
+    <div class="summary-card">
+      <div class="num red">5</div>
+      <div class="label">业务痛点</div>
+    </div>
+    <div class="summary-card">
+      <div class="num orange">34</div>
+      <div class="label">待确认问题</div>
+    </div>
+  </div>
+
+  <!-- Section 1: Business Scope -->
+  <div class="section">
+    <div class="section-title">
+      <div class="icon blue">1</div>
+      业务范围与组织架构
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>子公司覆盖</h3>
+        <table>
+          <tr><td><strong>珠海凌达</strong></td><td>总部，供应珠海基地/金湾基地</td></tr>
+          <tr><td>郑州凌达</td><td>子公司</td></tr>
+          <tr><td>武汉凌达</td><td>子公司</td></tr>
+          <tr><td>重庆凌达</td><td>子公司</td></tr>
+          <tr><td>合肥凌达</td><td>子公司</td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <h3>业务范围</h3>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="tag tag-blue">格力内部销售</span>
+            <span style="font-size:13px;color:var(--text-secondary);">供应珠海基地、金湾基地等格力各基地</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="tag tag-green">格力外部销售</span>
+            <span style="font-size:13px;color:var(--text-secondary);">含内销、出口业务</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="tag tag-gray">凌内部调拨</span>
+            <span style="font-size:13px;color:var(--text-secondary);">子公司间物料调拨</span>
+          </div>
+        </div>
+
+        <!-- 仓库管理模式 -->
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+          <h3 style="margin-bottom:12px;">仓库管理模式</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:var(--radius-sm);padding:14px;">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+                <span class="tag tag-orange">JIT</span>
+                <span style="font-weight:600;font-size:13px;color:var(--accent);">准时制仓库管理</span>
+              </div>
+              <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;">
+                按需配送、最小库存，配套格力的 JIT 生产模式，物料按计划准时送达产线
+              </div>
+            </div>
+            <div style="background:#f0f7ff;border:1px solid #bfdbfe;border-radius:var(--radius-sm);padding:14px;">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+                <span class="tag tag-blue">线边仓</span>
+                <span style="font-weight:600;font-size:13px;color:var(--primary);">线边仓库管理</span>
+              </div>
+              <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;">
+                产线旁设暂存仓，物料直供产线使用，减少搬运距离和等待时间
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 订单来源 -->
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+          <h3 style="margin-bottom:12px;">订单来源</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+
+            <!-- 内部客户 -->
+            <div style="background:#f0f7ff;border:1px solid #bfdbfe;border-radius:var(--radius-sm);padding:14px;">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+                <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:var(--primary);color:#fff;border-radius:50%;font-size:11px;font-weight:700;">内</span>
+                <span style="font-weight:600;font-size:13px;color:var(--primary);">内部客户（格力各基地）</span>
+              </div>
+              <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;">
+                <div style="margin-bottom:4px;">📋 各基地发<b style="color:var(--text);">短缺物资采购计划</b></div>
+                <div style="margin-bottom:4px;">📅 近期<b style="color:var(--text);">三天短缺</b>排发货计划</div>
+                <div style="margin-bottom:4px;">📊 基地<b style="color:var(--text);">每日手工上报库存</b>给经营部</div>
+                <div style="color:var(--danger);font-weight:500;">⚠️ 手工寻缘，无系统订单</div>
+              </div>
+            </div>
+
+            <!-- 外部客户 -->
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--radius-sm);padding:14px;">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+                <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:var(--success);color:#fff;border-radius:50%;font-size:11px;font-weight:700;">外</span>
+                <span style="font-weight:600;font-size:13px;color:var(--success);">外部客户（格力外部）</span>
+              </div>
+              <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;">
+                <div style="margin-bottom:4px;">📧 业务员<b style="color:var(--text);">邮件线下提供</b>发货需求</div>
+                <div style="margin-bottom:4px;">🖊️ 人工维护到<b style="color:var(--text);">自研订单系统</b></div>
+                <div style="margin-bottom:4px;">📦 统一安排发货</div>
+                <div style="color:var(--warning);font-weight:500;">⚠️ 线下邮件录入，依赖人工</div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- 流程说明 -->
+          <div style="margin-top:12px;padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:var(--radius-sm);font-size:12px;color:var(--text-secondary);line-height:1.8;">
+            <b style="color:var(--accent);">发货计划全链路（当前现状）：</b><br>
+            内部客户：基地短缺计划 → 手工寻缘 → 经营部安排 → 邮件备货计划 → 打印线下备货 → ERP 开单 → 打单 → PDA扫描装车 → 发货<br>
+            外部客户：业务员邮件 → 人工录入订单系统 → 经营部安排 → 邮件备货计划 → 打印线下备货 → ERP 开单 → 打单 → PDA扫描装车 → 发货
+          </div>
+        </div>
+
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+          <h3>ERP 基本信息（珠海凌达）</h3>
+          <table style="font-size:12px;">
+            <tr><td style="width:40%;color:var(--text-secondary);">总部 ERP 客户代码</td><td><strong>600 公司</strong></td></tr>
+            <tr><td style="color:var(--text-secondary);">成品库账务仓代码</td><td><strong>900</strong></td></tr>
+            <tr><td style="color:var(--text-secondary);">WMS 系统地址</td><td>172.75.200:8001</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 2: System Architecture -->
+  <div class="section">
+    <div class="section-title">
+      <div class="icon blue">2</div>
+      现有系统架构
+    </div>
+
+    <div class="card">
+      <h3>系统全景</h3>
+      <div class="sys-chips" style="margin-bottom:16px;">
+        <div class="sys-chip"><span class="dot green"></span>自研 WMS · 成品库存管理</div>
+        <div class="sys-chip"><span class="dot blue"></span>ERP · 账务核算/出入库凭证</div>
+        <div class="sys-chip"><span class="dot blue"></span>CRM · 客户订单/发货计划</div>
+        <div class="sys-chip"><span class="dot gray"></span>BPM(OA) · 退领料审批</div>
+        <div class="sys-chip"><span class="dot gray"></span>APS（自研）· 生产计划</div>
+        <div class="sys-chip"><span class="dot gray"></span>MES · 原材料管理</div>
+        <div class="sys-chip"><span class="dot orange"></span>QMS · 质控检验</div>
+        <div class="sys-chip"><span class="dot gray"></span>车辆管理（自研）· 装车</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>系统</th><th>用途</th><th>使用部门</th><th>集成方式</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>自研 WMS</strong></td><td>成品库存管理，五子公司在用</td><td>质控部、成品物流部</td><td>—</td></tr>
+            <tr><td>ERP（总部）</td><td>账务核算、出入库凭证</td><td>经营部、财务部</td><td>入库自动，出库半自动</td></tr>
+            <tr><td>CRM</td><td>客户订单、发货计划导出</td><td>经营部</td><td>手工导出</td></tr>
+            <tr><td><strong>BPM(OA)</strong></td><td>退领料 BPM 签审 + ERP 手工推送</td><td>各部门</td><td>OA→WMS 自动，BPM→ERP 手工</td></tr>
+            <tr><td>APS（自研）</td><td>生产计划下达</td><td>生产部</td><td>—</td></tr>
+            <tr><td>MES</td><td>原材料管理</td><td>生产部</td><td>与其他基地共用</td></tr>
+            <tr><td>QMS</td><td>质控检验结果</td><td>质控部</td><td>自动同步WMS</td></tr>
+            <tr><td>车辆管理（自研）</td><td>出库装车管理</td><td>成品物流部</td><td>待确认</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>库存编码体系（四码对应）</h3>
+        <table style="font-size:12px;">
+          <tr><td><span class="tag tag-blue">凌达代码</span></td><td>与格力条码一一对应</td></tr>
+          <tr><td><span class="tag tag-blue">格力代码</span></td><td>格力物料编码，中台可获取</td></tr>
+          <tr><td><span class="tag tag-green">周转卡号</span></td><td>一包一卡一机型，含多个唯一码，整包发货扫此卡</td></tr>
+          <tr><td><span class="tag tag-orange">机身条码</span></td><td>每台唯一码，拆零发货逐台扫</td></tr>
+        </table>
+        <div style="margin-top:10px;padding:8px 12px;background:rgba(214,64,69,0.05);border-radius:var(--radius-sm);font-size:12px;color:var(--danger);">
+          &#9888; 条码明细在 WMS 中未展示（仅 ERP 有），扫描时系统调 ERP 判断条码有效性
+        </div>
+      </div>
+      <div class="card">
+        <h3>仓库结构</h3>
+        <div style="text-align:center;padding:16px 0;">
+          <div style="display:inline-flex;align-items:center;gap:12px;">
+            <div style="padding:10px 24px;background:var(--primary);color:#fff;border-radius:var(--radius-sm);font-weight:600;">仓库</div>
+            <span style="font-size:20px;color:var(--text-light);">→</span>
+            <div style="padding:10px 24px;background:rgba(26,58,92,0.1);color:var(--primary);border-radius:var(--radius-sm);font-weight:600;border:1px solid var(--primary);">库位</div>
+          </div>
+          <div style="margin-top:8px;font-size:12px;color:var(--text-secondary);">当前仅 2 层结构，无区/排/层</div>
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary);">
+          · 仓库代码与 ERP 一一对应<br>
+          · 库位由各基地自定义
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 3: Business Flows -->
+  <div class="section">
+    <div class="section-title">
+      <div class="icon blue">3</div>
+      核心业务流程
+    </div>
+
+    <!-- 3.1 Production -->
+    <div class="card">
+      <h3>3.1 生产入库流程</h3>
+      <div class="flow" style="flex-wrap:wrap;">
+        <span class="flow-step system">生产线</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step system">单台扫码报工<br><small>报工系统</small></span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step system">MES 入库</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step auto">ERP 集成<br><small>报总装账务</small></span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step system">WMS 入库扫描</span>
+      </div>
+
+      <!-- 并行：质控同步 + 交付单绑定 -->
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;margin:16px 0 16px 0;align-items:center;">
+        <div style="text-align:center;">
+          <div class="flow-step auto" style="display:inline-block;">同步质控状态</div>
+          <div style="font-size:11px;color:var(--text-light);margin-top:4px;">&#128339; 定时任务同步，入库后持续更新</div>
+        </div>
+        <div style="font-size:18px;color:var(--text-light);">+</div>
+        <div style="text-align:center;">
+          <div class="flow-step manual" style="display:inline-block;">下交付单 + 绑定周转卡</div>
+          <div style="font-size:11px;color:var(--text-light);margin-top:4px;">可在扫码入库前或后操作</div>
+        </div>
+      </div>
+
+      <div class="flow" style="flex-wrap:wrap;justify-content:center;">
+        <span class="flow-arrow" style="font-size:18px;">↓</span>
+      </div>
+      <div class="flow" style="flex-wrap:wrap;justify-content:center;">
+        <span class="flow-step auto" style="border-color:#dc2626;color:#dc2626;">WMS 入库记账（总装 → 成品）<br><small style="color:#dc2626;">必须绑定交付单+周转卡，否则 ERP 记账不成功</small></span>
+      </div>
+
+      <div style="font-size:12px;color:var(--text-secondary);padding-left:4px;">
+        <div class="flow-legend">
+          <span class="l-auto">自动</span>
+          <span class="l-manual">人工操作</span>
+          <span class="l-system">系统操作</span>
+        </div>
+        <div style="margin-top:10px;padding:10px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:var(--radius-sm);font-size:12px;color:#92400e;line-height:1.8;">
+          &#9888; <b>记账前置条件：</b>总装需下交付单并绑定周转卡，绑定后成品报账到 ERP 才能成功。<br>
+          &#128339; <b>质控状态：</b>质控状态通过定时任务与入库扫描同步，入库后仍会持续更新。<br>
+          &#128203; <b>交付单时机：</b>下交付单+绑定周转卡可在 WMS 扫码入库前或扫码入库后操作，但必须在入库记账前完成。
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.2 Shipping -->
+    <div class="card">
+      <h3>3.2 成品发货流程</h3>
+      <div class="flow" style="flex-wrap:wrap;">
+        <span class="flow-step manual">CRM 导出发货计划</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step manual">邮件发备货计划</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step manual">打印备货计划<br><small>线下按计划备货</small></span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step manual">ERP 开单</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step system">自研批量打单系统<br><small>关联 ERP 订单打印发货单</small></span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step system">PDA 按订单扫描装车</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step system">条码绑定</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step manual">WMS 确认出库</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step manual">ERP 手工确认</span>
+      </div>
+      <div class="flow-legend">
+        <span class="l-auto">自动</span>
+        <span class="l-manual">人工操作</span>
+        <span class="l-system">系统操作</span>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:var(--text-secondary);">
+        <p>&#9888; <strong>关键信息：</strong>备货在 ERP 开单之前，通过邮件线下传递备货计划并打印备货；ERP 开单后，再按实际订单 PDA 扫描装车。出库通过 ERP 中间表集成，PDA 扫描后需人工到 WMS 确认数量并扣减库存，再由 ERP 手工确认出库数量完成账务。每天日结，只做当天发货计划。允许甩货出库。</p>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>3.3 成品领料流程</h3>
+        <div class="flow" style="flex-wrap:wrap;">
+          <span class="flow-step manual">BPM(OA) 提交审批</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-step auto">审批通过<br><small>自动同步明细到 WMS</small></span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-step system">仓库确认退货</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-step auto">仓库签收<br><small>自动扣减库存</small></span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-step manual">BPM 签审</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-step manual">手工推送 ERP</span>
+        </div>
+        <div class="flow-legend" style="margin-top:10px;">
+          <span class="l-auto">自动</span>
+          <span class="l-manual">人工操作</span>
+          <span class="l-system">系统操作</span>
+        </div>
+        <div style="margin-top:10px;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--radius-sm);font-size:12px;color:#166534;">
+          ✅ <b>OA 与 BPM 为同一套系统。</b>审批通过后自动同步领料明细至 WMS，仓库签收后自动扣减库存；BPM 签审完成后仍需<strong>手工推送 ERP</strong> 完成账务。
+        </div>
+      </div>
+      <div class="card">
+        <h3>3.4 质量管理流程</h3>
+        <div style="font-size:13px;color:var(--text-secondary);display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:flex-start;gap:8px;">
+            <span class="tag tag-green">入库前</span>
+            <span>QMS 外检结果自动同步质控合格状态到 WMS</span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:8px;">
+            <span class="tag tag-orange">入库后</span>
+            <span>发现问题使用 WMS"封存"功能，封存状态不可发货</span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:8px;">
+            <span class="tag tag-blue">解封</span>
+            <span>需走流程后在 WMS 操作"解封"</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>3.5 退货流程</h3>
+      <div class="flow" style="flex-wrap:wrap;">
+        <span class="flow-step manual">BPM(OA) 提交审批</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step auto">审批通过<br><small>自动同步明细到 WMS</small></span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step manual">仓库人工确认退货</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step auto">仓库签收<br><small>自动扣减库存</small></span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step manual">BPM 签审</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step manual">手工 ERP 做账</span>
+      </div>
+      <div class="flow-legend">
+        <span class="l-auto">自动</span>
+        <span class="l-manual">人工操作</span>
+      </div>
+      <div style="margin-top:10px;padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:var(--radius-sm);font-size:12px;color:#92400e;">
+        &#9888; 与成品领料流程类似，BPM(OA) 审批通过后自动同步退货明细至 WMS，仓库签收自动扣减库存；但 ERP 做账仍需<strong>手工操作</strong>，账务最后一环未全链路打通。
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>PDA 扫描工具功能模块</h3>
+      <div class="grid-4" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+        <div style="text-align:center;padding:14px 8px;background:#f8f9fb;border-radius:var(--radius-sm);">
+          <div style="font-size:22px;margin-bottom:6px;">&#128230;</div>
+          <div style="font-size:12px;font-weight:600;">出库装车扫描</div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">销售发货出库</div>
+        </div>
+        <div style="text-align:center;padding:14px 8px;background:#f8f9fb;border-radius:var(--radius-sm);">
+          <div style="font-size:22px;margin-bottom:6px;">&#128230;</div>
+          <div style="font-size:12px;font-weight:600;">配件打包</div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">配件与箱号绑定</div>
+        </div>
+        <div style="text-align:center;padding:14px 8px;background:#f8f9fb;border-radius:var(--radius-sm);">
+          <div style="font-size:22px;margin-bottom:6px;">&#128230;</div>
+          <div style="font-size:12px;font-weight:600;">配件出库</div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">压缩机配件出库</div>
+        </div>
+        <div style="text-align:center;padding:14px 8px;background:#f8f9fb;border-radius:var(--radius-sm);">
+          <div style="font-size:22px;margin-bottom:6px;">&#128230;</div>
+          <div style="font-size:12px;font-weight:600;">成品库操作</div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;">退领料、返包</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4: ERP Integration -->
+  <div class="section">
+    <div class="section-title">
+      <div class="icon orange">4</div>
+      ERP 集成现状
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>集成环节</th><th>方式</th><th>触发方式</th><th>评估</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>入库集成</strong></td>
+              <td>自动集成</td>
+              <td>生产入库后自动同步 ERP</td>
+              <td><span class="tag tag-green">成熟</span></td>
+            </tr>
+            <tr>
+              <td><strong>出库集成</strong></td>
+              <td>半自动（人工确认）</td>
+              <td>PDA 扫描 → 中间表 → WMS 确认 → ERP 手工确认</td>
+              <td><span class="tag tag-orange">待优化</span></td>
+            </tr>
+            <tr>
+              <td><strong>退货集成</strong></td>
+              <td>手工</td>
+              <td>线下 BPM 审批后手工处理</td>
+              <td><span class="tag tag-red">缺失</span></td>
+            </tr>
+            <tr>
+              <td><strong>质控状态</strong></td>
+              <td>QMS → WMS 同步</td>
+              <td>入库时自动同步合格/不合格状态</td>
+              <td><span class="tag tag-green">成熟</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 5: Pain Points -->
+  <div class="section">
+    <div class="section-title">
+      <div class="icon red">5</div>
+      业务痛点（已确认）
+    </div>
+    <div class="pain-grid">
+      <div class="pain-card high">
+        <div class="pain-id">P1 · 高</div>
+        <div class="pain-title">发货计划频繁变更，无系统订单支撑</div>
+        <div class="pain-desc">发货计划全靠手工整理，CRM 导出后邮件发给物流部。<b>计划发货前后都在变化</b>，变更时无法实时同步，导致仓库备货白做或遗漏。</div>
+        <div class="pain-tags"><span class="tag tag-red">经营部</span><span class="tag tag-red">物流部</span><span class="tag tag-red">仓库</span></div>
+      </div>
+      <div class="pain-card high">
+        <div class="pain-id">P2 · 高</div>
+        <div class="pain-title">线下邮件沟通，信息传递链路长</div>
+        <div class="pain-desc">CRM 导出 → 邮件 → ERP 开单 → 仓库备货，至少 3 个手工环节，响应慢、易出错。</div>
+        <div class="pain-tags"><span class="tag tag-red">多部门协同</span></div>
+      </div>
+      <div class="pain-card high">
+        <div class="pain-id">P3 · 高</div>
+        <div class="pain-title">物流履约无系统，在途到签收无法跟踪</div>
+        <div class="pain-desc">出库后在途状态、运输进度、客户签收完全靠人工电话/微信跟踪，无 TMS 系统。</div>
+        <div class="pain-tags"><span class="tag tag-red">客户满意度</span></div>
+      </div>
+      <div class="pain-card medium">
+        <div class="pain-id">P4 · 中</div>
+        <div class="pain-title">成品领料 ERP 推送仍需手工</div>
+        <div class="pain-desc">OA 审批通过后自动同步领料明细至 WMS，仓库签收自动扣减库存；但 BPM 签审完成后仍需手工推送 ERP，账务与仓库未全链路打通。</div>
+        <div class="pain-tags"><span class="tag tag-orange">最后一环手工</span></div>
+      </div>
+      <div class="pain-card medium">
+        <div class="pain-id">P5 · 中</div>
+        <div class="pain-title">出库账务手工两步确认</div>
+        <div class="pain-desc">WMS 确认数量 + ERP 手工确认，两次手工操作，效率低且存在数据不一致风险。</div>
+        <div class="pain-tags"><span class="tag tag-orange">数据风险</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 6: Decision -->
+  <div class="section">
+    <div class="section-title">
+      <div class="icon green">6</div>
+      决策分析
+    </div>
+
+    <div class="decision-box">
+      <h3>一句话结论</h3>
+      <p>凌达自研 WMS 成品仓作业<b>已基本成熟可用，且凌达目前没有切换 WMS 的意愿</b>。核心问题在于<b>发货无准确的系统发货计划下发，计划在发货前后频繁变更</b>，导致仓库作业被动，下游物流跟踪也无法开展。</p>
+    </div>
+
+    <div class="card">
+      <h3>现状评估</h3>
+      <div class="status-row">
+        <div class="status-item ok"><span class="s-icon">&#10003;</span> 成品仓作业成熟可用</div>
+        <div class="status-item ok"><span class="s-icon">&#10003;</span> 库存管理基本可用</div>
+        <div class="status-item warn"><span class="s-icon">&#9888;</span> ERP 半集成</div>
+        <div class="status-item warn"><span class="s-icon">&#9888;</span> 领料ERP手工推送</div>
+        <div class="status-item err"><span class="s-icon">&#10007;</span> 发货无系统订单</div>
+        <div class="status-item err"><span class="s-icon">&#10007;</span> 物流无跟踪</div>
+        <div class="status-item err"><span class="s-icon">&#10007;</span> 退货线下手工</div>
+      </div>
+      <div style="margin-top:16px;padding:12px 16px;background:rgba(26,58,92,0.04);border-radius:var(--radius-sm);border-left:3px solid var(--primary);">
+        <div style="font-size:13px;color:var(--primary);font-weight:600;margin-bottom:4px;">补充信息</div>
+        <div style="font-size:13px;color:var(--text-secondary);">凌达目前有<b style="color:var(--text);">自有的研发团队</b>，集中开发维护自有系统（WMS、APS、车辆管理等），具备独立开发和迭代能力。</div>
+      </div>
+    </div>
+
+    <div style="background:linear-gradient(135deg,#fef2f2 0%,#fff 100%);border:2px solid var(--danger);border-radius:var(--radius);padding:24px;margin:16px 0;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:var(--danger);color:#fff;border-radius:50%;font-size:16px;font-weight:700;">!</span>
+        <h3 style="color:var(--danger);font-size:17px;margin:0;">核心问题</h3>
+      </div>
+      <div style="font-size:15px;font-weight:600;line-height:1.8;color:var(--text);margin-bottom:12px;">
+        发货无准确的系统发货计划下发，计划在发货前后频繁变更
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:flex-start;gap:10px;font-size:13px;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:var(--danger);color:#fff;border-radius:50%;font-size:11px;font-weight:700;flex-shrink:0;">1</span>
+          <span style="color:var(--text-secondary);">没有系统化的发货计划，全靠 CRM 导出 → 邮件 → ERP 手工链路</span>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;font-size:13px;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:var(--danger);color:#fff;border-radius:50%;font-size:11px;font-weight:700;flex-shrink:0;">2</span>
+          <span style="color:var(--text-secondary);">发货前计划变更 → 仓库已备货需重新调整，备货白做</span>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;font-size:13px;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:var(--danger);color:#fff;border-radius:50%;font-size:11px;font-weight:700;flex-shrink:0;">3</span>
+          <span style="color:var(--text-secondary);">发货后计划变更 → 甩货出库、补发货等异常操作增加</span>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;font-size:13px;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:var(--danger);color:#fff;border-radius:50%;font-size:11px;font-weight:700;flex-shrink:0;">4</span>
+          <span style="color:var(--text-secondary);">变更无法实时同步到仓库 → 信息滞后导致发错货、漏发货</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="compare-wrap">
+      <div class="compare-col a">
+        <h4>方案 A：保持自研 + 补订单 + TMS</h4>
+        <div class="compare-item"><span class="label">改造方向</span><span class="value">自研 WMS 补订单模块 + 新建 TMS</span></div>
+        <div class="compare-item"><span class="label">改造范围</span><span class="value">局部补接口</span></div>
+        <div class="compare-item"><span class="label">对接系统</span><span class="value">2-3 个</span></div>
+        <div class="compare-item"><span class="label">作业影响</span><span class="value" style="color:var(--success);">不影响现有成熟作业</span></div>
+        <div class="compare-item"><span class="label">风险</span><span class="value" style="color:var(--success);">低，渐进式</span></div>
+        <div class="compare-item"><span class="label">上线周期</span><span class="value">短（分步上线）</span></div>
+        <div class="compare-item"><span class="label">凌达配合意愿</span><span class="value" style="color:var(--success);">&#9733;&#9733;&#9733; 高</span></div>
+      </div>
+      <div class="compare-col b">
+        <h4>方案 B：切换奇点计划 WMS + TMS</h4>
+        <div class="compare-item"><span class="label">改造方向</span><span class="value">替换自研 WMS + 新建 TMS</span></div>
+        <div class="compare-item"><span class="label">改造范围</span><span class="value">全面重做 + 全部外围对接</span></div>
+        <div class="compare-item"><span class="label">对接系统</span><span class="value" style="color:var(--danger);">至少 7 个</span></div>
+        <div class="compare-item"><span class="label">作业影响</span><span class="value" style="color:var(--danger);">全部重写 PDA/库存/扫码</span></div>
+        <div class="compare-item"><span class="label">风险</span><span class="value" style="color:var(--danger);">高，波及面未摸清</span></div>
+        <div class="compare-item"><span class="label">上线周期</span><span class="value">长（WMS 切换 → TMS）</span></div>
+        <div class="compare-item"><span class="label">凌达配合意愿</span><span class="value" style="color:var(--warning);">&#9733; 低，需高层推动</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>方案 B 切换需对接的系统清单</h3>
+      <div class="table-wrap">
+        <table style="font-size:12px;">
+          <thead><tr><th>系统</th><th>对接内容</th><th>复杂度</th><th>当前状态</th></tr></thead>
+          <tbody>
+            <tr><td><strong>总部 ERP</strong></td><td>入库/出库/库存同步/账务确认</td><td><span class="tag tag-red">高</span></td><td>入库已有</td></tr>
+            <tr><td>CRM</td><td>发货计划/订单同步</td><td><span class="tag tag-orange">中</span></td><td>待评估 API</td></tr>
+            <tr><td>BPM</td><td>退领料签审触发 WMS 出库</td><td><span class="tag tag-orange">中</span></td><td>待评估</td></tr>
+            <tr><td>QMS</td><td>质控状态同步</td><td><span class="tag tag-orange">中</span></td><td>已有</td></tr>
+            <tr><td>APS / MES</td><td>生产计划（可选）</td><td><span class="tag tag-green">低</span></td><td>非必须</td></tr>
+            <tr><td>车辆管理</td><td>配车信息关联</td><td><span class="tag tag-orange">中</span></td><td>待评估</td></tr>
+            <tr><td><strong>TMS（待建设）</strong></td><td>在途可视化/签收管理</td><td><span class="tag tag-orange">中</span></td><td>两个方案都需要</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:8px;font-size:11px;color:var(--text-secondary);">&#9888; 以上仅初步识别，实际波及面可能更大，五家子公司可能有本地化系统。</p>
+    </div>
+
+    <div class="card">
+      <h3>需领导决策的问题</h3>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:12px;background:#f8f9fb;border-radius:var(--radius-sm);">
+          <span style="font-size:18px;font-weight:700;color:var(--primary);flex-shrink:0;">1</span>
+          <div><strong>WMS 策略</strong><br><span style="font-size:13px;color:var(--text-secondary);">尊重凌达意愿保持自研，还是从集团层面推动切换？</span></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:12px;background:#f8f9fb;border-radius:var(--radius-sm);">
+          <span style="font-size:18px;font-weight:700;color:var(--primary);flex-shrink:0;">2</span>
+          <div><strong>TMS 如何落地</strong>（凌达真正想要的）<br><span style="font-size:13px;color:var(--text-secondary);">无论 WMS 走哪条路，TMS 都需要建。关键前提：先解决系统订单问题。</span></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:12px;background:#f8f9fb;border-radius:var(--radius-sm);">
+          <span style="font-size:18px;font-weight:700;color:var(--primary);flex-shrink:0;">3</span>
+          <div><strong>方案 A 的话谁来开发？</strong><br><span style="font-size:13px;color:var(--text-secondary);">凌达自己补？还是我们帮补？维护权责怎么定？</span></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:12px;background:#f8f9fb;border-radius:var(--radius-sm);">
+          <span style="font-size:18px;font-weight:700;color:var(--primary);flex-shrink:0;">4</span>
+          <div><strong>五家子公司推广策略</strong><br><span style="font-size:13px;color:var(--text-secondary);">一起推广还是先选一个基地试点？</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 7: Pending Questions -->
+  <div class="section">
+    <div class="section-title">
+      <div class="icon orange">7</div>
+      待补充调研问题
+    </div>
+
+    <div class="card">
+      <div style="text-align:center;padding:40px 20px;color:var(--text-light);">
+        <div style="font-size:40px;margin-bottom:12px;">📋</div>
+        <div style="font-size:15px;font-weight:500;color:var(--text-secondary);margin-bottom:6px;">问题清单待后续补充</div>
+        <div style="font-size:13px;">前期调研问题已基本解决，后续根据需要新增问题</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  珠海凌达压缩机 WMS 调研报告 · 2026年6月4日
+</div>
+
+</body>
+</html>
