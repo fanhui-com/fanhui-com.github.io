@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>菜单角色查询 - 多选交集查询</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', Roboto, Arial, sans-serif;
+            background: #f0f2f6;
+            color: #1f2f3d;
+            font-size: 14px;
+        }
+
+        .app {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 顶部导航 */
+        .top-nav {
+            background: linear-gradient(135deg, #1a2a3a 0%, #0f1a24 100%);
+            color: white;
+            padding: 0 24px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: #409eff;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 4px;
+        }
+
+        .nav-tab {
+            padding: 6px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+
+        .nav-tab.active {
+            background: #409eff;
+            color: white;
+        }
+
+        .nav-tab:hover:not(.active) {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 13px;
+        }
+
+        /* 主体布局 */
+        .main-layout {
+            display: flex;
+            flex: 1;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        /* 左侧菜单树面板 */
+        .menu-panel {
+            width: 380px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            padding: 18px 20px;
+            border-bottom: 1px solid #e8ecf0;
+            background: #fafbfc;
+        }
+
+        .panel-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2f3d;
+            margin-bottom: 12px;
+        }
+
+        .menu-search {
+            position: relative;
+        }
+
+        .menu-search input {
+            width: 100%;
+            padding: 8px 12px 8px 32px;
+            border: 1px solid #dcdfe6;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .menu-search input:focus {
+            border-color: #409eff;
+            box-shadow: 0 0 0 2px rgba(64,158,255,0.1);
+        }
+
+        .menu-search::before {
+            content: "🔍";
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            color: #909399;
+        }
+
+        /* 菜单树容器 */
+        .menu-tree-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 0 12px 12px;
+        }
+
+        /* 树形菜单样式 */
+        .menu-tree {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .menu-tree li {
+            list-style: none;
+            margin: 0;
+        }
+
+        .menu-node {
+            display: flex;
+            align-items: center;
+            padding: 6px 8px 6px 0;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .menu-node:hover {
+            background: #f5f7fa;
+        }
+
+        .expand-icon {
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #909399;
+            font-size: 12px;
+            cursor: pointer;
+            flex-shrink: 0;
+            border-radius: 4px;
+        }
+
+        .expand-icon:hover {
+            background: #e4e7ed;
+        }
+
+        .checkbox-wrapper {
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        .checkbox-wrapper input {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #409eff;
+        }
+
+        .menu-label {
+            font-size: 14px;
+            color: #303133;
+            flex: 1;
+        }
+
+        .menu-code {
+            font-size: 12px;
+            color: #909399;
+            margin-left: 12px;
+            margin-right: 4px;
+        }
+
+        .children {
+            padding-left: 28px;
+        }
+
+        /* 右侧角色列表面板 */
+        .roles-panel {
+            flex: 1;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .roles-header {
+            padding: 18px 20px;
+            border-bottom: 1px solid #e8ecf0;
+            background: #fafbfc;
+        }
+
+        .selected-menus-info {
+            background: #ecf5ff;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border-left: 4px solid #409eff;
+        }
+
+        .selected-menus-info .label {
+            font-size: 13px;
+            color: #606266;
+            margin-right: 12px;
+        }
+
+        .selected-menus-info .menus-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .menu-tag {
+            background: #409eff;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .menu-tag .remove {
+            cursor: pointer;
+            opacity: 0.8;
+        }
+
+        .menu-tag .remove:hover {
+            opacity: 1;
+        }
+
+        .roles-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2f3d;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .roles-count {
+            background: #409eff;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .query-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: #409eff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #66b1ff;
+        }
+
+        .btn-default {
+            background: white;
+            border: 1px solid #dcdfe6;
+            color: #606266;
+        }
+
+        .btn-default:hover {
+            background: #f5f7fa;
+            border-color: #c0c4cc;
+        }
+
+        .export-btn {
+            margin-left: auto;
+            padding: 6px 16px;
+            background: white;
+            border: 1px solid #dcdfe6;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .export-btn:hover {
+            border-color: #409eff;
+            color: #409eff;
+        }
+
+        /* 角色表格 */
+        .roles-table-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 20px 20px 20px;
+        }
+
+        .roles-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .roles-table th {
+            text-align: left;
+            padding: 14px 12px;
+            background: #f5f7fa;
+            color: #606266;
+            font-weight: 500;
+            border-bottom: 1px solid #e8ecf0;
+        }
+
+        .roles-table td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            color: #303133;
+        }
+
+        .roles-table tr:hover td {
+            background: #f5f7fa;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #909399;
+            font-size: 14px;
+        }
+        .empty-state .hint { font-size: 12px; color: #bbb; margin-top: 8px; }
+
+        /* 模态框 */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.45);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        .modal {
+            background: #fff; border-radius: 10px;
+            width: 520px; max-height: 75vh;
+            display: flex; flex-direction: column;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+        }
+        .modal-header {
+            padding: 16px 20px; border-bottom: 1px solid #eee;
+            font-weight: 600; font-size: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-close { cursor: pointer; font-size: 18px; color: #999; background: none; border: none; }
+        .modal-close:hover { color: #333; }
+        .modal-body { padding: 16px 20px; overflow-y: auto; flex: 1; }
+        .modal-body .role-option {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 12px; border-radius: 6px; transition: background 0.1s;
+        }
+        .modal-body .role-option:hover { background: #f5f7fa; }
+        .modal-body .role-option input { width: 16px; height: 16px; cursor: pointer; accent-color: #409eff; }
+        .modal-body .role-option .role-name { font-weight: 600; font-size: 13px; }
+        .modal-body .role-option .role-info { font-size: 12px; color: #909399; }
+        .modal-footer {
+            padding: 12px 20px; border-top: 1px solid #eee;
+            display: flex; justify-content: flex-end; gap: 10px;
+        }
+        .modal-info { font-size: 12px; color: #909399; margin-bottom: 10px; }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="top-nav">
+        <div class="logo-area">
+            <div class="logo-icon">W</div>
+            <div class="logo-text">仓储管理系统</div>
+        </div>
+        <div class="nav-tabs">
+            <div class="nav-tab active">PC端</div>
+            <div class="nav-tab">PDA端</div>
+        </div>
+        <div class="user-info">
+            <span>👤 管理员</span>
+            <span>⚙️</span>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <!-- 左侧：菜单树（支持多选） -->
+        <div class="menu-panel">
+            <div class="panel-header">
+                <h3>菜单树 <span style="font-size:12px; color:#909399; font-weight:normal;">（可多选）</span></h3>
+                <div class="menu-search">
+                    <input type="text" id="menuSearch" placeholder="搜索菜单" autocomplete="off">
+                </div>
+            </div>
+            <div class="menu-tree-container" id="menuTreeContainer">
+                <!-- 动态渲染菜单树 -->
+            </div>
+        </div>
+
+        <!-- 右侧：角色列表（同时拥有所有选中菜单的角色） -->
+        <div class="roles-panel">
+            <div class="roles-header">
+                <div class="selected-menus-info" id="selectedMenusInfo">
+                    <span class="label">已选菜单：</span>
+                    <span class="value">暂未选择任何菜单</span>
+                    <div class="menus-tags" id="menusTags"></div>
+                </div>
+                <div class="query-actions">
+                    <button class="btn btn-primary" id="queryBtn">🔍 查询</button>
+                    <button class="btn btn-default" id="clearBtn">清空选中</button>
+                    <button class="btn btn-success" id="batchAuthBtn" style="background:#2a9d5c;color:#fff;border:none;">✅ 批量授权</button>
+                    <button class="btn btn-danger" id="deletePermBtn" style="background:#d64045;color:#fff;border:none;">🗑 删除菜单权限</button>
+                    <button class="export-btn" id="exportBtn">📎 导出</button>
+                </div>
+                <div style="margin-top: 16px;">
+                    <h3>
+                        📋 同时拥有以上菜单权限的角色
+                        <span id="rolesCount" class="roles-count">0</span>
+                    </h3>
+                </div>
+            </div>
+            <div class="roles-table-container" id="rolesTableContainer">
+                <div class="empty-state">✅ 请先勾选左侧菜单，然后点击「查询」</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==================== 菜单树数据 ====================
+    const menuTreeData = [
+        { id: "home", name: "主页", code: "HOME", parentId: null, children: [] },
+        { id: "inbound", name: "入库管理", code: "INBOUND", parentId: null, children: [] },
+        { id: "outbound", name: "出库管理", code: "OUTBOUND", parentId: null, children: [] },
+        { id: "smart_produce", name: "智能设备生产入库", code: "SMART_PRODUCE", parentId: null, children: [] },
+        { id: "vehicle", name: "车辆管理", code: "VEHICLE", parentId: null, children: [] },
+        { id: "internal", name: "库内管理", code: "INTERNAL", parentId: null, children: [] },
+        { id: "report", name: "报表管理", code: "REPORT", parentId: null, children: [] },
+        { id: "basic", name: "基础设置", code: "BASIC", parentId: null, children: [] },
+        { id: "config", name: "配置管理", code: "CONFIG", parentId: null, children: [] },
+        { id: "exception", name: "异常管理", code: "EXCEPTION", parentId: null, children: [] },
+        { id: "system", name: "系统管理", code: "SYSTEM", parentId: null, children: [] },
+        { id: "qa", name: "智能问答", code: "QA", parentId: null, children: [] },
+        { id: "loading_time", name: "装卸工时管理", code: "LOADING_TIME", parentId: null, children: [] },
+        { id: "download", name: "下载中心", code: "DOWNLOAD", parentId: null, children: [] },
+        { id: "strategy", name: "策略管理", code: "STRATEGY", parentId: null, children: [] }
+    ];
+
+    // 构建子菜单
+    function buildChildren() {
+        const inboundNode = menuTreeData.find(m => m.id === "inbound");
+        if (inboundNode) inboundNode.children = [
+            { id: "inbound_purchase", name: "采购入库", code: "INBOUND_PURCHASE", parentId: "inbound", children: [] },
+            { id: "inbound_return", name: "退货入库", code: "INBOUND_RETURN", parentId: "inbound", children: [] },
+            { id: "inbound_transfer", name: "调拨入库", code: "INBOUND_TRANSFER", parentId: "inbound", children: [] }
+        ];
+        const outboundNode = menuTreeData.find(m => m.id === "outbound");
+        if (outboundNode) outboundNode.children = [
+            { id: "outbound_sale", name: "销售出库", code: "OUTBOUND_SALE", parentId: "outbound", children: [] },
+            { id: "outbound_return", name: "退货出库", code: "OUTBOUND_RETURN", parentId: "outbound", children: [] },
+            { id: "outbound_picking", name: "拣货管理", code: "OUTBOUND_PICKING", parentId: "outbound", children: [] }
+        ];
+        const internalNode = menuTreeData.find(m => m.id === "internal");
+        if (internalNode) internalNode.children = [
+            { id: "internal_inventory", name: "库存盘点", code: "INTERNAL_INVENTORY", parentId: "internal", children: [] },
+            { id: "internal_move", name: "移库管理", code: "INTERNAL_MOVE", parentId: "internal", children: [] },
+            { id: "internal_replenish", name: "补货管理", code: "INTERNAL_REPLENISH", parentId: "internal", children: [] }
+        ];
+        const reportNode = menuTreeData.find(m => m.id === "report");
+        if (reportNode) reportNode.children = [
+            { id: "report_inventory", name: "库存报表", code: "REPORT_INVENTORY", parentId: "report", children: [] },
+            { id: "report_inout", name: "出入库报表", code: "REPORT_INOUT", parentId: "report", children: [] },
+            { id: "report_analysis", name: "数据分析", code: "REPORT_ANALYSIS", parentId: "report", children: [] }
+        ];
+        const systemNode = menuTreeData.find(m => m.id === "system");
+        if (systemNode) systemNode.children = [
+            { id: "system_user", name: "用户管理", code: "SYSTEM_USER", parentId: "system", children: [] },
+            { id: "system_role", name: "角色管理", code: "SYSTEM_ROLE", parentId: "system", children: [] },
+            { id: "system_log", name: "操作日志", code: "SYSTEM_LOG", parentId: "system", children: [] }
+        ];
+        const basicNode = menuTreeData.find(m => m.id === "basic");
+        if (basicNode) basicNode.children = [
+            { id: "basic_warehouse", name: "仓库信息", code: "BASIC_WAREHOUSE", parentId: "basic", children: [] },
+            { id: "basic_customer", name: "客户信息", code: "BASIC_CUSTOMER", parentId: "basic", children: [] },
+            { id: "basic_supplier", name: "供应商信息", code: "BASIC_SUPPLIER", parentId: "basic", children: [] }
+        ];
+        const strategyNode = menuTreeData.find(m => m.id === "strategy");
+        if (strategyNode) strategyNode.children = [
+            { id: "strategy_allocate", name: "分配策略", code: "STRATEGY_ALLOCATE", parentId: "strategy", children: [] },
+            { id: "strategy_pick", name: "拣货策略", code: "STRATEGY_PICK", parentId: "strategy", children: [] }
+        ];
+    }
+    buildChildren();
+
+    // ==================== 角色数据 ====================
+    const allRoles = [
+        { id: "role_001", name: "系统管理员", code: "ADMIN", department: "技术中心", description: "拥有所有权限" },
+        { id: "role_002", name: "仓库主管", code: "WAREHOUSE_MGR", department: "仓储部", description: "管理仓库作业" },
+        { id: "role_003", name: "操作员", code: "OPERATOR", department: "仓储部", description: "执行出入库操作" },
+        { id: "role_004", name: "审计员", code: "AUDITOR", department: "合规部", description: "审计日志和报表" },
+        { id: "role_005", name: "查看者", code: "VIEWER", department: "各部门", description: "只读权限" },
+        { id: "role_006", name: "财务审核", code: "FINANCE", department: "财务部", description: "财务相关审批" },
+        { id: "role_007", name: "采购专员", code: "PURCHASE", department: "采购部", description: "采购入库管理" }
+    ];
+
+    // ==================== 菜单-角色权限映射 ====================
+    const menuRoleMapping = {
+        "home": ["role_001", "role_002", "role_003", "role_004", "role_005", "role_006", "role_007"],
+        "inbound": ["role_001", "role_002", "role_003", "role_007"],
+        "inbound_purchase": ["role_001", "role_002", "role_003", "role_007"],
+        "inbound_return": ["role_001", "role_002", "role_003"],
+        "inbound_transfer": ["role_001", "role_002", "role_003"],
+        "outbound": ["role_001", "role_002", "role_003"],
+        "outbound_sale": ["role_001", "role_002", "role_003"],
+        "outbound_return": ["role_001", "role_002", "role_003"],
+        "outbound_picking": ["role_001", "role_002", "role_003"],
+        "smart_produce": ["role_001", "role_002"],
+        "vehicle": ["role_001", "role_002"],
+        "internal": ["role_001", "role_002", "role_003"],
+        "internal_inventory": ["role_001", "role_002", "role_003", "role_004"],
+        "internal_move": ["role_001", "role_002", "role_003"],
+        "internal_replenish": ["role_001", "role_002"],
+        "report": ["role_001", "role_002", "role_004", "role_005"],
+        "report_inventory": ["role_001", "role_002", "role_004", "role_005"],
+        "report_inout": ["role_001", "role_002", "role_004", "role_005"],
+        "report_analysis": ["role_001", "role_004"],
+        "basic": ["role_001"],
+        "basic_warehouse": ["role_001"],
+        "basic_customer": ["role_001"],
+        "basic_supplier": ["role_001"],
+        "config": ["role_001"],
+        "exception": ["role_001", "role_002", "role_004"],
+        "system": ["role_001"],
+        "system_user": ["role_001"],
+        "system_role": ["role_001"],
+        "system_log": ["role_001", "role_004"],
+        "qa": ["role_001", "role_002", "role_003", "role_005"],
+        "loading_time": ["role_001", "role_002", "role_003"],
+        "download": ["role_001", "role_002", "role_003", "role_004", "role_005"],
+        "strategy": ["role_001"],
+        "strategy_allocate": ["role_001"],
+        "strategy_pick": ["role_001"]
+    };
+
+    // 获取所有菜单ID（扁平化）
+    function getAllMenuIds() {
+        const ids = [];
+        function traverse(node) {
+            ids.push(node.id);
+            if (node.children) node.children.forEach(child => traverse(child));
+        }
+        menuTreeData.forEach(node => traverse(node));
+        return ids;
+    }
+
+    // 获取节点的所有子节点ID
+    function getAllChildrenIds(node) {
+        const ids = [];
+        function traverse(n) {
+            if (n.children) {
+                n.children.forEach(child => {
+                    ids.push(child.id);
+                    traverse(child);
+                });
+            }
+        }
+        traverse(node);
+        return ids;
+    }
+
+    // 获取节点的所有父节点ID
+    function getAllParentIds(nodeId, data = menuTreeData, parents = []) {
+        for (const item of data) {
+            if (item.id === nodeId) return parents;
+            if (item.children) {
+                const result = getAllParentIds(nodeId, item.children, [...parents, item.id]);
+                if (result) return result;
+            }
+        }
+        return [];
+    }
+
+    // 状态管理
+    let currentSearchKeyword = "";
+    let expandedNodes = new Set();
+    let selectedMenuIds = new Set();  // 选中的菜单ID集合
+    let selectedRoleIds = new Set();  // 勾选的角色ID集合（用于删除权限）
+    let queryResults = [];  // 查询结果角色列表
+
+    // 获取菜单名称
+    function getMenuName(menuId, data = menuTreeData) {
+        for (let item of data) {
+            if (item.id === menuId) return item.name;
+            if (item.children) {
+                const found = getMenuName(menuId, item.children);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+
+    // 获取菜单路径
+    function getMenuPath(menuId, data = menuTreeData, path = []) {
+        for (let item of data) {
+            if (item.id === menuId) return [...path, item.name];
+            if (item.children) {
+                const result = getMenuPath(menuId, item.children, [...path, item.name]);
+                if (result) return result;
+            }
+        }
+        return null;
+    }
+
+    // 更新节点勾选（联动）
+    function updateNodeCheck(node, checked) {
+        if (checked) {
+            selectedMenuIds.add(node.id);
+        } else {
+            selectedMenuIds.delete(node.id);
+        }
+
+        // 联动：勾选父节点时，勾选所有子节点
+        if (checked && node.children && node.children.length) {
+            const childrenIds = getAllChildrenIds(node);
+            childrenIds.forEach(id => selectedMenuIds.add(id));
+        }
+        
+        // 联动：取消子节点时，检查并取消父节点（如果所有子节点都未选中）
+        if (!checked) {
+            const parentIds = getAllParentIds(node.id, menuTreeData);
+            for (const parentId of parentIds) {
+                let parentNode = null;
+                function findParent(nodes, pid) {
+                    for (const n of nodes) {
+                        if (n.id === pid) return n;
+                        if (n.children) {
+                            const found = findParent(n.children, pid);
+                            if (found) return found;
+                        }
+                    }
+                    return null;
+                }
+                parentNode = findParent(menuTreeData, parentId);
+                if (parentNode && parentNode.children) {
+                    const allChildrenSelected = parentNode.children.every(child => selectedMenuIds.has(child.id));
+                    if (!allChildrenSelected) {
+                        selectedMenuIds.delete(parentId);
+                    }
+                }
+            }
+        }
+        
+        // 联动：勾选子节点时，勾选所有父节点
+        if (checked) {
+            const parentIds = getAllParentIds(node.id, menuTreeData);
+            parentIds.forEach(id => selectedMenuIds.add(id));
+        }
+        
+        // 更新已选菜单展示
+        updateSelectedMenusDisplay();
+    }
+
+    // 更新已选菜单展示
+    function updateSelectedMenusDisplay() {
+        const menusTagContainer = document.getElementById("menusTags");
+        const selectedValueSpan = document.querySelector("#selectedMenusInfo .value");
+        
+        const selectedMenus = Array.from(selectedMenuIds).map(id => ({
+            id: id,
+            name: getMenuName(id)
+        })).filter(m => m.name);
+        
+        if (selectedMenus.length === 0) {
+            selectedValueSpan.textContent = "暂未选择任何菜单";
+            menusTagContainer.innerHTML = "";
+        } else {
+            selectedValueSpan.textContent = `已选择 ${selectedMenus.length} 个菜单`;
+            menusTagContainer.innerHTML = selectedMenus.map(menu => `
+                <span class="menu-tag">
+                    ${menu.name}
+                    <span class="remove" data-id="${menu.id}">✕</span>
+                </span>
+            `).join("");
+            
+            // 绑定删除事件
+            document.querySelectorAll(".menu-tag .remove").forEach(el => {
+                el.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    const menuId = el.getAttribute("data-id");
+                    selectedMenuIds.delete(menuId);
+                    refreshMenuTree();  // 刷新菜单树，同步复选框状态
+                    updateSelectedMenusDisplay();
+                    // 清空查询结果
+                    queryResults = [];
+                    renderRolesTable([]);
+                });
+            });
+        }
+    }
+
+    // 检查节点是否匹配搜索
+    function matchesSearch(node, keyword) {
+        if (!keyword) return true;
+        if (node.name.toLowerCase().includes(keyword.toLowerCase())) return true;
+        if (node.code && node.code.toLowerCase().includes(keyword.toLowerCase())) return true;
+        if (node.children) {
+            return node.children.some(child => matchesSearch(child, keyword));
+        }
+        return false;
+    }
+
+    // 渲染菜单树
+    function renderMenuTree(nodes, level = 0) {
+        if (!nodes || !nodes.length) return document.createDocumentFragment();
+        
+        const fragment = document.createDocumentFragment();
+        const ul = document.createElement("ul");
+        ul.className = "menu-tree";
+        
+        for (const node of nodes) {
+            if (!matchesSearch(node, currentSearchKeyword)) continue;
+            
+            const li = document.createElement("li");
+            const nodeDiv = document.createElement("div");
+            nodeDiv.className = "menu-node";
+            
+            const hasChildren = node.children && node.children.length;
+            const expandIcon = document.createElement("span");
+            expandIcon.className = "expand-icon";
+            if (hasChildren) {
+                expandIcon.textContent = expandedNodes.has(node.id) ? "▼" : "▶";
+                expandIcon.onclick = (e) => {
+                    e.stopPropagation();
+                    if (expandedNodes.has(node.id)) {
+                        expandedNodes.delete(node.id);
+                    } else {
+                        expandedNodes.add(node.id);
+                    }
+                    refreshMenuTree();
+                };
+            } else {
+                expandIcon.textContent = "•";
+                expandIcon.style.color = "#dcdfe6";
+            }
+            
+            const checkboxSpan = document.createElement("span");
+            checkboxSpan.className = "checkbox-wrapper";
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.checked = selectedMenuIds.has(node.id);
+            checkbox.onchange = (e) => {
+                e.stopPropagation();
+                updateNodeCheck(node, checkbox.checked);
+                refreshMenuTree();
+                // 清空查询结果（因为选中菜单变化了）
+                queryResults = [];
+                renderRolesTable([]);
+            };
+            checkboxSpan.appendChild(checkbox);
+            
+            const labelSpan = document.createElement("span");
+            labelSpan.className = "menu-label";
+            labelSpan.textContent = node.name;
+            
+            const codeSpan = document.createElement("span");
+            codeSpan.className = "menu-code";
+            codeSpan.textContent = node.code;
+            
+            nodeDiv.appendChild(expandIcon);
+            nodeDiv.appendChild(checkboxSpan);
+            nodeDiv.appendChild(labelSpan);
+            nodeDiv.appendChild(codeSpan);
+            
+            li.appendChild(nodeDiv);
+            
+            if (hasChildren && expandedNodes.has(node.id)) {
+                const childrenUl = renderMenuTree(node.children, level + 1);
+                const childrenContainer = document.createElement("div");
+                childrenContainer.className = "children";
+                childrenContainer.appendChild(childrenUl);
+                li.appendChild(childrenContainer);
+            }
+            
+            ul.appendChild(li);
+        }
+        
+        fragment.appendChild(ul);
+        return fragment;
+    }
+
+    function refreshMenuTree() {
+        const container = document.getElementById("menuTreeContainer");
+        const fragment = renderMenuTree(menuTreeData);
+        container.innerHTML = "";
+        container.appendChild(fragment);
+        
+        if (container.children.length === 0 || (container.children[0].children && container.children[0].children.length === 0)) {
+            container.innerHTML = '<div style="text-align: center; padding: 40px; color: #909399;">未找到匹配的菜单</div>';
+        }
+    }
+
+    // 查询：找出同时拥有所有选中菜单权限的角色（交集）
+    function queryRoles() {
+        if (selectedMenuIds.size === 0) {
+            alert("请至少选择一个菜单");
+            return;
+        }
+        
+        const selectedMenus = Array.from(selectedMenuIds);
+        
+        // 获取每个菜单对应的角色ID集合
+        const roleSets = selectedMenus.map(menuId => {
+            const roleIds = menuRoleMapping[menuId] || [];
+            return new Set(roleIds);
+        });
+        
+        // 计算交集：同时拥有所有菜单的角色
+        if (roleSets.length === 0) {
+            queryResults = [];
+            renderRolesTable([]);
+            return;
+        }
+        
+        // 从第一个集合开始，逐个求交集
+        let intersection = new Set(roleSets[0]);
+        for (let i = 1; i < roleSets.length; i++) {
+            intersection = new Set([...intersection].filter(x => roleSets[i].has(x)));
+        }
+        
+        // 获取角色详情
+        queryResults = allRoles.filter(role => intersection.has(role.id));
+        renderRolesTable(queryResults);
+    }
+
+    // 渲染角色表格
+    function renderRolesTable(roles) {
+        const container = document.getElementById("rolesTableContainer");
+        const countSpan = document.getElementById("rolesCount");
+        countSpan.textContent = roles.length;
+        
+        if (!roles.length) {
+            container.innerHTML = '<div class="empty-state">📭 没有角色同时拥有以上所有菜单权限</div>';
+            return;
+        }
+
+        const allChecked = roles.every(r => selectedRoleIds.has(r.id));
+        const tableHtml = `
+            <table class="roles-table">
+                <thead>
+                    <tr>
+                        <th style="width:40px;"><input type="checkbox" id="selectAllRoles" ${allChecked ? 'checked' : ''}></th>
+                        <th>角色名称</th>
+                        <th>角色编码</th>
+                        <th>所属基地</th>
+                        <th>描述</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${roles.map(role => `
+                        <tr>
+                            <td><input type="checkbox" class="role-checkbox" data-role-id="${role.id}" ${selectedRoleIds.has(role.id) ? 'checked' : ''}></td>
+                            <td><strong>${role.name}</strong></td>
+                            <td>${role.code}</td>
+                            <td>${role.department}</td>
+                            <td style="color: #909399;">${role.description || '-'}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+        container.innerHTML = tableHtml;
+
+        // 全选/取消全选
+        const selectAllCheckbox = document.getElementById("selectAllRoles");
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener("change", (e) => {
+                if (e.target.checked) {
+                    roles.forEach(r => selectedRoleIds.add(r.id));
+                } else {
+                    roles.forEach(r => selectedRoleIds.delete(r.id));
+                }
+                renderRolesTable(roles);
+            });
+        }
+
+        // 单个角色勾选
+        document.querySelectorAll(".role-checkbox").forEach(cb => {
+            cb.addEventListener("change", (e) => {
+                const roleId = e.target.dataset.roleId;
+                if (e.target.checked) {
+                    selectedRoleIds.add(roleId);
+                } else {
+                    selectedRoleIds.delete(roleId);
+                }
+                renderRolesTable(roles);
+            });
+        });
+    }
+
+    // 批量授权：弹出模态框，从所有角色中选择并授权
+    function batchAuthorize() {
+        if (selectedMenuIds.size === 0) {
+            alert("请先在左侧选择要授权的菜单");
+            return;
+        }
+
+        const menuNames = Array.from(selectedMenuIds).map(id => getMenuName(id)).filter(n => n);
+
+        // 构建模态框
+        const overlay = document.createElement("div");
+        overlay.className = "modal-overlay";
+        overlay.innerHTML = `
+            <div class="modal">
+                <div class="modal-header">
+                    <span>📋 批量授权 — 选择角色</span>
+                    <button class="modal-close">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-info">将以下 <b>${menuNames.length}</b> 个菜单授权给选中的角色：<br>👉 ${menuNames.join("、")}</div>
+                    <div style="margin-bottom:8px;">
+                        <label><input type="checkbox" id="modalSelectAll" checked> <b>全选/取消</b></label>
+                    </div>
+                    ${allRoles.map(r => `
+                        <div class="role-option">
+                            <input type="checkbox" class="modal-role-cb" data-role-id="${r.id}" checked>
+                            <span class="role-name">${r.name}</span>
+                            <span class="role-info">${r.code} · ${r.department}</span>
+                        </div>
+                    `).join("")}
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-default" id="modalCancelBtn">取消</button>
+                    <button class="btn btn-primary" id="modalConfirmBtn">✅ 确认授权</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        // 全选/取消
+        const selectAll = overlay.querySelector("#modalSelectAll");
+        const checkboxes = overlay.querySelectorAll(".modal-role-cb");
+        selectAll.addEventListener("change", () => {
+            checkboxes.forEach(cb => { cb.checked = selectAll.checked; });
+        });
+
+        // 关闭
+        const closeModal = () => overlay.remove();
+        overlay.querySelector(".modal-close").addEventListener("click", closeModal);
+        overlay.querySelector("#modalCancelBtn").addEventListener("click", closeModal);
+        overlay.addEventListener("click", (e) => { if (e.target === overlay) closeModal(); });
+
+        // 确认授权
+        overlay.querySelector("#modalConfirmBtn").addEventListener("click", () => {
+            const selectedRoleIds = [];
+            checkboxes.forEach(cb => {
+                if (cb.checked) selectedRoleIds.push(cb.dataset.roleId);
+            });
+
+            if (selectedRoleIds.length === 0) {
+                alert("请至少选择一个角色");
+                return;
+            }
+
+            // 将选中的菜单授权给选中的角色
+            for (const menuId of selectedMenuIds) {
+                if (!menuRoleMapping[menuId]) {
+                    menuRoleMapping[menuId] = [];
+                }
+                for (const rid of selectedRoleIds) {
+                    if (!menuRoleMapping[menuId].includes(rid)) {
+                        menuRoleMapping[menuId].push(rid);
+                    }
+                }
+            }
+
+            const roleNames = selectedRoleIds.map(id => {
+                const r = allRoles.find(r => r.id === id);
+                return r ? r.name : id;
+            }).join("、");
+
+            closeModal();
+            queryRoles();
+            alert(`✅ 已将 ${menuNames.length} 个菜单授权给 ${selectedRoleIds.length} 个角色\n角色：${roleNames}`);
+        });
+    }
+
+    // 删除选中角色的菜单权限
+    function deleteMenuPermissions() {
+        if (selectedMenuIds.size === 0) {
+            alert("请先在左侧选择要删除的菜单");
+            return;
+        }
+        if (selectedRoleIds.size === 0) {
+            alert("请先在角色列表中勾选要操作的角色");
+            return;
+        }
+
+        const menuNames = Array.from(selectedMenuIds).map(id => getMenuName(id)).filter(n => n).join("、");
+        const roleNames = Array.from(selectedRoleIds).map(id => {
+            const r = allRoles.find(r => r.id === id);
+            return r ? r.name : id;
+        }).join("、");
+
+        if (!confirm(`确认要从以下角色中删除所选菜单权限？\n\n角色：${roleNames}\n菜单：${menuNames}`)) {
+            return;
+        }
+
+        // 从 menuRoleMapping 中移除
+        for (const menuId of selectedMenuIds) {
+            if (menuRoleMapping[menuId]) {
+                menuRoleMapping[menuId] = menuRoleMapping[menuId].filter(rid => !selectedRoleIds.has(rid));
+            }
+        }
+
+        // 重新查询刷新表格
+        const deletedCount = Array.from(selectedRoleIds).length;
+        selectedRoleIds.clear();
+        queryRoles();
+        alert(`✅ 已从 ${deletedCount} 个角色中删除所选菜单权限`);
+    }
+
+    // 清空所有选中
+    function clearSelection() {
+        selectedMenuIds.clear();
+        selectedRoleIds.clear();
+        queryResults = [];
+        refreshMenuTree();
+        updateSelectedMenusDisplay();
+        renderRolesTable([]);
+    }
+
+    // 导出
+    function exportToCSV() {
+        if (queryResults.length === 0) {
+            alert("暂无数据可导出，请先选择菜单并查询");
+            return;
+        }
+        
+        const selectedMenuNames = Array.from(selectedMenuIds).map(id => getMenuName(id)).filter(n => n).join("、");
+        let csvContent = "\uFEFF角色名称,角色编码,所属基地,描述\n";
+        queryResults.forEach(role => {
+            csvContent += `"${role.name}","${role.code}","${role.department}","${role.description || ''}"\n`;
+        });
+        
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.setAttribute("download", `菜单角色查询_${selectedMenuNames}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    // 搜索防抖
+    let searchTimeout;
+    function initSearch() {
+        const searchInput = document.getElementById("menuSearch");
+        searchInput.addEventListener("input", (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentSearchKeyword = e.target.value;
+                if (currentSearchKeyword) {
+                    // 展开所有节点以便搜索
+                    function expandAll(node) {
+                        if (node.children) {
+                            expandedNodes.add(node.id);
+                            node.children.forEach(child => expandAll(child));
+                        }
+                    }
+                    menuTreeData.forEach(node => expandAll(node));
+                }
+                refreshMenuTree();
+            }, 300);
+        });
+    }
+
+    // 初始化展开一级菜单
+    function initExpand() {
+        menuTreeData.forEach(node => expandedNodes.add(node.id));
+    }
+
+    // 初始化
+    function init() {
+        initExpand();
+        refreshMenuTree();
+        initSearch();
+        updateSelectedMenusDisplay();
+        
+        document.getElementById("queryBtn").addEventListener("click", queryRoles);
+        document.getElementById("clearBtn").addEventListener("click", clearSelection);
+        document.getElementById("batchAuthBtn").addEventListener("click", batchAuthorize);
+        document.getElementById("deletePermBtn").addEventListener("click", deleteMenuPermissions);
+        document.getElementById("exportBtn").addEventListener("click", exportToCSV);
+    }
+    
+    init();
+</script>
+</body>
+</html>
