@@ -339,6 +339,14 @@
             opacity: 1;
         }
 
+        .menu-group-toggle:hover {
+            background: #d9ecff !important;
+        }
+
+        .menu-group-children {
+            line-height: 2;
+        }
+
         .roles-header h3 {
             font-size: 16px;
             font-weight: 600;
@@ -954,89 +962,72 @@
         return null;
     }
 
-    // 更新已选菜单展示（带父子层级）
+    // 更新已选菜单展示（可折叠分组）
     function updateSelectedMenusDisplay() {
         const menusTagContainer = document.getElementById("menusTags");
         const selectedValueSpan = document.querySelector("#selectedMenusInfo .value");
-        
         const selectedIds = Array.from(selectedMenuIds);
-        
+
         if (selectedIds.length === 0) {
             selectedValueSpan.textContent = "暂未选择任何菜单";
             menusTagContainer.innerHTML = "";
             return;
         }
-        
-        selectedValueSpan.textContent = `已选择 ${selectedIds.length} 个菜单`;
 
-        // 构建层级分组：找出每个选中菜单的父节点，按父节点分组
-        const groups = {};  // { parentId: { parentName, children: [{id, name}], ... } }
-        const orphans = []; // 顶层菜单（无父节点）
+        // 按顶层父节点分组
+        const topGroups = {}; // { topParentName: { children: [{id,name}], count } }
+        const directOrphans = []; // 本身是顶层菜单
 
         for (const mid of selectedIds) {
             const menuPath = getMenuPath(mid);
             const menuName = getMenuName(mid);
             if (!menuName) continue;
-            
+
             if (menuPath && menuPath.length > 1) {
-                // 有父节点，取直接父节点
-                const parentName = menuPath[menuPath.length - 2]; // 倒数第二个是直接父节点
-                // 从树中找父节点ID
-                let parentId = null;
-                function findParentId(nodes, childId) {
-                    for (const n of nodes) {
-                        if (n.children) {
-                            for (const c of n.children) {
-                                if (c.id === childId) { parentId = n.id; return; }
-                            }
-                            findParentId(n.children, childId);
-                        }
-                    }
-                }
-                findParentId(menuTreeData, mid);
-                const key = parentId || parentName;
-                if (!groups[key]) groups[key] = { parentName, children: [] };
-                groups[key].children.push({ id: mid, name: menuName });
+                const topParent = menuPath[0]; // 顶层父节点名
+                if (!topGroups[topParent]) topGroups[topParent] = { children: [] };
+                topGroups[topParent].children.push({ id: mid, name: menuName });
             } else {
-                orphans.push({ id: mid, name: menuName });
+                directOrphans.push({ id: mid, name: menuName });
             }
         }
 
-        // 将同名的孤儿合并到分组中
-        const orphanNames = new Set(orphans.map(o => o.name));
-        const usedParents = new Set();
+        // 清理直接孤儿中的重复（既在分组中又是孤儿的，说明是顶层父节点本身被选中）
+        const groupNames = new Set(Object.keys(topGroups));
+        const cleanOrphans = directOrphans.filter(o => !groupNames.has(o.name));
+
+        const groupCount = Object.keys(topGroups).length + (cleanOrphans.length > 0 ? 1 : 0);
+        selectedValueSpan.innerHTML = `已选择 ${selectedIds.length} 个菜单（${groupCount} 个分类）
+            <span style="float:right;font-weight:normal;font-size:11px;">
+                <span style="color:#4099A3;cursor:pointer;user-select:none;margin-left:8px;" onclick="toggleAllMenuGroups(true)">展开全部</span>
+                <span style="color:#909399;margin:0 4px;">|</span>
+                <span style="color:#4099A3;cursor:pointer;user-select:none;" onclick="toggleAllMenuGroups(false)">收起全部</span>
+            </span>`;
 
         let html = "";
 
-        // 先渲染分组
-        for (const [key, group] of Object.entries(groups)) {
-            html += `<div class="menu-group" style="margin-bottom:6px;">`;
-            html += `<span class="menu-parent-tag" style="background:#e6f0ff;color:#1a5fb4;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:600;display:inline-block;margin-right:4px;margin-bottom:2px;">📁 ${group.parentName}</span>`;
-            html += group.children.map(c => `
-                <span class="menu-tag" style="margin-bottom:2px;">
-                    ${c.name}
-                    <span class="remove" data-id="${c.id}">✕</span>
+        let gidx = 0;
+        for (const [topName, group] of Object.entries(topGroups)) {
+            const gid = `menuGroup_${gidx++}`;
+            html += `<div class="menu-group-row" style="margin-bottom:4px;">
+                <span class="menu-group-toggle" data-gid="${gid}" style="cursor:pointer;font-size:12px;color:#4099A3;user-select:none;font-weight:600;display:inline-flex;align-items:center;gap:4px;padding:2px 6px;border-radius:4px;background:#ecf5ff;" onclick="toggleMenuGroup('${gid}')">
+                    <span class="toggle-icon">▶</span> 📁 ${topName}（${group.children.length}个）
                 </span>
-            `).join("");
-            html += `</div>`;
-            usedParents.add(group.parentName);
+                <span class="menu-group-children" id="${gid}" style="display:none;margin-top:3px;margin-left:8px;">
+                    ${group.children.map(c => `<span class="menu-tag" style="margin:1px 2px;font-size:11px;padding:2px 7px;">${c.name}<span class="remove" data-id="${c.id}">✕</span></span>`).join("")}
+                </span>
+            </div>`;
         }
 
-        // 渲染孤儿（顶层无子节点的菜单和未被分组覆盖的顶层菜单）
-        const orphanTags = orphans.filter(o => !usedParents.has(o.name));
-        if (orphanTags.length > 0) {
-            html += `<div class="menu-group" style="margin-bottom:6px;">`;
-            html += orphanTags.map(o => `
-                <span class="menu-tag" style="margin-bottom:2px;">
-                    ${o.name}
-                    <span class="remove" data-id="${o.id}">✕</span>
-                </span>
-            `).join("");
+        // 直接孤儿
+        if (cleanOrphans.length > 0) {
+            html += `<div class="menu-group-row" style="margin-bottom:4px;">`;
+            html += cleanOrphans.map(o => `<span class="menu-tag" style="margin:1px 2px;">${o.name}<span class="remove" data-id="${o.id}">✕</span></span>`).join("");
             html += `</div>`;
         }
 
-        menusTagContainer.innerHTML = html || '<span style="color:#909399;font-size:12px;">无</span>';
-        
+        menusTagContainer.innerHTML = html;
+
         // 绑定删除事件
         document.querySelectorAll(".menu-tag .remove").forEach(el => {
             el.addEventListener("click", (e) => {
@@ -1048,6 +1039,30 @@
                 queryResults = [];
                 renderRolesTable([]);
             });
+        });
+    }
+
+    // 切换菜单分组展开/收起
+    function toggleMenuGroup(gid) {
+        const container = document.getElementById(gid);
+        const row = container ? container.parentElement : null;
+        const toggle = row ? row.querySelector(".menu-group-toggle .toggle-icon") : null;
+        if (!container || !toggle) return;
+        if (container.style.display === "none") {
+            container.style.display = "block";
+            toggle.textContent = "▼";
+        } else {
+            container.style.display = "none";
+            toggle.textContent = "▶";
+        }
+    }
+
+    function toggleAllMenuGroups(expand) {
+        document.querySelectorAll(".menu-group-children").forEach(el => {
+            el.style.display = expand ? "block" : "none";
+        });
+        document.querySelectorAll(".toggle-icon").forEach(el => {
+            el.textContent = expand ? "▼" : "▶";
         });
     }
 
