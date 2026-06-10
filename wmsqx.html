@@ -510,6 +510,39 @@
         }
         .modal-select:focus { border-color: #409eff; }
 
+        /* 右侧面板 Tab 切换 */
+        .right-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid #e8ecf0;
+        }
+        .right-tab {
+            padding: 8px 18px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #909399;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .right-tab:hover { color: #4099A3; }
+        .right-tab.active {
+            color: #4099A3;
+            border-bottom-color: #4099A3;
+        }
+        .tab-content {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .tab-content.hidden { display: none; }
+
         /* 滚动条 */
         ::-webkit-scrollbar {
             width: 6px;
@@ -603,25 +636,135 @@
                     <button class="btn btn-primary" id="queryBtn" disabled>🔍 查询</button>
                     <button class="btn btn-outline" id="clearBtn" disabled>清空选中</button>
                     <button class="btn btn-primary" id="batchAuthBtn" style="background:#4099A3;color:#fff;border:none;" disabled>✅ 授权</button>
-                    <button class="btn btn-primary" id="copyRoleBtn" style="background:#4099A3;color:#fff;border:none;" disabled>📋 复制角色权限</button>
+                    <button class="btn btn-primary" id="copyRoleBtn" style="background:#4099A3;color:#fff;border:none;">📋 复制角色权限</button>
                     <button class="btn btn-primary" id="deletePermBtn" style="background:#4099A3;color:#fff;border:none;" disabled>🗑 批量删除</button>
                     <button class="btn btn-outline" id="exportBtn" disabled>📎 导出</button>
                 </div>
                 <div style="margin-top: 16px;">
-                    <h3>
-                        📋 同时拥有以上菜单权限的角色
-                        <span id="rolesCount" class="roles-count">0</span>
-                    </h3>
+                    <div class="right-tabs">
+                        <span class="right-tab active" data-tab="roles" id="tabRolesBtn">📋 角色查询结果 <span id="rolesCount" class="roles-count">0</span></span>
+                        <span class="right-tab" data-tab="logs" id="tabLogsBtn">📝 操作日志 <span id="logCount" class="roles-count" style="background:#e6a23c;">0</span></span>
+                    </div>
                 </div>
             </div>
-            <div class="roles-table-container" id="rolesTableContainer">
-                <div class="empty-state">✅ 请先勾选左侧菜单，然后点击「查询」</div>
+            <!-- Tab: 角色查询结果 -->
+            <div class="tab-content" id="tabRolesContent">
+                <div class="roles-table-container" id="rolesTableContainer">
+                    <div class="empty-state">✅ 请先勾选左侧菜单，然后点击「查询」</div>
+                </div>
+            </div>
+            <!-- Tab: 操作日志 -->
+            <div class="tab-content hidden" id="tabLogsContent">
+                <div style="padding:10px 16px;border-bottom:1px solid #e8ecf0;background:#fafbfc;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                    <span style="font-size:12px;color:#606266;white-space:nowrap;">📅 日期范围：</span>
+                    <input type="date" id="logDateFrom" style="padding:4px 8px;border:1px solid #d0d5dd;border-radius:4px;font-size:12px;outline:none;">
+                    <span style="color:#909399;">至</span>
+                    <input type="date" id="logDateTo" style="padding:4px 8px;border:1px solid #d0d5dd;border-radius:4px;font-size:12px;outline:none;">
+                    <span style="font-size:12px;color:#606266;white-space:nowrap;margin-left:8px;">👤 操作人：</span>
+                    <input type="text" id="logOperatorFilter" placeholder="搜索操作人..." style="padding:4px 10px;border:1px solid #d0d5dd;border-radius:4px;font-size:12px;outline:none;width:140px;">
+                    <button class="btn btn-outline" style="padding:4px 12px;font-size:11px;" onclick="applyLogFilters()">🔍 筛选</button>
+                    <span style="font-size:11px;color:#909399;margin-left:auto;" id="logFilterSummary">显示全部</span>
+                </div>
+                <div id="logList" style="padding:12px 20px;font-size:12px;color:#909399;flex:1;overflow-y:auto;">暂无操作记录</div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
+    // ==================== 操作日志 ====================
+    const operationLogs = [];
+    const currentUser = "系统管理员 (admin)";
+
+    function addOperationLog(action, detail) {
+        const now = new Date();
+        operationLogs.unshift({
+            time: now.toLocaleString("zh-CN", { hour12: false }),
+            timestamp: now.getTime(),
+            action: action,
+            detail: detail,
+            operator: currentUser
+        });
+        if (operationLogs.length > 200) operationLogs.length = 200;
+        applyLogFilters();
+    }
+
+    // 默认近30天
+    function getDefaultLogDateRange() {
+        const to = new Date();
+        to.setHours(23, 59, 59, 999);
+        const from = new Date();
+        from.setDate(from.getDate() - 30);
+        from.setHours(0, 0, 0, 0);
+        return { from, to };
+    }
+
+    function applyLogFilters() {
+        const list = document.getElementById("logList");
+        const logCount = document.getElementById("logCount");
+        const summary = document.getElementById("logFilterSummary");
+        const dateFromEl = document.getElementById("logDateFrom");
+        const dateToEl = document.getElementById("logDateTo");
+        const operatorEl = document.getElementById("logOperatorFilter");
+
+        if (!list) return;
+
+        const fromVal = dateFromEl ? dateFromEl.value : "";
+        const toVal = dateToEl ? dateToEl.value : "";
+        const opFilter = (operatorEl ? operatorEl.value : "").trim().toLowerCase();
+
+        const fromTs = fromVal ? new Date(fromVal + "T00:00:00").getTime() : null;
+        const toTs = toVal ? new Date(toVal + "T23:59:59").getTime() : null;
+
+        let filtered = operationLogs;
+        if (fromTs) filtered = filtered.filter(log => log.timestamp >= fromTs);
+        if (toTs) filtered = filtered.filter(log => log.timestamp <= toTs);
+        if (opFilter) filtered = filtered.filter(log => log.operator.toLowerCase().includes(opFilter));
+
+        if (logCount) logCount.textContent = filtered.length;
+        if (summary) summary.textContent = `显示 ${filtered.length} / ${operationLogs.length} 条`;
+
+        if (filtered.length === 0) {
+            list.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#909399;">📭 暂无匹配的操作记录</div>';
+            return;
+        }
+        const badgeColor = (action) => {
+            if (action.includes('覆盖')) return '#d64045';
+            if (action.includes('累加')) return '#4099A3';
+            if (action.includes('删除')) return '#e6a23c';
+            if (action.includes('复制')) return '#8b5cf6';
+            return '#909399';
+        };
+        list.innerHTML = `
+            <div style="display:flex;padding:6px 0;border-bottom:2px solid #e8ecf0;font-size:11px;color:#909399;font-weight:600;gap:10px;">
+                <span style="width:140px;flex-shrink:0;">📅 操作时间</span>
+                <span style="width:105px;flex-shrink:0;text-align:center;">🏷️ 操作类型</span>
+                <span style="flex:1;">📋 操作内容</span>
+                <span style="width:140px;flex-shrink:0;text-align:right;">👤 操作人</span>
+            </div>
+            ${filtered.map((log) => `
+            <div style="padding:7px 0;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:10px;">
+                <span style="color:#606266;white-space:nowrap;font-size:11px;width:140px;flex-shrink:0;">${log.time}</span>
+                <span style="background:${badgeColor(log.action)};color:#fff;padding:2px 6px;border-radius:3px;font-size:10px;white-space:nowrap;width:105px;flex-shrink:0;text-align:center;">${log.action}</span>
+                <span style="color:#303133;font-size:12px;flex:1;">${log.detail}</span>
+                <span style="color:#909399;font-size:11px;width:140px;flex-shrink:0;text-align:right;">👤 ${log.operator}</span>
+            </div>
+            `).join("")}
+        `;
+    }
+
+    function renderOperationLogs() {
+        applyLogFilters();
+    }
+
+    // Tab 切换
+    function switchRightTab(tab) {
+        document.querySelectorAll(".right-tab").forEach(t => t.classList.remove("active"));
+        document.getElementById("tabRolesContent").classList.toggle("hidden", tab !== "roles");
+        document.getElementById("tabLogsContent").classList.toggle("hidden", tab !== "logs");
+        document.getElementById(tab === "roles" ? "tabRolesBtn" : "tabLogsBtn").classList.add("active");
+    }
+
     // ==================== 菜单树数据 ====================
     // 将原始菜单数据转换为带ID的树结构
     function buildMenuTree(rawData, prefix) {
@@ -1514,16 +1657,14 @@
                 }
                 closeModal();
                 queryRoles();
+                const actionType = (isOverwrite ? "覆盖授权" : "累加授权") + "(" + currentTab.toUpperCase() + ")";
+                addOperationLog(actionType, `${menuNames.length}个菜单 → ${selectedRoleIds.length}个角色（${roleNames}）`);
                 alert(`✅ 已${isOverwrite ? "覆盖" : "累加"}授权 ${menuNames.length} 个菜单给 ${selectedRoleIds.length} 个角色`);
             };
 
             choiceOverlay.querySelector("#choiceOverwrite").addEventListener("click", () => doAuthorize(true));
             choiceOverlay.querySelector("#choiceAppend").addEventListener("click", () => doAuthorize(false));
             choiceOverlay.querySelector("#choiceCancel").addEventListener("click", () => choiceOverlay.remove());
-
-            closeModal();
-            queryRoles();
-            alert(`✅ 已${isOverwrite ? "覆盖" : "累加"}授权 ${menuNames.length} 个菜单给 ${selectedRoleIds.length} 个角色\n角色：${roleNames}`);
         });
     }
 
@@ -1748,6 +1889,7 @@
 
             closeModal();
             queryRoles();
+            addOperationLog("复制权限(" + currentTab.toUpperCase() + ")", `源：${sourceRole.name} → ${targetIds.length}个目标角色，${sourceMenus.size}个菜单`);
             alert(`✅ 已将「${sourceRole.name}」的 ${sourceMenus.size} 个菜单权限复制给 ${targetIds.length} 个角色\n目标角色：${targetNames}`);
         });
     }
@@ -1898,6 +2040,7 @@
 
                 closeModal();
                 const deletedCount = targetRoleIds.size;
+                addOperationLog("删除权限(PDA)", `${menuNames.length}个菜单 → ${deletedCount}个角色 · 基地：${baseNames}`);
                 selectedRoleIds.clear();
                 queryRoles();
                 alert(`✅ 已从「${baseNames}」的 ${deletedCount} 个角色中删除所选菜单权限`);
@@ -1925,6 +2068,7 @@
 
         // 重新查询刷新表格
         const deletedCount = Array.from(selectedRoleIds).length;
+        addOperationLog("删除权限(PC)", `${menuNames.length}个菜单 → ${deletedCount}个角色（${roleNames}）`);
         selectedRoleIds.clear();
         queryRoles();
         alert(`✅ 已从 ${deletedCount} 个角色中删除所选菜单权限`);
@@ -2203,10 +2347,61 @@
             renderRolesTable([]);
         });
         // 初始化完成，启用所有操作按钮
-        ["queryBtn","clearBtn","batchAuthBtn","copyRoleBtn","deletePermBtn","exportBtn"].forEach(id => {
+        ["queryBtn","clearBtn","batchAuthBtn","deletePermBtn","exportBtn"].forEach(id => {
             const btn = document.getElementById(id);
             if (btn) btn.disabled = false;
         });
+
+        // 右侧 Tab 切换
+        document.querySelectorAll(".right-tab").forEach(tab => {
+            tab.addEventListener("click", () => switchRightTab(tab.dataset.tab));
+        });
+
+        // 日志筛选：默认近30天
+        const { from, to } = getDefaultLogDateRange();
+        const fmt = (d) => d.toISOString().split("T")[0];
+        document.getElementById("logDateFrom").value = fmt(from);
+        document.getElementById("logDateTo").value = fmt(to);
+        document.getElementById("logOperatorFilter").addEventListener("input", () => applyLogFilters());
+        document.getElementById("logDateFrom").addEventListener("change", () => applyLogFilters());
+        document.getElementById("logDateTo").addEventListener("change", () => applyLogFilters());
+
+        // 预置模拟日志数据（近30天内）
+        seedMockLogs();
+    }
+
+    function seedMockLogs() {
+        const now = Date.now();
+        const day = 86400000;
+        const operators = ["系统管理员 (admin)", "仓库主管 (wangcang)", "IT运维 (itops)"];
+        const mockData = [
+            { ago: 0.5, action: "覆盖授权(PC)", detail: "8个菜单 → 3个角色（系统管理员、仓库主管、操作员）", op: 0 },
+            { ago: 1, action: "累加授权(PDA)", detail: "5个菜单 → 2个角色（质检员1、发货员2）", op: 1 },
+            { ago: 2, action: "删除权限(PC)", detail: "3个菜单 → 1个角色（查看者）", op: 0 },
+            { ago: 3, action: "复制权限(PC)", detail: "源：系统管理员 → 2个目标角色，15个菜单", op: 2 },
+            { ago: 4, action: "删除权限(PDA)", detail: "6个菜单 → 4个角色 · 基地：珠海基地、长沙基地", op: 1 },
+            { ago: 6, action: "覆盖授权(PC)", detail: "12个菜单 → 5个角色（审计员、财务审核、采购专员…）", op: 0 },
+            { ago: 8, action: "复制权限(PDA)", detail: "源：仓库主管 → 3个目标角色，10个菜单", op: 2 },
+            { ago: 10, action: "累加授权(PC)", detail: "4个菜单 → 2个角色（备货员1、复核员2）", op: 1 },
+            { ago: 12, action: "删除权限(PC)", detail: "2个菜单 → 1个角色（统计员3）", op: 0 },
+            { ago: 15, action: "覆盖授权(PDA)", detail: "7个菜单 → 3个角色（收货员4、盘点员5、班长6）", op: 2 },
+            { ago: 18, action: "复制权限(PC)", detail: "源：审计员 → 1个目标角色，8个菜单", op: 1 },
+            { ago: 20, action: "累加授权(PDA)", detail: "3个菜单 → 4个角色（叉车工1、文员3…）", op: 0 },
+            { ago: 22, action: "删除权限(PDA)", detail: "5个菜单 → 2个角色 · 基地：郑州基地", op: 2 },
+            { ago: 25, action: "覆盖授权(PC)", detail: "10个菜单 → 3个角色（组长2、跟单员5、客服7）", op: 1 },
+            { ago: 28, action: "复制权限(PC)", detail: "源：操作员 → 2个目标角色，6个菜单", op: 0 },
+        ];
+        mockData.forEach(m => {
+            const ts = now - m.ago * day - Math.floor(Math.random() * 3600000);
+            operationLogs.push({
+                time: new Date(ts).toLocaleString("zh-CN", { hour12: false }),
+                timestamp: ts,
+                action: m.action,
+                detail: m.detail,
+                operator: operators[m.op]
+            });
+        });
+        applyLogFilters();
     }
     
     init();
