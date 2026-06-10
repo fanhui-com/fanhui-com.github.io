@@ -24,65 +24,117 @@
             flex-direction: column;
         }
 
-        /* 顶部导航 */
+        /* 顶部导航 — 老系统风格 */
         .top-nav {
-            background: linear-gradient(135deg, #1a2a3a 0%, #0f1a24 100%);
+            background: #4099A3;
             color: white;
-            padding: 0 24px;
-            height: 56px;
+            padding: 0 20px;
+            height: 50px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+            font-size: 13px;
         }
 
         .logo-area {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
+            margin-right: 20px;
         }
 
         .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: #409eff;
-            border-radius: 8px;
+            width: 28px;
+            height: 28px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: 18px;
+            font-size: 14px;
         }
 
         .logo-text {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             letter-spacing: 1px;
+            white-space: nowrap;
         }
 
-        .nav-tabs {
+        .nav-links {
             display: flex;
-            gap: 4px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 8px;
-            padding: 4px;
+            gap: 0;
+            flex: 1;
         }
 
-        .nav-tab {
-            padding: 6px 20px;
-            border-radius: 6px;
+        .nav-link {
+            padding: 0 16px;
+            height: 50px;
+            display: flex;
+            align-items: center;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: background 0.2s;
+            white-space: nowrap;
             font-size: 13px;
+            border-bottom: 3px solid transparent;
         }
 
-        .nav-tab.active {
-            background: #409eff;
+        .nav-link:hover, .nav-link.active {
+            background: rgba(255,255,255,0.1);
+            border-bottom-color: #6bc5d4;
+        }
+
+        .nav-base-select {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.3);
             color: white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            outline: none;
+            cursor: pointer;
+        }
+        .nav-base-select option { color: #333; }
+
+        .user-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-left: auto;
+            font-size: 12px;
         }
 
-        .nav-tab:hover:not(.active) {
+        .user-avatar {
+            width: 28px;
+            height: 28px;
             background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        /* 加载遮罩 */
+        .loading-overlay {
+            position: absolute; inset: 0;
+            background: rgba(255,255,255,0.7);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .loading-spinner {
+            width: 28px; height: 28px;
+            border: 3px solid #e0e0e0;
+            border-top-color: #1a5c4a;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .roles-table-container {
+            position: relative;
         }
 
         .user-info {
@@ -322,12 +374,12 @@
         }
 
         .btn-primary {
-            background: #409eff;
+            background: #4099A3;
             color: white;
         }
 
         .btn-primary:hover {
-            background: #66b1ff;
+            background: #5aadb5;
         }
 
         .btn-default {
@@ -341,6 +393,18 @@
             border-color: #c0c4cc;
         }
 
+        .btn-outline {
+            background: white;
+            border: 1px solid #4099A3;
+            color: #4099A3;
+        }
+
+        .btn-outline:hover {
+            background: #eaf5f6;
+            border-color: #5aadb5;
+            color: #5aadb5;
+        }
+
         .export-btn {
             margin-left: auto;
             padding: 6px 16px;
@@ -352,9 +416,10 @@
             transition: all 0.2s;
         }
 
-        .export-btn:hover {
-            border-color: #409eff;
-            color: #409eff;
+        .btn:disabled, .export-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            pointer-events: none;
         }
 
         /* 角色表格 */
@@ -458,16 +523,24 @@
 <div class="app">
     <div class="top-nav">
         <div class="logo-area">
-            <div class="logo-icon">W</div>
-            <div class="logo-text">仓储管理系统</div>
+            <div class="logo-icon">格</div>
+            <div class="logo-text">格力WMS系统</div>
         </div>
-        <div class="nav-tabs">
-            <div class="nav-tab active">PC端</div>
-            <div class="nav-tab">PDA端</div>
+        <div class="nav-links">
+            <div class="nav-link">WMS需求池</div>
+            <div class="nav-link">PDA端下载</div>
+            <div class="nav-link">下载中心</div>
+            <div class="nav-link">
+                <select class="nav-base-select">
+                    <option>珠海基地</option>
+                    <option>长沙基地</option>
+                    <option>合肥基地</option>
+                </select>
+            </div>
         </div>
-        <div class="user-info">
-            <span>👤 管理员</span>
-            <span>⚙️</span>
+        <div class="user-area">
+            <span>100218091</span>
+            <div class="user-avatar">👤</div>
         </div>
     </div>
 
@@ -476,18 +549,34 @@
         <div class="menu-panel">
             <div class="panel-header">
                 <h3>菜单树 <span style="font-size:12px; color:#909399; font-weight:normal;">（可多选）</span>
-                    <label style="margin-left:12px;font-size:12px;cursor:pointer;user-select:none;">
-                        <input type="checkbox" id="menuSelectAll" style="width:14px;height:14px;accent-color:#409eff;vertical-align:middle;"> <span style="color:#409eff;">全选</span>
-                    </label>
+                    <span style="margin-left:12px;font-size:12px;color:#606266;">端别：</span>
+                    <select id="tabSelect" style="padding:3px 8px;border:1px solid #d0d5dd;border-radius:4px;font-size:12px;outline:none;color:#303133;background:#fff;">
+                        <option value="pc" selected>PC端</option>
+                        <option value="pda">PDA端</option>
+                    </select>
                 </h3>
                 <div class="menu-search">
                     <input type="text" id="menuSearch" placeholder="搜索菜单" autocomplete="off">
                 </div>
-                <div style="margin-top:8px;position:relative;">
-                    <input type="text" id="roleFilterInput" placeholder="👤 输入角色名称查询拥有菜单..." autocomplete="off"
-                        style="width:100%;padding:7px 10px;border:1px solid #d0d5dd;border-radius:6px;font-size:12px;outline:none;color:#606266;">
-                    <div id="roleSuggestList" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:99;background:#fff;border:1px solid #d0d5dd;border-radius:6px;max-height:180px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.1);"></div>
+                <div style="margin-top:8px;display:flex;gap:6px;position:relative;">
+                    <div style="flex:1;position:relative;">
+                        <input type="text" id="roleFilterInput" placeholder="👤 输入角色名称查询拥有菜单..." autocomplete="off"
+                            style="width:100%;padding:7px 10px;border:1px solid #d0d5dd;border-radius:6px;font-size:12px;outline:none;color:#606266;">
+                        <div id="roleSuggestList" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:99;background:#fff;border:1px solid #d0d5dd;border-radius:6px;max-height:180px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.1);"></div>
+                    </div>
+                    <div id="baseFilterRow" style="display:none;width:45%;position:relative;">
+                        <input type="text" id="baseFilterInput" placeholder="🏭 选择基地..." autocomplete="off"
+                            style="width:100%;padding:7px 8px;border:1px solid #d0d5dd;border-radius:6px;font-size:12px;outline:none;color:#606266;background:#fff;">
+                        <div id="baseSuggestList" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:99;background:#fff;border:1px solid #d0d5dd;border-radius:6px;max-height:180px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.1);"></div>
+                    </div>
                 </div>
+            </div>
+            <div style="padding:10px 16px;background:#fafbfc;border-bottom:1px solid #e8ecf0;display:flex;align-items:center;gap:8px;">
+                <label style="font-size:13px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;">
+                    <input type="checkbox" id="menuSelectAll" style="width:16px;height:16px;accent-color:#409eff;">
+                    <b style="color:#409eff;">全选菜单</b>
+                </label>
+                <span style="font-size:11px;color:#909399;">勾选后将选中全部菜单进行查询</span>
             </div>
             <div class="menu-tree-container" id="menuTreeContainer">
                 <!-- 动态渲染菜单树 -->
@@ -503,12 +592,12 @@
                     <div class="menus-tags" id="menusTags"></div>
                 </div>
                 <div class="query-actions">
-                    <button class="btn btn-primary" id="queryBtn">🔍 查询</button>
-                    <button class="btn btn-default" id="clearBtn">清空选中</button>
-                    <button class="btn btn-success" id="batchAuthBtn" style="background:#2a9d5c;color:#fff;border:none;">✅ 批量授权</button>
-                    <button class="btn btn-warning" id="copyRoleBtn" style="background:#e6a817;color:#fff;border:none;">📋 复制角色权限</button>
-                    <button class="btn btn-danger" id="deletePermBtn" style="background:#d64045;color:#fff;border:none;">🗑 删除菜单权限</button>
-                    <button class="export-btn" id="exportBtn">📎 导出</button>
+                    <button class="btn btn-primary" id="queryBtn" disabled>🔍 查询</button>
+                    <button class="btn btn-outline" id="clearBtn" disabled>清空选中</button>
+                    <button class="btn btn-primary" id="batchAuthBtn" style="background:#4099A3;color:#fff;border:none;" disabled>✅ 授权</button>
+                    <button class="btn btn-primary" id="copyRoleBtn" style="background:#4099A3;color:#fff;border:none;" disabled>📋 复制角色权限</button>
+                    <button class="btn btn-primary" id="deletePermBtn" style="background:#4099A3;color:#fff;border:none;" disabled>🗑 批量删除</button>
+                    <button class="btn btn-outline" id="exportBtn" disabled>📎 导出</button>
                 </div>
                 <div style="margin-top: 16px;">
                     <h3>
@@ -526,133 +615,230 @@
 
 <script>
     // ==================== 菜单树数据 ====================
-    const menuTreeData = [
-        { id: "home", name: "主页", code: "HOME", parentId: null, children: [] },
-        { id: "inbound", name: "入库管理", code: "INBOUND", parentId: null, children: [] },
-        { id: "outbound", name: "出库管理", code: "OUTBOUND", parentId: null, children: [] },
-        { id: "smart_produce", name: "智能设备生产入库", code: "SMART_PRODUCE", parentId: null, children: [] },
-        { id: "vehicle", name: "车辆管理", code: "VEHICLE", parentId: null, children: [] },
-        { id: "internal", name: "库内管理", code: "INTERNAL", parentId: null, children: [] },
-        { id: "report", name: "报表管理", code: "REPORT", parentId: null, children: [] },
-        { id: "basic", name: "基础设置", code: "BASIC", parentId: null, children: [] },
-        { id: "config", name: "配置管理", code: "CONFIG", parentId: null, children: [] },
-        { id: "exception", name: "异常管理", code: "EXCEPTION", parentId: null, children: [] },
-        { id: "system", name: "系统管理", code: "SYSTEM", parentId: null, children: [] },
-        { id: "qa", name: "智能问答", code: "QA", parentId: null, children: [] },
-        { id: "loading_time", name: "装卸工时管理", code: "LOADING_TIME", parentId: null, children: [] },
-        { id: "download", name: "下载中心", code: "DOWNLOAD", parentId: null, children: [] },
-        { id: "strategy", name: "策略管理", code: "STRATEGY", parentId: null, children: [] }
+    // 将原始菜单数据转换为带ID的树结构
+    function buildMenuTree(rawData, prefix) {
+        let idx = 0;
+        function process(nodes) {
+            return nodes.filter(n => n !== null).map(n => {
+                const id = `${prefix}_${idx++}`;
+                let children = [];
+                if (n.children && Array.isArray(n.children)) {
+                    children = process(n.children);
+                }
+                return { id, name: n.name, code: id.toUpperCase(), parentId: null, children };
+            });
+        }
+        return process(rawData);
+    }
+
+    // PC菜单原始数据
+    const pcRawData = [
+        { name: "主页", children: [{ name: "主页" }] },
+        { name: "入库管理", children: [
+            { name: "入库任务" }, { name: "入库记录" }, { name: "库存预警查询" }, { name: "补货计划" },
+            { name: "网批需求计划" }, { name: "生产计划" }, { name: "入库记账明细" }, { name: "入库采集" }
+        ]},
+        { name: "出库管理", children: [
+            { name: "发货单管理（内销）" }, { name: "出口发货单" }, { name: "备货计划审核" }, { name: "手工发货单" },
+            { name: "备货任务" }, { name: "出库任务" }, { name: "退领料调账申请单" }, { name: "退领料出库明细" },
+            { name: "出库审批" }, { name: "直发订单" }
+        ]},
+        { name: "智能设备生产入库", children: [{ name: "智能入库" }, { name: "智能收货" }] },
+        { name: "车辆管理", children: [
+            { name: "车辆进出厂查询" }, { name: "园区车辆管理" }, { name: "车位号管理" },
+            { name: "出口柜进出厂查询" }, { name: "预约看板" }, { name: "车辆在厂停留时间查询" }
+        ]},
+        { name: "库内管理", children: [
+            { name: "任务管理" }, { name: "班组管理" }, { name: "转库记录" }, { name: "转库任务" },
+            { name: "移库调整管理" }, { name: "盘点管理" }, { name: "库内调整" }, { name: "封存解封" },
+            { name: "待补货物料" }, { name: "N章机标记" }, { name: "QMS暂缓封存" }, { name: "设备任务监控" },
+            { name: "验货管理" }, { name: "调库任务" }, { name: "上线检测" }
+        ]},
+        { name: "报表管理", children: [
+            { name: "实时库存查询" }, { name: "入库流水" }, { name: "出库流水" }, { name: "成品库存流水查询" },
+            { name: "操作流水" }, { name: "可发货库存报表" }, { name: "条码记录追踪" }, { name: "出库详情" },
+            { name: "出库批量查询" }, { name: "期初期末库存" }, { name: "库龄分析" }, { name: "库龄查询" },
+            { name: "套机库存查询" }, { name: "库存初始化导入" }, { name: "可用库存导入" }, { name: "计划库存导入" },
+            { name: "入库详情" }, { name: "固化库存" }, { name: "箱单关系查询" }, { name: "库位库存报表" },
+            { name: "出口散件免检号段维护" }, { name: "出口散件漏扫查询" }, { name: "成品库出口报关" },
+            { name: "销司寄存" }, { name: "出口条码库位查询" }, { name: "实发数反馈表" }, { name: "待处理管理" },
+            { name: "出库封存监控告警" }, { name: "人员绩效报表" }, { name: "呆机分析" }, { name: "可封柜未出门柜报表" },
+            { name: "WMS需求池" }, { name: "客户派工报表" }, { name: "出口实时上柜数据报表" }, { name: "发货区域报表" },
+            { name: "生产物料库存报表" }, { name: "单机配套率分析报表" }, { name: "生产订单发货报表" },
+            { name: "仓储笼条码报表" }, { name: "智能问答" }, { name: "国补在库条码报表" }
+        ]},
+        { name: "基础设置", children: [
+            { name: "物料资料" }, { name: "产品品类" }, { name: "货主资料" }, { name: "园区-出入口管理" },
+            { name: "仓库资料" }, { name: "楼层库区" }, { name: "通道库位" }, { name: "基地管理" },
+            { name: "地址信息查询" }, { name: "月台设置" }, { name: "承运商信息维护" }, { name: "箱单信息" },
+            { name: "出库批次维护" }, { name: "打印配置" }, { name: "推荐仓配置" }, { name: "包装规则" },
+            { name: "设备档案" }, { name: "环线管理" }, { name: "装卸货单位维护" }, { name: "客户资料" },
+            { name: "验货室库位绑定" }, { name: "自定义打印配置" }, { name: "ERP公司代码" }, { name: "承运商司机信息" }
+        ]},
+        { name: "配置管理", children: [
+            { name: "分配策略" }, { name: "批次属性" }, { name: "批次映射" }, { name: "派仓规则配置" },
+            { name: "承运商ERP代码关系" }, { name: "物料映射关系" }, { name: "出入库结果推送通知" }, { name: "邮箱配置" },
+            { name: "船公司封条校验配置" }, { name: "运营参数配置" }, { name: "黑白名单配置" }, { name: "出口强校验子码配置" },
+            { name: "国补政策" }, { name: "包装规则自动绑定" }, { name: "国标信息维护" }, { name: "外仓小库关联实仓配置" }
+        ]},
+        { name: "异常管理", children: [{ name: "拦截查询" }, { name: "异常处理记录" }] },
+        { name: "系统管理", children: [
+            { name: "用户管理" }, { name: "角色管理" }, { name: "数据维度管理" }, { name: "PDA菜单管理" }, { name: "升级日志" }
+        ]},
+        { name: "PDA菜单权限管理", children: [] },
+        { name: "装卸工时管理", children: [
+            { name: "装卸数据查询" }, { name: "装卸报表(外仓)" }, { name: "装卸工时确认" }, { name: "装卸工时对账" },
+            { name: "打包工时维护" }, { name: "临时工时维护" }, { name: "装卸规则配置" }, { name: "计量单位维护" },
+            { name: "补贴系数维护" }
+        ]},
+        { name: "下载中心", children: [] },
+        { name: "策略管理", children: [{ name: "上架策略" }, { name: "入库指引" }, { name: "物料库位指引" }] }
     ];
 
-    // 构建子菜单
-    function buildChildren() {
-        const inboundNode = menuTreeData.find(m => m.id === "inbound");
-        if (inboundNode) inboundNode.children = [
-            { id: "inbound_purchase", name: "采购入库", code: "INBOUND_PURCHASE", parentId: "inbound", children: [] },
-            { id: "inbound_return", name: "退货入库", code: "INBOUND_RETURN", parentId: "inbound", children: [] },
-            { id: "inbound_transfer", name: "调拨入库", code: "INBOUND_TRANSFER", parentId: "inbound", children: [] }
-        ];
-        const outboundNode = menuTreeData.find(m => m.id === "outbound");
-        if (outboundNode) outboundNode.children = [
-            { id: "outbound_sale", name: "销售出库", code: "OUTBOUND_SALE", parentId: "outbound", children: [] },
-            { id: "outbound_return", name: "退货出库", code: "OUTBOUND_RETURN", parentId: "outbound", children: [] },
-            { id: "outbound_picking", name: "拣货管理", code: "OUTBOUND_PICKING", parentId: "outbound", children: [] }
-        ];
-        const internalNode = menuTreeData.find(m => m.id === "internal");
-        if (internalNode) internalNode.children = [
-            { id: "internal_inventory", name: "库存盘点", code: "INTERNAL_INVENTORY", parentId: "internal", children: [] },
-            { id: "internal_move", name: "移库管理", code: "INTERNAL_MOVE", parentId: "internal", children: [] },
-            { id: "internal_replenish", name: "补货管理", code: "INTERNAL_REPLENISH", parentId: "internal", children: [] }
-        ];
-        const reportNode = menuTreeData.find(m => m.id === "report");
-        if (reportNode) reportNode.children = [
-            { id: "report_inventory", name: "库存报表", code: "REPORT_INVENTORY", parentId: "report", children: [] },
-            { id: "report_inout", name: "出入库报表", code: "REPORT_INOUT", parentId: "report", children: [] },
-            { id: "report_analysis", name: "数据分析", code: "REPORT_ANALYSIS", parentId: "report", children: [] }
-        ];
-        const systemNode = menuTreeData.find(m => m.id === "system");
-        if (systemNode) systemNode.children = [
-            { id: "system_user", name: "用户管理", code: "SYSTEM_USER", parentId: "system", children: [] },
-            { id: "system_role", name: "角色管理", code: "SYSTEM_ROLE", parentId: "system", children: [] },
-            { id: "system_log", name: "操作日志", code: "SYSTEM_LOG", parentId: "system", children: [] }
-        ];
-        const basicNode = menuTreeData.find(m => m.id === "basic");
-        if (basicNode) basicNode.children = [
-            { id: "basic_warehouse", name: "仓库信息", code: "BASIC_WAREHOUSE", parentId: "basic", children: [] },
-            { id: "basic_customer", name: "客户信息", code: "BASIC_CUSTOMER", parentId: "basic", children: [] },
-            { id: "basic_supplier", name: "供应商信息", code: "BASIC_SUPPLIER", parentId: "basic", children: [] }
-        ];
-        const strategyNode = menuTreeData.find(m => m.id === "strategy");
-        if (strategyNode) strategyNode.children = [
-            { id: "strategy_allocate", name: "分配策略", code: "STRATEGY_ALLOCATE", parentId: "strategy", children: [] },
-            { id: "strategy_pick", name: "拣货策略", code: "STRATEGY_PICK", parentId: "strategy", children: [] }
-        ];
+    // PDA菜单原始数据
+    const pdaRawData = [
+        { name: "备货", children: [
+            { name: "强制扫N章机" }, { name: "弹窗强制扫入(备货出口-范围)" }, { name: "弹窗强制扫入(备货出口-客户型号)" },
+            { name: "弹窗强制扫入(备货出口-物料子码)" }, { name: "强制扫码" }, { name: "弹窗强制扫入(出口)" }
+        ]},
+        { name: "车辆调度", children: [
+            { name: "预约提货" },
+            { name: "车辆叫号管理", children: [
+                { name: "排队中", children: [
+                    { name: "取消登记" }, { name: "确认进厂" }, { name: "修改月台" }, { name: "装卸叫号" },
+                    { name: "进厂叫号" }, { name: "修改车辆排位" }, { name: "继续进场" }, { name: "异常离场" }
+                ]},
+                { name: "呼叫中", children: [
+                    { name: "修改月台" }, { name: "取消叫号" }, { name: "确认进厂" }, { name: "装卸叫号" },
+                    { name: "过号" }, { name: "开始装卸车" }, { name: "继续进场" }, { name: "异常离场" }
+                ]},
+                { name: "装卸中", children: [
+                    { name: "确认离场" }, { name: "装卸完成" }, { name: "强制离厂" }, { name: "强制完成" }, { name: "异常离场" }
+                ]},
+                { name: "已完成", children: [{ name: "确认离场" }] },
+                { name: "已离场" },
+                { name: "异常登记", children: [{ name: "删除" }, { name: "移入队列" }] },
+                { name: "待审核", children: [{ name: "审核离场" }, { name: "异常离场" }] }
+            ]},
+            { name: "进厂登记" }, { name: "离厂登记" }, { name: "到车登记" }, { name: "淋柜" },
+            { name: "车辆看板" }, { name: "停柜" }, { name: "场内转柜" }, { name: "理货封条" },
+            { name: "上传照片" }, { name: "停柜查询" }
+        ]},
+        { name: "入库", children: [
+            { name: "入库-混料堆板" }, { name: "退货一键入库" }, { name: "MES强制一键入库" }, { name: "无条码收货" },
+            { name: "提交并记账" }, { name: "按车入库" }, { name: "弹窗强制扫入(箱号-范围)" }, { name: "一键入库" },
+            { name: "查看" }, { name: "无任务入库" }, { name: "仅集采物料" }
+        ]},
+        { name: "堆卸板/拆合箱", children: [{ name: "堆卸板-混料堆板" }] },
+        { name: "出库", children: [
+            { name: "挑单甩货" }, { name: "调柜明细" }, { name: "无条码出库" }, { name: "查看" }, { name: "装车扫码" },
+            { name: "不绑定运单按钮" }, { name: "强制提交" }, { name: "已记账-卸货" }, { name: "已记账-换货" },
+            { name: "补装车" }, { name: "已记账-补货" }, { name: "大金模式" }, { name: "高库龄-继续扫入" },
+            { name: "强制扫N章机" }, { name: "开始装车" }, { name: "甩货" }, { name: "提示模式" }, { name: "整版模式" },
+            { name: "整箱模式" }, { name: "强制扫码" }, { name: "弹窗强制扫入(出口)" }, { name: "弹窗强制扫入(出口-范围)" },
+            { name: "弹窗强制扫入(出口-客户型号)" }, { name: "弹窗强制扫入(出口-物料子码)" }
+        ]},
+        { name: "移库", children: [
+            { name: "移库-混料堆板" }, { name: "无条码移库" }, { name: "查看" }, { name: "自动堆板" }, { name: "待处理移库" }
+        ]},
+        { name: "封存解封", children: [{ name: "封存/待处理" }, { name: "解封" }, { name: "查看" }] },
+        { name: "盘点" },
+        { name: "转库", children: [
+            { name: "转库-混料堆板" }, { name: "无条码转库" }, { name: "查看" }, { name: "强制扫码" },
+            { name: "手工转库" }, { name: "手工转库-erp单选" }
+        ]},
+        { name: "条码追踪" },
+        { name: "退领料出库", children: [
+            { name: "退领料-强制扫码" }, { name: "手工单" }, { name: "手工单申请" }, { name: "手工单审核" },
+            { name: "确认收货" }, { name: "目标仓确认单选框" }
+        ]},
+        { name: "生产/返包入库", children: [
+            { name: "生产返包-混料堆板" }, { name: "强制入库" }, { name: "珠海交互开关" }
+        ]},
+        { name: "报完工" }, { name: "设备入库" }, { name: "其他盘点" },
+        { name: "设置", children: [{ name: "重置密码" }] },
+        { name: "专用件尾箱" },
+        { name: "库存查询", children: [{ name: "是否可用" }, { name: "查询" }] },
+        { name: "操作流水查询" }, { name: "上线检测" }, { name: "库位容量" }, { name: "绑定仓储笼" }, { name: "环线口状态" }
+    ];
+
+    // 构建PC和PDA菜单树
+    const pcMenuTreeData = buildMenuTree(pcRawData, "pc");
+    const pdaMenuTreeData = buildMenuTree(pdaRawData, "pda");
+    let menuTreeData = pcMenuTreeData;
+
+    // 切换菜单树
+    function switchMenuTree(tab) {
+        menuTreeData = (tab === "pda") ? pdaMenuTreeData : pcMenuTreeData;
+        expandedNodes.clear();
+        menuTreeData.forEach(node => expandedNodes.add(node.id));
+        selectedMenuIds.clear();
+        selectedRoleIds.clear();
+        queryResults = [];
+        filterRoleId = null;
+        filterBaseDepartment = "";
+        const rf = document.getElementById("roleFilterInput"); if (rf) rf.value = "";
+        const bf = document.getElementById("baseFilterInput"); if (bf) bf.value = "";
+        refreshMenuTree();
+        updateSelectedMenusDisplay();
+        renderRolesTable([]);
     }
-    buildChildren();
+
+    // 自动生成菜单-角色权限映射（模拟真实权限分配）
+    function generateMenuRoleMapping() {
+        const mapping = {};
+        const allIds = [];
+        function collectIds(nodes) {
+            nodes.forEach(n => { allIds.push(n.id); if (n.children) collectIds(n.children); });
+        }
+        collectIds(pcMenuTreeData);
+        collectIds(pdaMenuTreeData);
+        const roleIds = allRoles.map(r => r.id);
+
+        // 前5个角色拥有大量权限（模拟管理员、主管等）
+        allIds.forEach(mid => {
+            mapping[mid] = [...roleIds.slice(0, 5)]; // 前5个角色拥有所有菜单
+            // 其余角色随机分配（30%-80%概率拥有每个菜单）
+            for (let i = 5; i < roleIds.length; i++) {
+                if (Math.random() < 0.5) {
+                    mapping[mid].push(roleIds[i]);
+                }
+            }
+        });
+        return mapping;
+    }
 
     // ==================== 角色数据（模拟几百个角色） ====================
+    const bases = ["珠海基地","长沙基地","合肥基地","郑州基地","武汉基地","重庆基地","芜湖基地","石家庄基地","南昌基地","柳州基地"];
+
     const baseRoles = [
-        { id: "role_001", name: "系统管理员", code: "ADMIN", department: "珠海基地", description: "拥有所有权限" },
-        { id: "role_002", name: "仓库主管", code: "WAREHOUSE_MGR", department: "长沙基地", description: "管理仓库作业" },
-        { id: "role_003", name: "操作员", code: "OPERATOR", department: "合肥基地", description: "执行出入库操作" },
-        { id: "role_004", name: "审计员", code: "AUDITOR", department: "郑州基地", description: "审计日志和报表" },
-        { id: "role_005", name: "查看者", code: "VIEWER", department: "武汉基地", description: "只读权限" },
-        { id: "role_006", name: "财务审核", code: "FINANCE", department: "重庆基地", description: "财务相关审批" },
-        { id: "role_007", name: "采购专员", code: "PURCHASE", department: "珠海基地", description: "采购入库管理" }
+        { id: "role_001", name: "系统管理员", code: "ADMIN", department: "珠海基地", bases: [...bases], description: "拥有所有权限" },
+        { id: "role_002", name: "仓库主管", code: "WAREHOUSE_MGR", department: "长沙基地", bases: ["珠海基地","长沙基地","合肥基地","郑州基地","武汉基地"], description: "管理仓库作业" },
+        { id: "role_003", name: "操作员", code: "OPERATOR", department: "合肥基地", bases: ["长沙基地","合肥基地","郑州基地"], description: "执行出入库操作" },
+        { id: "role_004", name: "审计员", code: "AUDITOR", department: "郑州基地", bases: ["珠海基地","郑州基地","重庆基地","石家庄基地"], description: "审计日志和报表" },
+        { id: "role_005", name: "查看者", code: "VIEWER", department: "武汉基地", bases: ["武汉基地","芜湖基地","南昌基地","柳州基地"], description: "只读权限" },
+        { id: "role_006", name: "财务审核", code: "FINANCE", department: "重庆基地", bases: ["重庆基地","合肥基地","石家庄基地"], description: "财务相关审批" },
+        { id: "role_007", name: "采购专员", code: "PURCHASE", department: "珠海基地", bases: ["珠海基地","长沙基地","南昌基地"], description: "采购入库管理" }
     ];
 
-    // 生成模拟角色（凑够 ~150 个）
-    const bases = ["珠海基地","长沙基地","合肥基地","郑州基地","武汉基地","重庆基地","芜湖基地","石家庄基地","南昌基地","柳州基地"];
     const roleNames = ["质检员","调度员","发货员","收货员","盘点员","计划员","统计员","稽核员","备货员","复核员","装卸工","叉车工","班长","组长","文员","跟单员","客服","数据分析师"];
     const allRoles = [...baseRoles];
     for (let i = 8; i <= 150; i++) {
         const rid = "role_" + String(i).padStart(3, "0");
         const rn = roleNames[i % roleNames.length];
         const b = bases[i % bases.length];
+        // 随机分配 1-5 个授权基地
+        const cnt = 1 + Math.floor(Math.random() * 5);
+        const shuffled = [...bases].sort(() => Math.random() - 0.5);
+        const roleBases = shuffled.slice(0, cnt);
+        if (!roleBases.includes(b)) roleBases.push(b);
         allRoles.push({
             id: rid, name: `${rn}${Math.ceil(i/18)}`, code: `ROLE_${String(i).padStart(3,"0")}`,
-            department: b, description: `${b}${rn}角色`
+            department: b, bases: roleBases, description: `${b}${rn}角色`
         });
     }
 
-    // ==================== 菜单-角色权限映射 ====================
-    const menuRoleMapping = {
-        "home": ["role_001", "role_002", "role_003", "role_004", "role_005", "role_006", "role_007"],
-        "inbound": ["role_001", "role_002", "role_003", "role_007"],
-        "inbound_purchase": ["role_001", "role_002", "role_003", "role_007"],
-        "inbound_return": ["role_001", "role_002", "role_003"],
-        "inbound_transfer": ["role_001", "role_002", "role_003"],
-        "outbound": ["role_001", "role_002", "role_003"],
-        "outbound_sale": ["role_001", "role_002", "role_003"],
-        "outbound_return": ["role_001", "role_002", "role_003"],
-        "outbound_picking": ["role_001", "role_002", "role_003"],
-        "smart_produce": ["role_001", "role_002"],
-        "vehicle": ["role_001", "role_002"],
-        "internal": ["role_001", "role_002", "role_003"],
-        "internal_inventory": ["role_001", "role_002", "role_003", "role_004"],
-        "internal_move": ["role_001", "role_002", "role_003"],
-        "internal_replenish": ["role_001", "role_002"],
-        "report": ["role_001", "role_002", "role_004", "role_005"],
-        "report_inventory": ["role_001", "role_002", "role_004", "role_005"],
-        "report_inout": ["role_001", "role_002", "role_004", "role_005"],
-        "report_analysis": ["role_001", "role_004"],
-        "basic": ["role_001"],
-        "basic_warehouse": ["role_001"],
-        "basic_customer": ["role_001"],
-        "basic_supplier": ["role_001"],
-        "config": ["role_001"],
-        "exception": ["role_001", "role_002", "role_004"],
-        "system": ["role_001"],
-        "system_user": ["role_001"],
-        "system_role": ["role_001"],
-        "system_log": ["role_001", "role_004"],
-        "qa": ["role_001", "role_002", "role_003", "role_005"],
-        "loading_time": ["role_001", "role_002", "role_003"],
-        "download": ["role_001", "role_002", "role_003", "role_004", "role_005"],
-        "strategy": ["role_001"],
-        "strategy_allocate": ["role_001"],
-        "strategy_pick": ["role_001"]
-    };
+    const menuRoleMapping = generateMenuRoleMapping();
 
     // 获取所有菜单ID（扁平化）
     function getAllMenuIds() {
@@ -684,12 +870,12 @@
     function getAllParentIds(nodeId, data = menuTreeData, parents = []) {
         for (const item of data) {
             if (item.id === nodeId) return parents;
-            if (item.children) {
+            if (item.children && item.children.length) {
                 const result = getAllParentIds(nodeId, item.children, [...parents, item.id]);
                 if (result) return result;
             }
         }
-        return [];
+        return null;
     }
 
     // 状态管理
@@ -698,7 +884,9 @@
     let selectedMenuIds = new Set();  // 选中的菜单ID集合
     let selectedRoleIds = new Set();  // 勾选的角色ID集合（用于删除权限）
     let queryResults = [];  // 查询结果角色列表
-    let filterRoleId = null;  // 按角色过滤菜单（null=未启用）
+    let filterRoleId = null;      // 按角色过滤菜单（null=未启用）
+    let filterBaseDepartment = ""; // 按基地过滤菜单（空=未启用）
+    let currentTab = "pc";         // 当前端别：pc 或 pda
 
     // 获取菜单名称
     function getMenuName(menuId, data = menuTreeData) {
@@ -728,87 +916,139 @@
     function updateNodeCheck(node, checked) {
         if (checked) {
             selectedMenuIds.add(node.id);
+            // 勾选当前节点 → 自动勾选所有子节点
+            const descendIds = getAllChildrenIds(node);
+            descendIds.forEach(id => selectedMenuIds.add(id));
+            // 自动勾选所有祖先节点
+            const ancestorIds = getAllParentIds(node.id, menuTreeData) || [];
+            ancestorIds.forEach(id => selectedMenuIds.add(id));
         } else {
             selectedMenuIds.delete(node.id);
-        }
-
-        // 联动：勾选父节点时，勾选所有子节点
-        if (checked && node.children && node.children.length) {
-            const childrenIds = getAllChildrenIds(node);
-            childrenIds.forEach(id => selectedMenuIds.add(id));
-        }
-        
-        // 联动：取消子节点时，检查并取消父节点（如果所有子节点都未选中）
-        if (!checked) {
-            const parentIds = getAllParentIds(node.id, menuTreeData);
-            for (const parentId of parentIds) {
-                let parentNode = null;
-                function findParent(nodes, pid) {
-                    for (const n of nodes) {
-                        if (n.id === pid) return n;
-                        if (n.children) {
-                            const found = findParent(n.children, pid);
-                            if (found) return found;
-                        }
-                    }
-                    return null;
-                }
-                parentNode = findParent(menuTreeData, parentId);
-                if (parentNode && parentNode.children) {
-                    const allChildrenSelected = parentNode.children.every(child => selectedMenuIds.has(child.id));
-                    if (!allChildrenSelected) {
-                        selectedMenuIds.delete(parentId);
+            // 取消勾选 → 自动取消所有子节点
+            const descendIds = getAllChildrenIds(node);
+            descendIds.forEach(id => selectedMenuIds.delete(id));
+            // 检查祖先：如果某个祖先的所有子节点都未选中，则取消该祖先
+            const ancestorIds = getAllParentIds(node.id, menuTreeData) || [];
+            for (const aid of ancestorIds) {
+                const ancestor = findNodeById(aid, menuTreeData);
+                if (ancestor && ancestor.children && ancestor.children.length > 0) {
+                    const anyChildChecked = ancestor.children.some(c => selectedMenuIds.has(c.id));
+                    if (!anyChildChecked) {
+                        selectedMenuIds.delete(aid);
                     }
                 }
             }
         }
-        
-        // 联动：勾选子节点时，勾选所有父节点
-        if (checked) {
-            const parentIds = getAllParentIds(node.id, menuTreeData);
-            parentIds.forEach(id => selectedMenuIds.add(id));
-        }
-        
-        // 更新已选菜单展示
         updateSelectedMenusDisplay();
     }
 
-    // 更新已选菜单展示
+    // 根据ID查找节点
+    function findNodeById(id, nodes) {
+        for (const n of nodes) {
+            if (n.id === id) return n;
+            if (n.children) {
+                const found = findNodeById(id, n.children);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+
+    // 更新已选菜单展示（带父子层级）
     function updateSelectedMenusDisplay() {
         const menusTagContainer = document.getElementById("menusTags");
         const selectedValueSpan = document.querySelector("#selectedMenusInfo .value");
         
-        const selectedMenus = Array.from(selectedMenuIds).map(id => ({
-            id: id,
-            name: getMenuName(id)
-        })).filter(m => m.name);
+        const selectedIds = Array.from(selectedMenuIds);
         
-        if (selectedMenus.length === 0) {
+        if (selectedIds.length === 0) {
             selectedValueSpan.textContent = "暂未选择任何菜单";
             menusTagContainer.innerHTML = "";
-        } else {
-            selectedValueSpan.textContent = `已选择 ${selectedMenus.length} 个菜单`;
-            menusTagContainer.innerHTML = selectedMenus.map(menu => `
-                <span class="menu-tag">
-                    ${menu.name}
-                    <span class="remove" data-id="${menu.id}">✕</span>
+            return;
+        }
+        
+        selectedValueSpan.textContent = `已选择 ${selectedIds.length} 个菜单`;
+
+        // 构建层级分组：找出每个选中菜单的父节点，按父节点分组
+        const groups = {};  // { parentId: { parentName, children: [{id, name}], ... } }
+        const orphans = []; // 顶层菜单（无父节点）
+
+        for (const mid of selectedIds) {
+            const menuPath = getMenuPath(mid);
+            const menuName = getMenuName(mid);
+            if (!menuName) continue;
+            
+            if (menuPath && menuPath.length > 1) {
+                // 有父节点，取直接父节点
+                const parentName = menuPath[menuPath.length - 2]; // 倒数第二个是直接父节点
+                // 从树中找父节点ID
+                let parentId = null;
+                function findParentId(nodes, childId) {
+                    for (const n of nodes) {
+                        if (n.children) {
+                            for (const c of n.children) {
+                                if (c.id === childId) { parentId = n.id; return; }
+                            }
+                            findParentId(n.children, childId);
+                        }
+                    }
+                }
+                findParentId(menuTreeData, mid);
+                const key = parentId || parentName;
+                if (!groups[key]) groups[key] = { parentName, children: [] };
+                groups[key].children.push({ id: mid, name: menuName });
+            } else {
+                orphans.push({ id: mid, name: menuName });
+            }
+        }
+
+        // 将同名的孤儿合并到分组中
+        const orphanNames = new Set(orphans.map(o => o.name));
+        const usedParents = new Set();
+
+        let html = "";
+
+        // 先渲染分组
+        for (const [key, group] of Object.entries(groups)) {
+            html += `<div class="menu-group" style="margin-bottom:6px;">`;
+            html += `<span class="menu-parent-tag" style="background:#e6f0ff;color:#1a5fb4;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:600;display:inline-block;margin-right:4px;margin-bottom:2px;">📁 ${group.parentName}</span>`;
+            html += group.children.map(c => `
+                <span class="menu-tag" style="margin-bottom:2px;">
+                    ${c.name}
+                    <span class="remove" data-id="${c.id}">✕</span>
                 </span>
             `).join("");
-            
-            // 绑定删除事件
-            document.querySelectorAll(".menu-tag .remove").forEach(el => {
-                el.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    const menuId = el.getAttribute("data-id");
-                    selectedMenuIds.delete(menuId);
-                    refreshMenuTree();  // 刷新菜单树，同步复选框状态
-                    updateSelectedMenusDisplay();
-                    // 清空查询结果
-                    queryResults = [];
-                    renderRolesTable([]);
-                });
-            });
+            html += `</div>`;
+            usedParents.add(group.parentName);
         }
+
+        // 渲染孤儿（顶层无子节点的菜单和未被分组覆盖的顶层菜单）
+        const orphanTags = orphans.filter(o => !usedParents.has(o.name));
+        if (orphanTags.length > 0) {
+            html += `<div class="menu-group" style="margin-bottom:6px;">`;
+            html += orphanTags.map(o => `
+                <span class="menu-tag" style="margin-bottom:2px;">
+                    ${o.name}
+                    <span class="remove" data-id="${o.id}">✕</span>
+                </span>
+            `).join("");
+            html += `</div>`;
+        }
+
+        menusTagContainer.innerHTML = html || '<span style="color:#909399;font-size:12px;">无</span>';
+        
+        // 绑定删除事件
+        document.querySelectorAll(".menu-tag .remove").forEach(el => {
+            el.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const menuId = el.getAttribute("data-id");
+                selectedMenuIds.delete(menuId);
+                refreshMenuTree();
+                updateSelectedMenusDisplay();
+                queryResults = [];
+                renderRolesTable([]);
+            });
+        });
     }
 
     // 检查节点是否匹配搜索
@@ -874,10 +1114,19 @@
             const labelSpan = document.createElement("span");
             labelSpan.className = "menu-label";
             labelSpan.textContent = node.name;
-            // 按角色过滤时，高亮该角色拥有的菜单
+            // 按角色过滤时，高亮该角色拥有的菜单（绿色）
             if (filterRoleId && menuRoleMapping[node.id] && menuRoleMapping[node.id].includes(filterRoleId)) {
                 labelSpan.style.color = "#2a9d5c";
                 labelSpan.style.fontWeight = "600";
+            }
+            // 按基地过滤时，高亮该基地下角色拥有的菜单（蓝色）
+            if (filterBaseDepartment && menuRoleMapping[node.id]) {
+                const baseRoleIds = new Set(allRoles.filter(r => r.bases && r.bases.includes(filterBaseDepartment)).map(r => r.id));
+                const hasBaseRole = menuRoleMapping[node.id].some(rid => baseRoleIds.has(rid));
+                if (hasBaseRole) {
+                    labelSpan.style.color = "#4099A3";
+                    labelSpan.style.fontWeight = "600";
+                }
             }
             
             const codeSpan = document.createElement("span");
@@ -909,6 +1158,8 @@
     // 按角色查询菜单：自动勾选该角色拥有的所有菜单
     function filterMenuByRole(roleId) {
         filterRoleId = roleId || null;
+        filterBaseDepartment = "";
+        document.getElementById("baseFilterInput").value = "";
         selectedMenuIds.clear();
         queryResults = [];
         selectedRoleIds.clear();
@@ -939,7 +1190,50 @@
 
         refreshMenuTree();
         updateSelectedMenusDisplay();
+        updateBaseFilterOptions();
         renderRolesTable([]);
+    }
+
+    // 按基地过滤菜单：自动勾选该基地角色拥有的菜单
+    function filterMenuByBase(baseDepartment) {
+        filterBaseDepartment = baseDepartment || "";
+        filterRoleId = null;
+        document.getElementById("roleFilterInput").value = "";
+        selectedMenuIds.clear();
+        queryResults = [];
+        selectedRoleIds.clear();
+
+        if (baseDepartment) {
+            function expandAll(node) {
+                expandedNodes.add(node.id);
+                if (node.children) node.children.forEach(expandAll);
+            }
+            menuTreeData.forEach(expandAll);
+
+            const baseRoleIds = new Set(allRoles.filter(r => r.bases && r.bases.includes(baseDepartment)).map(r => r.id));
+            for (const [menuId, roleIds] of Object.entries(menuRoleMapping)) {
+                if (roleIds.some(rid => baseRoleIds.has(rid))) {
+                    selectedMenuIds.add(menuId);
+                }
+            }
+            const allMenuIds = getAllMenuIds();
+            for (const mid of allMenuIds) {
+                if (selectedMenuIds.has(mid)) {
+                    const parents = getAllParentIds(mid, menuTreeData);
+                    if (parents) parents.forEach(pid => selectedMenuIds.add(pid));
+                }
+            }
+        }
+
+        refreshMenuTree();
+        updateSelectedMenusDisplay();
+        renderRolesTable([]);
+    }
+
+    // 更新基地下拉选项：默认带出有权限的基地（via 输入框提示）
+    function updateBaseFilterOptions() {
+        // PDA模式下基地输入框的自动补全在 init 中处理
+        // 此函数保留用于兼容
     }
 
     function refreshMenuTree() {
@@ -967,6 +1261,17 @@
             return;
         }
         
+        // 显示加载效果
+        const container = document.getElementById("rolesTableContainer");
+        container.innerHTML = '<div class="empty-state"><div class="loading-spinner" style="margin:0 auto 12px;"></div>查询中，请稍候...</div>';
+        
+        // 模拟加载延迟（让用户感知刷新效果）
+        setTimeout(() => {
+            _doQueryRoles();
+        }, 300);
+    }
+
+    function _doQueryRoles() {
         const selectedMenus = Array.from(selectedMenuIds);
         
         // 获取每个菜单对应的角色ID集合
@@ -1012,7 +1317,7 @@
                         <th style="width:40px;"><input type="checkbox" id="selectAllRoles" ${allChecked ? 'checked' : ''}></th>
                         <th>角色名称</th>
                         <th>角色编码</th>
-                        <th>所属基地</th>
+                        <th>所属基地${currentTab === "pda" ? '<span style="font-size:10px;color:#e6a817;margin-left:4px;">（PDA授权基地）</span>' : ''}</th>
                         <th>描述</th>
                     </tr>
                 </thead>
@@ -1022,7 +1327,12 @@
                             <td><input type="checkbox" class="role-checkbox" data-role-id="${role.id}" ${selectedRoleIds.has(role.id) ? 'checked' : ''}></td>
                             <td><strong>${role.name}</strong></td>
                             <td>${role.code}</td>
-                            <td>${role.department}</td>
+                            <td>${currentTab === "pda" && role.bases && role.bases.length > 0
+                                ? (role.bases.length <= 5
+                                    ? role.bases.map(b => `<span class="menu-tag" style="font-size:11px;padding:2px 7px;margin:1px;">${b}</span>`).join("")
+                                    : role.bases.slice(0, 4).map(b => `<span class="menu-tag" style="font-size:11px;padding:2px 7px;margin:1px;">${b}</span>`).join("")
+                                      + `<span class="menu-tag" style="font-size:11px;padding:2px 7px;margin:1px;background:#4099A3;color:#fff;cursor:pointer;" onclick="event.stopPropagation();showAllBases('${role.id}')">+${role.bases.length - 4}个</span>`)
+                                : `<strong>${role.department}</strong>`}</td>
                             <td style="color: #909399;">${role.description || '-'}</td>
                         </tr>
                     `).join('')}
@@ -1073,7 +1383,7 @@
         overlay.innerHTML = `
             <div class="modal">
                 <div class="modal-header">
-                    <span>📋 批量授权 — 选择角色</span>
+                    <span>📋 授权 — 选择角色</span>
                     <button class="modal-close">✕</button>
                 </div>
                 <div class="modal-body">
@@ -1369,13 +1679,156 @@
             return;
         }
 
-        const menuNames = Array.from(selectedMenuIds).map(id => getMenuName(id)).filter(n => n).join("、");
+        const menuNames = Array.from(selectedMenuIds).map(id => getMenuName(id)).filter(n => n);
+
+        // PDA 模式：弹出带基地多选的模态框
+        if (currentTab === "pda") {
+            const selectedRoleList = Array.from(selectedRoleIds).map(id => allRoles.find(r => r.id === id)).filter(Boolean);
+            // 收集所有唯一基地
+            const allBases = [...new Set(allRoles.map(r => r.department).filter(Boolean))];
+
+            const overlay = document.createElement("div");
+            overlay.className = "modal-overlay";
+            overlay.innerHTML = `
+                <div class="modal" style="width:560px;">
+                    <div class="modal-header">
+                        <span>🗑 批量删除权限（PDA模式）</span>
+                        <button class="modal-close">✕</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="modal-info">将删除以下 <b>${menuNames.length}</b> 个菜单权限：<br>👉 ${menuNames.join("、")}</div>
+                        <div style="margin-bottom:10px;">
+                            <label style="font-size:13px;font-weight:600;">📌 选择要操作的基地（多选）：</label>
+                            <label style="margin-left:12px;font-size:12px;cursor:pointer;">
+                                <input type="checkbox" id="deleteBaseSelectAll" checked> <b>全选/取消</b>
+                            </label>
+                        </div>
+                        <input type="text" id="deleteBaseSearch" placeholder="🔍 模糊搜索基地..." style="width:100%;padding:7px 12px;border:1px solid #d0d5dd;border-radius:6px;font-size:12px;outline:none;margin-bottom:8px;">
+                        <div id="deleteBaseList" style="max-height:200px;overflow-y:auto;border:1px solid #eee;border-radius:6px;padding:8px;" data-all-bases="${allBases.map(b => b.replace(/"/g,'&quot;')).join('|||')}">
+                            ${allBases.map(b => `
+                                <div class="role-option delete-base-item" data-base="${b}">
+                                    <input type="checkbox" class="delete-base-cb" data-base="${b}" checked>
+                                    <span class="role-name">${b}</span>
+                                    <span class="role-info" style="font-size:11px;color:#999;" id="baseRoleCount_${b.replace(/[^a-zA-Z\u4e00-\u9fa5]/g,'_')}"></span>
+                                </div>
+                            `).join("")}
+                        </div>
+                        <div style="font-size:12px;color:#909399;margin-top:8px;" id="deleteSummary">
+                            共选中 <b id="deleteTargetRoleCount">${selectedRoleIds.size}</b> 个角色
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-default" id="deleteCancelBtn">取消</button>
+                        <button class="btn btn-danger" id="deleteConfirmBtn" style="background:#d64045;color:#fff;border:none;">🗑 确认删除</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+
+            const baseCheckboxes = overlay.querySelectorAll(".delete-base-cb");
+            const selectAllCb = overlay.querySelector("#deleteBaseSelectAll");
+            const summarySpan = overlay.querySelector("#deleteTargetRoleCount");
+            const baseListContainer = overlay.querySelector("#deleteBaseList");
+
+            // 更新每个基地对应的角色数量
+            function updateBaseRoleCounts() {
+                const selectedBases = new Set();
+                baseCheckboxes.forEach(cb => { if (cb.checked) selectedBases.add(cb.dataset.base); });
+                baseCheckboxes.forEach(cb => {
+                    const base = cb.dataset.base;
+                    const countInBase = selectedRoleList.filter(r => r.department === base).length;
+                    const countEl = overlay.querySelector("#baseRoleCount_" + base.replace(/[^a-zA-Z\u4e00-\u9fa5]/g, "_"));
+                    if (countEl) countEl.textContent = `（${countInBase} 个角色）`;
+                });
+                // 统计勾选基地下的角色数
+                let totalTarget = 0;
+                selectedRoleList.forEach(r => { if (selectedBases.has(r.department)) totalTarget++; });
+                summarySpan.textContent = totalTarget;
+            }
+            updateBaseRoleCounts();
+
+            // 基地模糊搜索
+            const deleteBaseSearch = overlay.querySelector("#deleteBaseSearch");
+            if (deleteBaseSearch) {
+                deleteBaseSearch.addEventListener("input", () => {
+                    const kw = deleteBaseSearch.value.toLowerCase();
+                    const items = baseListContainer.querySelectorAll(".delete-base-item");
+                    items.forEach(item => {
+                        const base = item.dataset.base.toLowerCase();
+                        item.style.display = base.includes(kw) ? "" : "none";
+                    });
+                });
+            }
+
+            // 全选/取消基地
+            selectAllCb.addEventListener("change", () => {
+                baseCheckboxes.forEach(cb => { cb.checked = selectAllCb.checked; });
+                updateBaseRoleCounts();
+            });
+
+            // 单个基地勾选
+            baseCheckboxes.forEach(cb => {
+                cb.addEventListener("change", () => {
+                    selectAllCb.checked = [...baseCheckboxes].every(c => c.checked);
+                    updateBaseRoleCounts();
+                });
+            });
+
+            const closeModal = () => overlay.remove();
+            overlay.querySelector(".modal-close").addEventListener("click", closeModal);
+            overlay.querySelector("#deleteCancelBtn").addEventListener("click", closeModal);
+            overlay.addEventListener("click", (e) => { if (e.target === overlay) closeModal(); });
+
+            // 确认删除
+            overlay.querySelector("#deleteConfirmBtn").addEventListener("click", () => {
+                const selectedBases = new Set();
+                baseCheckboxes.forEach(cb => { if (cb.checked) selectedBases.add(cb.dataset.base); });
+
+                if (selectedBases.size === 0) {
+                    alert("请至少选择一个基地");
+                    return;
+                }
+
+                // 过滤出属于选中基地的角色
+                const targetRoleIds = new Set();
+                selectedRoleList.forEach(r => {
+                    if (selectedBases.has(r.department)) targetRoleIds.add(r.id);
+                });
+
+                if (targetRoleIds.size === 0) {
+                    alert("所选基地中没有匹配的角色");
+                    return;
+                }
+
+                const baseNames = [...selectedBases].join("、");
+                if (!confirm(`确认删除以下权限？\n\n基地：${baseNames}\n菜单：${menuNames.join("、")}\n影响角色数：${targetRoleIds.size}`)) {
+                    return;
+                }
+
+                // 从 menuRoleMapping 中移除
+                for (const menuId of selectedMenuIds) {
+                    if (menuRoleMapping[menuId]) {
+                        menuRoleMapping[menuId] = menuRoleMapping[menuId].filter(rid => !targetRoleIds.has(rid));
+                    }
+                }
+
+                closeModal();
+                const deletedCount = targetRoleIds.size;
+                selectedRoleIds.clear();
+                queryRoles();
+                alert(`✅ 已从「${baseNames}」的 ${deletedCount} 个角色中删除所选菜单权限`);
+            });
+
+            return;
+        }
+
+        // PC 模式：简单确认删除
         const roleNames = Array.from(selectedRoleIds).map(id => {
             const r = allRoles.find(r => r.id === id);
             return r ? r.name : id;
         }).join("、");
 
-        if (!confirm(`确认要从以下角色中删除所选菜单权限？\n\n角色：${roleNames}\n菜单：${menuNames}`)) {
+        if (!confirm(`确认要从以下角色中删除所选菜单权限？\n\n角色：${roleNames}\n菜单：${menuNames.join("、")}`)) {
             return;
         }
 
@@ -1394,6 +1847,30 @@
     }
 
     // 清空所有选中
+    // 查看角色全部授权基地（弹窗）
+    function showAllBases(roleId) {
+        const role = allRoles.find(r => r.id === roleId);
+        if (!role || !role.bases) return;
+        const overlay = document.createElement("div");
+        overlay.className = "modal-overlay";
+        overlay.innerHTML = `
+            <div class="modal" style="width:480px;">
+                <div class="modal-header">
+                    <span>🏭 ${role.name} — 授权基地（共${role.bases.length}个）</span>
+                    <button class="modal-close">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                        ${role.bases.map(b => `<span class="menu-tag" style="font-size:12px;padding:4px 10px;">${b}</span>`).join("")}
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        overlay.querySelector(".modal-close").addEventListener("click", () => overlay.remove());
+        overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
+    }
+
     function clearSelection() {
         selectedMenuIds.clear();
         selectedRoleIds.clear();
@@ -1536,6 +2013,90 @@
             }
         });
 
+        // 端别切换：PC端 / PDA端
+        const tabSelect = document.getElementById("tabSelect");
+        const baseFilterRow = document.getElementById("baseFilterRow");
+        if (tabSelect) {
+            tabSelect.addEventListener("change", () => {
+                currentTab = tabSelect.value;
+                if (baseFilterRow) baseFilterRow.style.display = currentTab === "pda" ? "block" : "none";
+                switchMenuTree(currentTab);
+            });
+        }
+        // 初始 PC 模式隐藏基地选项
+        if (baseFilterRow) baseFilterRow.style.display = "none";
+
+        // 基地输入框自动补全（PDA模式）
+        const baseFilterInput = document.getElementById("baseFilterInput");
+        const baseSuggestList = document.getElementById("baseSuggestList");
+        let baseFilterTimeout;
+        if (baseFilterInput) {
+            // 获取所有唯一基地
+            const allBases = [...new Set(allRoles.map(r => r.department).filter(Boolean))];
+
+            function showBaseSuggest(keyword = "") {
+                const kw = keyword.trim().toLowerCase();
+                let matched = allBases;
+                if (kw) {
+                    matched = allBases.filter(b => b.toLowerCase().includes(kw));
+                }
+                if (matched.length === 0) {
+                    baseSuggestList.innerHTML = '<div style="padding:8px 12px;color:#999;font-size:12px;">无匹配基地</div>';
+                } else {
+                    baseSuggestList.innerHTML = matched.map(b => {
+                        const count = allRoles.filter(r => r.department === b).length;
+                        let menuCnt = 0;
+                        for (const roleIds of Object.values(menuRoleMapping)) {
+                            const baseRoleIds = new Set(allRoles.filter(r => r.department === b).map(r => r.id));
+                            if (roleIds.some(rid => baseRoleIds.has(rid))) menuCnt++;
+                        }
+                        return `<div class="base-suggest-item" data-base="${b}"
+                             style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid #f0f0f0;"
+                             onmouseover="this.style.background='#f5f7fa'" onmouseout="this.style.background=''">
+                            <b>${b}</b>&nbsp;<span style="color:#999;">${count}角色 · ${menuCnt}菜单</span>
+                        </div>`;
+                    }).join("");
+                }
+                baseSuggestList.style.display = "block";
+            }
+
+            baseFilterInput.addEventListener("focus", () => showBaseSuggest(baseFilterInput.value));
+            baseFilterInput.addEventListener("click", () => showBaseSuggest(baseFilterInput.value));
+            baseFilterInput.addEventListener("input", () => {
+                clearTimeout(baseFilterTimeout);
+                baseFilterTimeout = setTimeout(() => showBaseSuggest(baseFilterInput.value), 200);
+            });
+
+            baseSuggestList.addEventListener("click", (e) => {
+                const item = e.target.closest(".base-suggest-item");
+                if (!item) return;
+                const base = item.dataset.base;
+                baseFilterInput.value = base;
+                baseSuggestList.style.display = "none";
+                filterMenuByBase(base);
+            });
+
+            document.addEventListener("click", (e) => {
+                if (!e.target.closest("#baseFilterInput") && !e.target.closest("#baseSuggestList")) {
+                    baseSuggestList.style.display = "none";
+                }
+            });
+
+            baseFilterInput.addEventListener("keydown", (e) => {
+                if (e.key === "Escape") {
+                    baseFilterInput.value = "";
+                    baseSuggestList.style.display = "none";
+                    filterBaseDepartment = "";
+                    selectedMenuIds.clear();
+                    queryResults = [];
+                    selectedRoleIds.clear();
+                    refreshMenuTree();
+                    updateSelectedMenusDisplay();
+                    renderRolesTable([]);
+                }
+            });
+        }
+
         document.getElementById("queryBtn").addEventListener("click", queryRoles);
         document.getElementById("clearBtn").addEventListener("click", clearSelection);
         document.getElementById("batchAuthBtn").addEventListener("click", batchAuthorize);
@@ -1556,6 +2117,11 @@
             refreshMenuTree();
             updateSelectedMenusDisplay();
             renderRolesTable([]);
+        });
+        // 初始化完成，启用所有操作按钮
+        ["queryBtn","clearBtn","batchAuthBtn","copyRoleBtn","deletePermBtn","exportBtn"].forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) btn.disabled = false;
         });
     }
     
