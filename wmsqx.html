@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>菜单角色查询 - 多选交集查询</title>
+    <title>菜单角色资源管理</title>
     <style>
         * {
             margin: 0;
@@ -556,7 +556,7 @@
         <!-- 左侧：菜单树（支持多选） -->
         <div class="menu-panel">
             <div class="panel-header">
-                <h3>菜单树 <span style="font-size:12px; color:#909399; font-weight:normal;">（可多选）</span>
+                <h3>菜单角色资源管理 <span style="font-size:12px; color:#909399; font-weight:normal;">（可多选）</span>
                     <span style="margin-left:12px;font-size:12px;color:#606266;">端别：</span>
                     <select id="tabSelect" style="padding:3px 8px;border:1px solid #d0d5dd;border-radius:4px;font-size:12px;outline:none;color:#303133;background:#fff;">
                         <option value="pc" selected>PC端</option>
@@ -1497,7 +1497,7 @@
         overlay.className = "modal-overlay";
         const targetListHTML = allRoles.slice(0, 20).map(r => `
             <div class="role-option" data-role-id="${r.id}" data-search-text="${r.name} ${r.code} ${r.department}">
-                <input type="checkbox" class="copy-target-cb" data-role-id="${r.id}" checked>
+                <input type="checkbox" class="copy-target-cb" data-role-id="${r.id}">
                 <span class="role-name">${r.name}</span>
                 <span class="role-info">${r.code} · ${r.department}</span>
             </div>
@@ -1518,7 +1518,7 @@
                     </div>
                     <div style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
                         <label style="font-size:13px;font-weight:600;">📋 目标角色（复制给谁）：</label>
-                        <label><input type="checkbox" id="copyTargetAll" checked> <b>全选/取消</b></label>
+                        <label><input type="checkbox" id="copyTargetAll"> <b>全选/取消</b></label>
                     </div>
                     <input type="text" class="modal-search" id="copyTargetSearch" placeholder="🔍 模糊搜索目标角色..." style="width:100%;padding:7px 12px;border:1px solid #d0d5dd;border-radius:6px;font-size:12px;outline:none;margin-bottom:10px;">
                     <div id="copyTargetList">${targetListHTML}</div>
@@ -1604,7 +1604,7 @@
                 const isSource = selectedSourceId === r.id;
                 return `
                 <div class="role-option" data-role-id="${r.id}" data-search-text="${r.name} ${r.code} ${r.department}">
-                    <input type="checkbox" class="copy-target-cb" data-role-id="${r.id}" ${isSource ? 'disabled' : 'checked'} >
+                    <input type="checkbox" class="copy-target-cb" data-role-id="${r.id}" ${isSource ? 'disabled' : ''} >
                     <span class="role-name">${r.name}</span>
                     <span class="role-info">${r.code} · ${r.department}</span>
                 </div>
@@ -1715,14 +1715,14 @@
                         <div style="margin-bottom:10px;">
                             <label style="font-size:13px;font-weight:600;">📌 选择要操作的基地（多选）：</label>
                             <label style="margin-left:12px;font-size:12px;cursor:pointer;">
-                                <input type="checkbox" id="deleteBaseSelectAll" checked> <b>全选/取消</b>
+                                <input type="checkbox" id="deleteBaseSelectAll"> <b>全选/取消</b>
                             </label>
                         </div>
                         <input type="text" id="deleteBaseSearch" placeholder="🔍 模糊搜索基地..." style="width:100%;padding:7px 12px;border:1px solid #d0d5dd;border-radius:6px;font-size:12px;outline:none;margin-bottom:8px;">
                         <div id="deleteBaseList" style="max-height:200px;overflow-y:auto;border:1px solid #eee;border-radius:6px;padding:8px;" data-all-bases="${allBases.map(b => b.replace(/"/g,'&quot;')).join('|||')}">
                             ${allBases.map(b => `
                                 <div class="role-option delete-base-item" data-base="${b}">
-                                    <input type="checkbox" class="delete-base-cb" data-base="${b}" checked>
+                                    <input type="checkbox" class="delete-base-cb" data-base="${b}">
                                     <span class="role-name">${b}</span>
                                     <span class="role-info" style="font-size:11px;color:#999;" id="baseRoleCount_${b.replace(/[^a-zA-Z\u4e00-\u9fa5]/g,'_')}"></span>
                                 </div>
