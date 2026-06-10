@@ -431,6 +431,11 @@
             display: flex; justify-content: flex-end; gap: 10px;
         }
         .modal-info { font-size: 12px; color: #909399; margin-bottom: 10px; }
+        .modal-select {
+            width: 100%; padding: 8px 12px; border: 1px solid #d0d5dd;
+            border-radius: 6px; font-size: 13px; margin-bottom: 14px; outline: none;
+        }
+        .modal-select:focus { border-color: #409eff; }
 
         /* 滚动条 */
         ::-webkit-scrollbar {
@@ -470,9 +475,18 @@
         <!-- 左侧：菜单树（支持多选） -->
         <div class="menu-panel">
             <div class="panel-header">
-                <h3>菜单树 <span style="font-size:12px; color:#909399; font-weight:normal;">（可多选）</span></h3>
+                <h3>菜单树 <span style="font-size:12px; color:#909399; font-weight:normal;">（可多选）</span>
+                    <label style="margin-left:12px;font-size:12px;cursor:pointer;user-select:none;">
+                        <input type="checkbox" id="menuSelectAll" style="width:14px;height:14px;accent-color:#409eff;vertical-align:middle;"> <span style="color:#409eff;">全选</span>
+                    </label>
+                </h3>
                 <div class="menu-search">
                     <input type="text" id="menuSearch" placeholder="搜索菜单" autocomplete="off">
+                </div>
+                <div style="margin-top:8px;position:relative;">
+                    <input type="text" id="roleFilterInput" placeholder="👤 输入角色名称查询拥有菜单..." autocomplete="off"
+                        style="width:100%;padding:7px 10px;border:1px solid #d0d5dd;border-radius:6px;font-size:12px;outline:none;color:#606266;">
+                    <div id="roleSuggestList" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:99;background:#fff;border:1px solid #d0d5dd;border-radius:6px;max-height:180px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.1);"></div>
                 </div>
             </div>
             <div class="menu-tree-container" id="menuTreeContainer">
@@ -492,6 +506,7 @@
                     <button class="btn btn-primary" id="queryBtn">🔍 查询</button>
                     <button class="btn btn-default" id="clearBtn">清空选中</button>
                     <button class="btn btn-success" id="batchAuthBtn" style="background:#2a9d5c;color:#fff;border:none;">✅ 批量授权</button>
+                    <button class="btn btn-warning" id="copyRoleBtn" style="background:#e6a817;color:#fff;border:none;">📋 复制角色权限</button>
                     <button class="btn btn-danger" id="deletePermBtn" style="background:#d64045;color:#fff;border:none;">🗑 删除菜单权限</button>
                     <button class="export-btn" id="exportBtn">📎 导出</button>
                 </div>
@@ -575,16 +590,30 @@
     }
     buildChildren();
 
-    // ==================== 角色数据 ====================
-    const allRoles = [
-        { id: "role_001", name: "系统管理员", code: "ADMIN", department: "技术中心", description: "拥有所有权限" },
-        { id: "role_002", name: "仓库主管", code: "WAREHOUSE_MGR", department: "仓储部", description: "管理仓库作业" },
-        { id: "role_003", name: "操作员", code: "OPERATOR", department: "仓储部", description: "执行出入库操作" },
-        { id: "role_004", name: "审计员", code: "AUDITOR", department: "合规部", description: "审计日志和报表" },
-        { id: "role_005", name: "查看者", code: "VIEWER", department: "各部门", description: "只读权限" },
-        { id: "role_006", name: "财务审核", code: "FINANCE", department: "财务部", description: "财务相关审批" },
-        { id: "role_007", name: "采购专员", code: "PURCHASE", department: "采购部", description: "采购入库管理" }
+    // ==================== 角色数据（模拟几百个角色） ====================
+    const baseRoles = [
+        { id: "role_001", name: "系统管理员", code: "ADMIN", department: "珠海基地", description: "拥有所有权限" },
+        { id: "role_002", name: "仓库主管", code: "WAREHOUSE_MGR", department: "长沙基地", description: "管理仓库作业" },
+        { id: "role_003", name: "操作员", code: "OPERATOR", department: "合肥基地", description: "执行出入库操作" },
+        { id: "role_004", name: "审计员", code: "AUDITOR", department: "郑州基地", description: "审计日志和报表" },
+        { id: "role_005", name: "查看者", code: "VIEWER", department: "武汉基地", description: "只读权限" },
+        { id: "role_006", name: "财务审核", code: "FINANCE", department: "重庆基地", description: "财务相关审批" },
+        { id: "role_007", name: "采购专员", code: "PURCHASE", department: "珠海基地", description: "采购入库管理" }
     ];
+
+    // 生成模拟角色（凑够 ~150 个）
+    const bases = ["珠海基地","长沙基地","合肥基地","郑州基地","武汉基地","重庆基地","芜湖基地","石家庄基地","南昌基地","柳州基地"];
+    const roleNames = ["质检员","调度员","发货员","收货员","盘点员","计划员","统计员","稽核员","备货员","复核员","装卸工","叉车工","班长","组长","文员","跟单员","客服","数据分析师"];
+    const allRoles = [...baseRoles];
+    for (let i = 8; i <= 150; i++) {
+        const rid = "role_" + String(i).padStart(3, "0");
+        const rn = roleNames[i % roleNames.length];
+        const b = bases[i % bases.length];
+        allRoles.push({
+            id: rid, name: `${rn}${Math.ceil(i/18)}`, code: `ROLE_${String(i).padStart(3,"0")}`,
+            department: b, description: `${b}${rn}角色`
+        });
+    }
 
     // ==================== 菜单-角色权限映射 ====================
     const menuRoleMapping = {
@@ -669,6 +698,7 @@
     let selectedMenuIds = new Set();  // 选中的菜单ID集合
     let selectedRoleIds = new Set();  // 勾选的角色ID集合（用于删除权限）
     let queryResults = [];  // 查询结果角色列表
+    let filterRoleId = null;  // 按角色过滤菜单（null=未启用）
 
     // 获取菜单名称
     function getMenuName(menuId, data = menuTreeData) {
@@ -844,6 +874,11 @@
             const labelSpan = document.createElement("span");
             labelSpan.className = "menu-label";
             labelSpan.textContent = node.name;
+            // 按角色过滤时，高亮该角色拥有的菜单
+            if (filterRoleId && menuRoleMapping[node.id] && menuRoleMapping[node.id].includes(filterRoleId)) {
+                labelSpan.style.color = "#2a9d5c";
+                labelSpan.style.fontWeight = "600";
+            }
             
             const codeSpan = document.createElement("span");
             codeSpan.className = "menu-code";
@@ -871,11 +906,54 @@
         return fragment;
     }
 
+    // 按角色查询菜单：自动勾选该角色拥有的所有菜单
+    function filterMenuByRole(roleId) {
+        filterRoleId = roleId || null;
+        selectedMenuIds.clear();
+        queryResults = [];
+        selectedRoleIds.clear();
+
+        if (roleId) {
+            // 展开所有节点
+            function expandAll(node) {
+                expandedNodes.add(node.id);
+                if (node.children) node.children.forEach(expandAll);
+            }
+            menuTreeData.forEach(expandAll);
+
+            // 勾选该角色拥有的所有菜单
+            for (const [menuId, roleIds] of Object.entries(menuRoleMapping)) {
+                if (roleIds.includes(roleId)) {
+                    selectedMenuIds.add(menuId);
+                }
+            }
+            // 补全父节点（确保父子联动一致）
+            const allMenuIds = getAllMenuIds();
+            for (const mid of allMenuIds) {
+                if (selectedMenuIds.has(mid)) {
+                    const parents = getAllParentIds(mid, menuTreeData);
+                    if (parents) parents.forEach(pid => selectedMenuIds.add(pid));
+                }
+            }
+        }
+
+        refreshMenuTree();
+        updateSelectedMenusDisplay();
+        renderRolesTable([]);
+    }
+
     function refreshMenuTree() {
         const container = document.getElementById("menuTreeContainer");
         const fragment = renderMenuTree(menuTreeData);
         container.innerHTML = "";
         container.appendChild(fragment);
+
+        // 同步全选复选框状态
+        const allIds = getAllMenuIds();
+        const selectAll = document.getElementById("menuSelectAll");
+        if (selectAll) {
+            selectAll.checked = allIds.length > 0 && allIds.every(id => selectedMenuIds.has(id));
+        }
         
         if (container.children.length === 0 || (container.children[0].children && container.children[0].children.length === 0)) {
             container.innerHTML = '<div style="text-align: center; padding: 40px; color: #909399;">未找到匹配的菜单</div>';
@@ -1000,16 +1078,12 @@
                 </div>
                 <div class="modal-body">
                     <div class="modal-info">将以下 <b>${menuNames.length}</b> 个菜单授权给选中的角色：<br>👉 ${menuNames.join("、")}</div>
+                    <input type="text" id="modalRoleSearch" placeholder="🔍 模糊搜索角色（名称/编码/基地）..." style="width:100%;padding:7px 12px;border:1px solid #d0d5dd;border-radius:6px;font-size:12px;outline:none;margin-bottom:8px;">
                     <div style="margin-bottom:8px;">
                         <label><input type="checkbox" id="modalSelectAll" checked> <b>全选/取消</b></label>
+                        <span style="margin-left:12px;font-size:11px;color:#999;" id="modalRoleCount"></span>
                     </div>
-                    ${allRoles.map(r => `
-                        <div class="role-option">
-                            <input type="checkbox" class="modal-role-cb" data-role-id="${r.id}" checked>
-                            <span class="role-name">${r.name}</span>
-                            <span class="role-info">${r.code} · ${r.department}</span>
-                        </div>
-                    `).join("")}
+                    <div id="modalRoleList" style="max-height:280px;overflow-y:auto;"></div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-default" id="modalCancelBtn">取消</button>
@@ -1019,11 +1093,36 @@
         `;
         document.body.appendChild(overlay);
 
-        // 全选/取消
+        const roleListContainer = overlay.querySelector("#modalRoleList");
+        const roleSearch = overlay.querySelector("#modalRoleSearch");
+        const roleCountSpan = overlay.querySelector("#modalRoleCount");
         const selectAll = overlay.querySelector("#modalSelectAll");
-        const checkboxes = overlay.querySelectorAll(".modal-role-cb");
+
+        // 默认显示前 20 个
+        function renderModalRoles(keyword = "") {
+            const kw = keyword.toLowerCase();
+            let filtered = allRoles;
+            if (kw) {
+                filtered = allRoles.filter(r =>
+                    r.name.toLowerCase().includes(kw) || r.code.toLowerCase().includes(kw) || r.department.toLowerCase().includes(kw)
+                );
+            }
+            const display = filtered.slice(0, 20);
+            roleCountSpan.textContent = `（共 ${filtered.length} 个${filtered.length > 20 ? "，显示前20个" : ""}）`;
+            roleListContainer.innerHTML = display.map(r => `
+                <div class="role-option" data-role-id="${r.id}">
+                    <input type="checkbox" class="modal-role-cb" data-role-id="${r.id}" checked>
+                    <span class="role-name">${r.name}</span>
+                    <span class="role-info">${r.code} · ${r.department}</span>
+                </div>
+            `).join("") || '<div style="padding:12px;color:#999;text-align:center;">无匹配角色</div>';
+        }
+        renderModalRoles();
+        roleSearch.addEventListener("input", () => renderModalRoles(roleSearch.value));
+
+        // 全选/取消（仅影响当前可见的复选框）
         selectAll.addEventListener("change", () => {
-            checkboxes.forEach(cb => { cb.checked = selectAll.checked; });
+            roleListContainer.querySelectorAll(".modal-role-cb").forEach(cb => { cb.checked = selectAll.checked; });
         });
 
         // 关闭
@@ -1035,7 +1134,7 @@
         // 确认授权
         overlay.querySelector("#modalConfirmBtn").addEventListener("click", () => {
             const selectedRoleIds = [];
-            checkboxes.forEach(cb => {
+            roleListContainer.querySelectorAll(".modal-role-cb").forEach(cb => {
                 if (cb.checked) selectedRoleIds.push(cb.dataset.roleId);
             });
 
@@ -1064,6 +1163,198 @@
             closeModal();
             queryRoles();
             alert(`✅ 已将 ${menuNames.length} 个菜单授权给 ${selectedRoleIds.length} 个角色\n角色：${roleNames}`);
+        });
+    }
+
+    // 复制角色权限：将源角色的全部权限复制给目标角色（覆盖）
+    function copyRolePermissions() {
+        const overlay = document.createElement("div");
+        overlay.className = "modal-overlay";
+        const targetListHTML = allRoles.slice(0, 20).map(r => `
+            <div class="role-option" data-role-id="${r.id}" data-search-text="${r.name} ${r.code} ${r.department}">
+                <input type="checkbox" class="copy-target-cb" data-role-id="${r.id}" checked>
+                <span class="role-name">${r.name}</span>
+                <span class="role-info">${r.code} · ${r.department}</span>
+            </div>
+        `).join("");
+        overlay.innerHTML = `
+            <div class="modal" style="width:560px;">
+                <div class="modal-header">
+                    <span>📋 复制角色权限</span>
+                    <button class="modal-close">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-info">选择一个<b>源角色</b>，将其全部菜单权限复制给下方的目标角色（目标角色原有权限将被<b style="color:#d64045;">覆盖</b>）</div>
+                    <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">📌 源角色（从谁复制）：</label>
+                    <div style="position:relative;margin-bottom:14px;">
+                        <input type="text" id="copySourceInput" placeholder="🔍 搜索源角色..." autocomplete="off"
+                            style="width:100%;padding:8px 12px;border:1px solid #d0d5dd;border-radius:6px;font-size:13px;outline:none;">
+                        <div id="copySourceList" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:99;background:#fff;border:1px solid #d0d5dd;border-radius:6px;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.1);"></div>
+                    </div>
+                    <div style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+                        <label style="font-size:13px;font-weight:600;">📋 目标角色（复制给谁）：</label>
+                        <label><input type="checkbox" id="copyTargetAll" checked> <b>全选/取消</b></label>
+                    </div>
+                    <input type="text" class="modal-search" id="copyTargetSearch" placeholder="🔍 模糊搜索目标角色..." style="width:100%;padding:7px 12px;border:1px solid #d0d5dd;border-radius:6px;font-size:12px;outline:none;margin-bottom:10px;">
+                    <div id="copyTargetList">${targetListHTML}</div>
+                    <div style="font-size:11px;color:#999;margin-top:4px;" id="copyTargetCount">（共 ${allRoles.length} 个，显示前 20 个，搜索查看更多）</div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-default" id="copyCancelBtn">取消</button>
+                    <button class="btn btn-primary" id="copyConfirmBtn">✅ 确认复制</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        const sourceInput = overlay.querySelector("#copySourceInput");
+        const sourceList = overlay.querySelector("#copySourceList");
+        const targetSearch = overlay.querySelector("#copyTargetSearch");
+        const targetList = overlay.querySelector("#copyTargetList");
+        const targetCount = overlay.querySelector("#copyTargetCount");
+        const selectAllTarget = overlay.querySelector("#copyTargetAll");
+        let selectedSourceId = null;
+
+        // 源角色搜索下拉（点击/聚焦默认展示前 20）
+        function showSourceSuggest(keyword = "") {
+            const kw = keyword.trim().toLowerCase();
+            let matched = allRoles;
+            if (kw) {
+                matched = allRoles.filter(r =>
+                    r.name.toLowerCase().includes(kw) || r.code.toLowerCase().includes(kw) || r.department.toLowerCase().includes(kw)
+                );
+            }
+            const display = matched.slice(0, 20);
+            sourceList.innerHTML = display.map(r => `
+                <div class="copy-source-item" data-role-id="${r.id}"
+                     style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid #f0f0f0;"
+                     onmouseover="this.style.background='#f5f7fa'" onmouseout="this.style.background=''">
+                    <b>${r.name}</b>&nbsp;<span style="color:#999;">${r.code} · ${r.department}</span>
+                </div>
+            `).join("") || '<div style="padding:8px 12px;color:#999;">无匹配角色</div>';
+            if (matched.length > 20) {
+                sourceList.innerHTML += `<div style="padding:6px 12px;color:#999;font-size:11px;text-align:center;">（共 ${matched.length} 个，显示前 20 个）</div>`;
+            }
+            sourceList.style.display = "block";
+        }
+        sourceInput.addEventListener("focus", () => showSourceSuggest(sourceInput.value));
+        sourceInput.addEventListener("click", () => showSourceSuggest(sourceInput.value));
+        sourceInput.addEventListener("input", () => showSourceSuggest(sourceInput.value));
+        sourceList.addEventListener("click", (e) => {
+            const item = e.target.closest(".copy-source-item");
+            if (!item) return;
+            const roleId = item.dataset.roleId;
+            const role = allRoles.find(r => r.id === roleId);
+            if (role) {
+                selectedSourceId = roleId;
+                sourceInput.value = `${role.name}（${role.code} · ${role.department}）`;
+                sourceList.style.display = "none";
+                // 灰显源角色
+                targetList.querySelectorAll(".role-option").forEach(row => {
+                    const cb = row.querySelector(".copy-target-cb");
+                    if (cb && cb.dataset.roleId === roleId) {
+                        cb.checked = false; cb.disabled = true; row.style.opacity = "0.4";
+                    }
+                });
+            }
+        });
+        document.addEventListener("click", (e) => {
+            if (!e.target.closest("#copySourceInput") && !e.target.closest("#copySourceList")) {
+                sourceList.style.display = "none";
+            }
+        });
+
+        // 目标角色搜索过滤 + 显示前 20
+        function renderTargetRoles(keyword = "") {
+            const kw = keyword.toLowerCase();
+            let filtered = allRoles;
+            if (kw) {
+                filtered = allRoles.filter(r =>
+                    r.name.toLowerCase().includes(kw) || r.code.toLowerCase().includes(kw) || r.department.toLowerCase().includes(kw)
+                );
+            }
+            const display = filtered.slice(0, 20);
+            targetCount.textContent = `（共 ${filtered.length} 个${filtered.length > 20 ? "，显示前 20 个" : ""}）`;
+            targetList.innerHTML = display.map(r => {
+                const isSource = selectedSourceId === r.id;
+                return `
+                <div class="role-option" data-role-id="${r.id}" data-search-text="${r.name} ${r.code} ${r.department}">
+                    <input type="checkbox" class="copy-target-cb" data-role-id="${r.id}" ${isSource ? 'disabled' : 'checked'} >
+                    <span class="role-name">${r.name}</span>
+                    <span class="role-info">${r.code} · ${r.department}</span>
+                </div>
+            `}).join("") || '<div style="padding:12px;color:#999;text-align:center;">无匹配角色</div>';
+            // 恢复灰显状态
+            if (selectedSourceId) {
+                targetList.querySelectorAll(".role-option").forEach(row => {
+                    const cb = row.querySelector(".copy-target-cb");
+                    if (cb && cb.dataset.roleId === selectedSourceId) {
+                        row.style.opacity = "0.4";
+                    }
+                });
+            }
+        }
+        targetSearch.addEventListener("input", () => renderTargetRoles(targetSearch.value));
+        selectAllTarget.addEventListener("change", () => {
+            targetList.querySelectorAll(".copy-target-cb").forEach(cb => {
+                if (!cb.disabled) cb.checked = selectAllTarget.checked;
+            });
+        });
+
+        const closeModal = () => overlay.remove();
+        overlay.querySelector(".modal-close").addEventListener("click", closeModal);
+        overlay.querySelector("#copyCancelBtn").addEventListener("click", closeModal);
+        overlay.addEventListener("click", (e) => { if (e.target === overlay) closeModal(); });
+
+        overlay.querySelector("#copyConfirmBtn").addEventListener("click", () => {
+            if (!selectedSourceId) {
+                alert("请先搜索并选择源角色");
+                return;
+            }
+
+            const targetIds = [];
+            targetList.querySelectorAll(".copy-target-cb").forEach(cb => {
+                if (cb.checked && cb.dataset.roleId !== selectedSourceId) {
+                    targetIds.push(cb.dataset.roleId);
+                }
+            });
+
+            if (targetIds.length === 0) {
+                alert("请至少选择一个目标角色");
+                return;
+            }
+
+            const sourceRole = allRoles.find(r => r.id === selectedSourceId);
+            const targetNames = targetIds.map(id => {
+                const r = allRoles.find(r => r.id === id);
+                return r ? r.name : id;
+            }).join("、");
+
+            if (!confirm(`确认将「${sourceRole.name}」的全部权限复制给以下角色？\n\n目标角色：${targetNames}\n\n⚠️ 目标角色原有权限将被覆盖！`)) {
+                return;
+            }
+
+            const sourceMenus = new Set();
+            for (const [menuId, roleIds] of Object.entries(menuRoleMapping)) {
+                if (roleIds.includes(selectedSourceId)) {
+                    sourceMenus.add(menuId);
+                }
+            }
+
+            for (const [menuId, roleIds] of Object.entries(menuRoleMapping)) {
+                menuRoleMapping[menuId] = roleIds.filter(rid => !targetIds.includes(rid));
+                if (sourceMenus.has(menuId)) {
+                    for (const tid of targetIds) {
+                        if (!menuRoleMapping[menuId].includes(tid)) {
+                            menuRoleMapping[menuId].push(tid);
+                        }
+                    }
+                }
+            }
+
+            closeModal();
+            queryRoles();
+            alert(`✅ 已将「${sourceRole.name}」的 ${sourceMenus.size} 个菜单权限复制给 ${targetIds.length} 个角色\n目标角色：${targetNames}`);
         });
     }
 
@@ -1171,11 +1462,101 @@
         initSearch();
         updateSelectedMenusDisplay();
         
+        // 初始化角色输入框（自动补全）
+        const roleFilterInput = document.getElementById("roleFilterInput");
+        const roleSuggestList = document.getElementById("roleSuggestList");
+        let roleFilterTimeout;
+
+        // 点击/聚焦时默认展示前 20 个
+        function showRoleSuggest(keyword = "") {
+            const kw = keyword.trim().toLowerCase();
+            let matched = allRoles;
+            if (kw) {
+                matched = allRoles.filter(r =>
+                    r.name.toLowerCase().includes(kw) ||
+                    r.code.toLowerCase().includes(kw) ||
+                    r.department.toLowerCase().includes(kw)
+                );
+            }
+            const display = matched.slice(0, 20);
+            if (display.length === 0) {
+                roleSuggestList.innerHTML = '<div style="padding:8px 12px;color:#999;font-size:12px;">无匹配角色</div>';
+            } else {
+                roleSuggestList.innerHTML = display.map(r => `
+                    <div class="role-suggest-item" data-role-id="${r.id}"
+                         style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid #f0f0f0;"
+                         onmouseover="this.style.background='#f5f7fa'" onmouseout="this.style.background=''">
+                        <b>${r.name}</b>&nbsp;<span style="color:#999;">${r.code} · ${r.department}</span>
+                    </div>
+                `).join("");
+                // 如果超过 20 个，显示提示
+                if (matched.length > 20) {
+                    roleSuggestList.innerHTML += `<div style="padding:6px 12px;color:#999;font-size:11px;text-align:center;">（共 ${matched.length} 个，显示前 20 个，输入关键字精确搜索）</div>`;
+                }
+            }
+            roleSuggestList.style.display = "block";
+        }
+
+        roleFilterInput.addEventListener("focus", () => showRoleSuggest(roleFilterInput.value));
+        roleFilterInput.addEventListener("click", () => showRoleSuggest(roleFilterInput.value));
+        roleFilterInput.addEventListener("input", () => {
+            clearTimeout(roleFilterTimeout);
+            roleFilterTimeout = setTimeout(() => showRoleSuggest(roleFilterInput.value), 200);
+        });
+
+        // 点击建议项 → 触发查询
+        roleSuggestList.addEventListener("click", (e) => {
+            const item = e.target.closest(".role-suggest-item");
+            if (!item) return;
+            const roleId = item.dataset.roleId;
+            const role = allRoles.find(r => r.id === roleId);
+            if (role) {
+                roleFilterInput.value = `${role.name}（${role.code} · ${role.department}）`;
+                roleSuggestList.style.display = "none";
+                filterMenuByRole(roleId);
+            }
+        });
+
+        // 点击外部关闭建议列表
+        document.addEventListener("click", (e) => {
+            if (!e.target.closest("#roleFilterInput") && !e.target.closest("#roleSuggestList")) {
+                roleSuggestList.style.display = "none";
+            }
+        });
+
+        // 按 Esc 清空
+        roleFilterInput.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+                roleFilterInput.value = "";
+                roleSuggestList.style.display = "none";
+                filterRoleId = null;
+                selectedMenuIds.clear();
+                refreshMenuTree();
+                updateSelectedMenusDisplay();
+            }
+        });
+
         document.getElementById("queryBtn").addEventListener("click", queryRoles);
         document.getElementById("clearBtn").addEventListener("click", clearSelection);
         document.getElementById("batchAuthBtn").addEventListener("click", batchAuthorize);
+        document.getElementById("copyRoleBtn").addEventListener("click", copyRolePermissions);
         document.getElementById("deletePermBtn").addEventListener("click", deleteMenuPermissions);
         document.getElementById("exportBtn").addEventListener("click", exportToCSV);
+
+        // 菜单树全选/取消
+        document.getElementById("menuSelectAll").addEventListener("change", (e) => {
+            const allIds = getAllMenuIds();
+            if (e.target.checked) {
+                allIds.forEach(id => selectedMenuIds.add(id));
+            } else {
+                allIds.forEach(id => selectedMenuIds.delete(id));
+            }
+            filterRoleId = null;
+            queryResults = [];
+            refreshMenuTree();
+            updateSelectedMenusDisplay();
+            renderRolesTable([]);
+        });
     }
     
     init();
