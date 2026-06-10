@@ -1405,7 +1405,7 @@
                     <div class="modal-info">将以下 <b>${menuNames.length}</b> 个菜单授权给选中的角色：<br>👉 ${menuNames.join("、")}</div>
                     <input type="text" id="modalRoleSearch" placeholder="🔍 模糊搜索角色（名称/编码/基地）..." style="width:100%;padding:7px 12px;border:1px solid #d0d5dd;border-radius:6px;font-size:12px;outline:none;margin-bottom:8px;">
                     <div style="margin-bottom:8px;">
-                        <label><input type="checkbox" id="modalSelectAll" checked> <b>全选/取消</b></label>
+                        <label><input type="checkbox" id="modalSelectAll"> <b>全选/取消</b></label>
                         <span style="margin-left:12px;font-size:11px;color:#999;" id="modalRoleCount"></span>
                     </div>
                     <div id="modalRoleList" style="max-height:280px;overflow-y:auto;"></div>
@@ -1423,7 +1423,8 @@
         const roleCountSpan = overlay.querySelector("#modalRoleCount");
         const selectAll = overlay.querySelector("#modalSelectAll");
 
-        // 默认显示前 20 个
+        // 默认显示查询结果中的角色（如有），否则显示前20个
+        const defaultCheckedIds = new Set(queryResults.map(r => r.id));
         function renderModalRoles(keyword = "") {
             const kw = keyword.toLowerCase();
             let filtered = allRoles;
@@ -1434,13 +1435,15 @@
             }
             const display = filtered.slice(0, 20);
             roleCountSpan.textContent = `（共 ${filtered.length} 个${filtered.length > 20 ? "，显示前20个" : ""}）`;
-            roleListContainer.innerHTML = display.map(r => `
+            roleListContainer.innerHTML = display.map(r => {
+                const isDefault = defaultCheckedIds.has(r.id);
+                return `
                 <div class="role-option" data-role-id="${r.id}">
-                    <input type="checkbox" class="modal-role-cb" data-role-id="${r.id}" checked>
+                    <input type="checkbox" class="modal-role-cb" data-role-id="${r.id}" ${isDefault ? 'checked' : ''}>
                     <span class="role-name">${r.name}</span>
                     <span class="role-info">${r.code} · ${r.department}</span>
-                </div>
-            `).join("") || '<div style="padding:12px;color:#999;text-align:center;">无匹配角色</div>';
+                </div>`;
+            }).join("") || '<div style="padding:12px;color:#999;text-align:center;">无匹配角色</div>';
         }
         renderModalRoles();
         roleSearch.addEventListener("input", () => renderModalRoles(roleSearch.value));
@@ -1468,26 +1471,59 @@
                 return;
             }
 
-            // 将选中的菜单授权给选中的角色
-            for (const menuId of selectedMenuIds) {
-                if (!menuRoleMapping[menuId]) {
-                    menuRoleMapping[menuId] = [];
-                }
-                for (const rid of selectedRoleIds) {
-                    if (!menuRoleMapping[menuId].includes(rid)) {
-                        menuRoleMapping[menuId].push(rid);
-                    }
-                }
-            }
-
             const roleNames = selectedRoleIds.map(id => {
                 const r = allRoles.find(r => r.id === id);
                 return r ? r.name : id;
             }).join("、");
 
+            // 弹出覆盖/累加选择弹窗
+            const choiceOverlay = document.createElement("div");
+            choiceOverlay.className = "modal-overlay";
+            choiceOverlay.innerHTML = `
+                <div class="modal" style="width:440px;">
+                    <div class="modal-header">
+                        <span>⚠️ 选择授权模式</span>
+                    </div>
+                    <div class="modal-body" style="text-align:center;">
+                        <p style="margin-bottom:12px;">为 <b>${selectedRoleIds.length}</b> 个角色授权 <b>${menuNames.length}</b> 个菜单</p>
+                        <p style="font-size:12px;color:#909399;margin-bottom:16px;">角色：${roleNames}</p>
+                    </div>
+                    <div class="modal-footer" style="justify-content:center;gap:16px;">
+                        <button class="btn btn-default" id="choiceCancel">取消</button>
+                        <button class="btn btn-primary" id="choiceOverwrite" style="background:#d64045;min-width:100px;">🔄 覆盖授权<br><span style="font-size:10px;font-weight:normal;">替换角色已有权限</span></button>
+                        <button class="btn btn-primary" id="choiceAppend" style="background:#4099A3;min-width:100px;">➕ 累加授权<br><span style="font-size:10px;font-weight:normal;">追加到已有权限</span></button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(choiceOverlay);
+
+            const doAuthorize = (isOverwrite) => {
+                choiceOverlay.remove();
+                for (const menuId of selectedMenuIds) {
+                    if (isOverwrite) {
+                        for (const key of Object.keys(menuRoleMapping)) {
+                            menuRoleMapping[key] = menuRoleMapping[key].filter(rid => !selectedRoleIds.includes(rid));
+                        }
+                    }
+                    if (!menuRoleMapping[menuId]) menuRoleMapping[menuId] = [];
+                    for (const rid of selectedRoleIds) {
+                        if (!menuRoleMapping[menuId].includes(rid)) {
+                            menuRoleMapping[menuId].push(rid);
+                        }
+                    }
+                }
+                closeModal();
+                queryRoles();
+                alert(`✅ 已${isOverwrite ? "覆盖" : "累加"}授权 ${menuNames.length} 个菜单给 ${selectedRoleIds.length} 个角色`);
+            };
+
+            choiceOverlay.querySelector("#choiceOverwrite").addEventListener("click", () => doAuthorize(true));
+            choiceOverlay.querySelector("#choiceAppend").addEventListener("click", () => doAuthorize(false));
+            choiceOverlay.querySelector("#choiceCancel").addEventListener("click", () => choiceOverlay.remove());
+
             closeModal();
             queryRoles();
-            alert(`✅ 已将 ${menuNames.length} 个菜单授权给 ${selectedRoleIds.length} 个角色\n角色：${roleNames}`);
+            alert(`✅ 已${isOverwrite ? "覆盖" : "累加"}授权 ${menuNames.length} 个菜单给 ${selectedRoleIds.length} 个角色\n角色：${roleNames}`);
         });
     }
 
@@ -1510,14 +1546,23 @@
                 </div>
                 <div class="modal-body">
                     <div class="modal-info">选择一个<b>源角色</b>，将其全部菜单权限复制给下方的目标角色（目标角色原有权限将被<b style="color:#d64045;">覆盖</b>）</div>
-                    <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">📌 源角色（从谁复制）：</label>
-                    <div style="position:relative;margin-bottom:14px;">
-                        <input type="text" id="copySourceInput" placeholder="🔍 搜索源角色..." autocomplete="off"
-                            style="width:100%;padding:8px 12px;border:1px solid #d0d5dd;border-radius:6px;font-size:13px;outline:none;">
-                        <div id="copySourceList" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:99;background:#fff;border:1px solid #d0d5dd;border-radius:6px;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.1);"></div>
+                    <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">📌 源角色（从谁复制）：${currentTab === "pda" ? '<span style="color:#d64045;font-size:11px;">（必选基地）</span>' : ''}</label>
+                    <div style="display:flex;gap:8px;margin-bottom:14px;position:relative;">
+                        ${currentTab === "pda" ? `<select id="copySourceBaseFilter" style="width:40%;padding:7px 10px;border:1px solid #d0d5dd;border-radius:6px;font-size:13px;outline:none;flex-shrink:0;">
+                            <option value="">🏭 请选择基地...</option>
+                            ${(() => { const permBases = new Set(); for (const ids of Object.values(menuRoleMapping)) { ids.forEach(rid => { const r = allRoles.find(r2 => r2.id === rid); if (r && r.bases) r.bases.forEach(b => permBases.add(b)); }); } return [...permBases].sort().map(b => `<option value="${b}">${b}</option>`).join(""); })()}
+                        </select>` : ""}
+                        <div style="flex:1;position:relative;">
+                            <input type="text" id="copySourceInput" placeholder="🔍 搜索源角色..." autocomplete="off"
+                                style="width:100%;padding:8px 12px;border:1px solid #d0d5dd;border-radius:6px;font-size:13px;outline:none;">
+                            <div id="copySourceList" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:99;background:#fff;border:1px solid #d0d5dd;border-radius:6px;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.1);"></div>
+                        </div>
                     </div>
                     <div style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
-                        <label style="font-size:13px;font-weight:600;">📋 目标角色（复制给谁）：</label>
+                        <label style="font-size:13px;font-weight:600;">📋 目标角色（复制给谁）：${currentTab === "pda" ? `<select id="copyTargetBaseFilter" style="padding:3px 8px;border:1px solid #d0d5dd;border-radius:4px;font-size:12px;outline:none;margin-left:4px;">
+                            <option value="">🏭 全部基地</option>
+                            ${(() => { const permBases = new Set(); for (const ids of Object.values(menuRoleMapping)) { ids.forEach(rid => { const r = allRoles.find(r2 => r2.id === rid); if (r && r.bases) r.bases.forEach(b => permBases.add(b)); }); } return [...permBases].sort().map(b => `<option value="${b}" ${b === '珠海基地' ? 'selected' : ''}>${b}</option>`).join(""); })()}
+                        </select>` : ""}</label>
                         <label><input type="checkbox" id="copyTargetAll"> <b>全选/取消</b></label>
                     </div>
                     <input type="text" class="modal-search" id="copyTargetSearch" placeholder="🔍 模糊搜索目标角色..." style="width:100%;padding:7px 12px;border:1px solid #d0d5dd;border-radius:6px;font-size:12px;outline:none;margin-bottom:10px;">
@@ -1538,14 +1583,18 @@
         const targetList = overlay.querySelector("#copyTargetList");
         const targetCount = overlay.querySelector("#copyTargetCount");
         const selectAllTarget = overlay.querySelector("#copyTargetAll");
+        const copySourceBaseFilter = overlay.querySelector("#copySourceBaseFilter");
+        const copyTargetBaseFilter = overlay.querySelector("#copyTargetBaseFilter");
         let selectedSourceId = null;
 
-        // 源角色搜索下拉（点击/聚焦默认展示前 20）
+        // 源角色搜索下拉（受基地筛选影响）
         function showSourceSuggest(keyword = "") {
             const kw = keyword.trim().toLowerCase();
+            const baseFilter = copySourceBaseFilter ? copySourceBaseFilter.value : "";
             let matched = allRoles;
+            if (baseFilter) matched = matched.filter(r => r.department === baseFilter || (r.bases && r.bases.includes(baseFilter)));
             if (kw) {
-                matched = allRoles.filter(r =>
+                matched = matched.filter(r =>
                     r.name.toLowerCase().includes(kw) || r.code.toLowerCase().includes(kw) || r.department.toLowerCase().includes(kw)
                 );
             }
@@ -1565,6 +1614,19 @@
         sourceInput.addEventListener("focus", () => showSourceSuggest(sourceInput.value));
         sourceInput.addEventListener("click", () => showSourceSuggest(sourceInput.value));
         sourceInput.addEventListener("input", () => showSourceSuggest(sourceInput.value));
+        if (copySourceBaseFilter) {
+            copySourceBaseFilter.addEventListener("change", () => {
+                selectedSourceId = null;
+                sourceInput.value = "";
+                showSourceSuggest("");
+                renderTargetRoles(targetSearch ? targetSearch.value : "");
+            });
+        }
+        if (copyTargetBaseFilter) {
+            copyTargetBaseFilter.addEventListener("change", () => {
+                renderTargetRoles(targetSearch ? targetSearch.value : "");
+            });
+        }
         sourceList.addEventListener("click", (e) => {
             const item = e.target.closest(".copy-source-item");
             if (!item) return;
@@ -1592,9 +1654,11 @@
         // 目标角色搜索过滤 + 显示前 20
         function renderTargetRoles(keyword = "") {
             const kw = keyword.toLowerCase();
+            const srcBase = copyTargetBaseFilter ? copyTargetBaseFilter.value : "";
             let filtered = allRoles;
+            if (srcBase) filtered = filtered.filter(r => r.department === srcBase || (r.bases && r.bases.includes(srcBase)));
             if (kw) {
-                filtered = allRoles.filter(r =>
+                filtered = filtered.filter(r =>
                     r.name.toLowerCase().includes(kw) || r.code.toLowerCase().includes(kw) || r.department.toLowerCase().includes(kw)
                 );
             }
@@ -1632,6 +1696,11 @@
         overlay.addEventListener("click", (e) => { if (e.target === overlay) closeModal(); });
 
         overlay.querySelector("#copyConfirmBtn").addEventListener("click", () => {
+            // PDA模式下源角色基地必填
+            if (currentTab === "pda" && copySourceBaseFilter && !copySourceBaseFilter.value) {
+                alert("PDA模式下请先选择源角色的基地");
+                return;
+            }
             if (!selectedSourceId) {
                 alert("请先搜索并选择源角色");
                 return;
