@@ -720,6 +720,8 @@
         if (fromTs) filtered = filtered.filter(log => log.timestamp >= fromTs);
         if (toTs) filtered = filtered.filter(log => log.timestamp <= toTs);
         if (opFilter) filtered = filtered.filter(log => log.operator.toLowerCase().includes(opFilter));
+        // 按操作时间降序
+        filtered = [...filtered].sort((a, b) => b.timestamp - a.timestamp);
 
         if (logCount) logCount.textContent = filtered.length;
         if (summary) summary.textContent = `显示 ${filtered.length} / ${operationLogs.length} 条`;
@@ -1546,6 +1548,35 @@
                 </div>
                 <div class="modal-body">
                     <div class="modal-info">将以下 <b>${menuNames.length}</b> 个菜单授权给选中的角色：<br>👉 ${menuNames.join("、")}</div>
+                    ${currentTab === "pda" ? `
+                    <!-- PDA模式：授权目标基地（面板checkbox多选、必填） -->
+                    <div style="margin-bottom:10px;">
+                        <label style="font-size:13px;font-weight:600;color:#d64045;">🏭 授权目标基地 <span style="color:#d64045;">*必填（多选）</span>：</label>
+                        <span id="authBaseSelectAllBtn" style="cursor:pointer;color:#4099A3;font-size:12px;margin-left:8px;user-select:none;">📋 全选</span>
+                        <span id="authBaseClearAllBtn" style="cursor:pointer;color:#909399;font-size:12px;margin-left:4px;user-select:none;">清空</span>
+                        <div id="authBaseTags" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;min-height:0;"></div>
+                        <div style="position:relative;margin-top:4px;">
+                            <div id="authBaseTrigger" style="display:flex;align-items:center;padding:6px 10px;border:1px solid #d0d5dd;border-radius:6px;cursor:pointer;background:#fff;min-height:34px;gap:4px;">
+                                <span style="color:#909399;font-size:12px;flex:1;" id="authBaseTriggerText">🔍 点击展开选择基地...</span>
+                                <span style="color:#909399;font-size:12px;" id="authBaseTriggerCount"></span>
+                                <span style="color:#909399;font-size:10px;">▼</span>
+                            </div>
+                            <div id="authBasePanel" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:#fff;border:1px solid #d0d5dd;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.12);margin-top:2px;overflow:hidden;">
+                                <div style="padding:6px 8px;border-bottom:1px solid #eee;">
+                                    <input type="text" id="authBaseSearch" placeholder="🔍 搜索基地..." style="width:100%;padding:6px 10px;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;outline:none;">
+                                </div>
+                                <div style="padding:4px 10px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:8px;">
+                                    <label style="font-size:12px;cursor:pointer;"><input type="checkbox" id="authBaseCheckAll"> <b>全选</b></label>
+                                    <span style="font-size:11px;color:#909399;" id="authBaseCheckCount"></span>
+                                </div>
+                                <div id="authBaseCheckList" style="max-height:220px;overflow-y:auto;padding:4px 0;">
+                                </div>
+                                <div id="authBaseMoreHint" style="display:none;padding:8px 12px;color:#909399;font-size:11px;text-align:center;border-top:1px solid #f0f0f0;"></div>
+                            </div>
+                        </div>
+                        <div style="font-size:11px;color:#d64045;margin-top:2px;" id="authBaseError" hidden>⚠️ 请至少选择一个授权目标基地</div>
+                    </div>
+                    ` : ""}
                     <input type="text" id="modalRoleSearch" placeholder="🔍 模糊搜索角色（名称/编码/基地）..." style="width:100%;padding:7px 12px;border:1px solid #d0d5dd;border-radius:6px;font-size:12px;outline:none;margin-bottom:8px;">
                     <div style="margin-bottom:8px;">
                         <label><input type="checkbox" id="modalSelectAll"> <b>全选/取消</b></label>
@@ -1566,13 +1597,223 @@
         const roleCountSpan = overlay.querySelector("#modalRoleCount");
         const selectAll = overlay.querySelector("#modalSelectAll");
 
+        // PDA模式基地多选相关（面板checkbox多选，200+基地优化）
+        const authBaseTags = overlay.querySelector("#authBaseTags");
+        const authBaseTrigger = overlay.querySelector("#authBaseTrigger");
+        const authBasePanel = overlay.querySelector("#authBasePanel");
+        const authBaseTriggerText = overlay.querySelector("#authBaseTriggerText");
+        const authBaseTriggerCount = overlay.querySelector("#authBaseTriggerCount");
+        const authBaseSearch = overlay.querySelector("#authBaseSearch");
+        const authBaseCheckAll = overlay.querySelector("#authBaseCheckAll");
+        const authBaseCheckCount = overlay.querySelector("#authBaseCheckCount");
+        const authBaseCheckList = overlay.querySelector("#authBaseCheckList");
+        const authBaseMoreHint = overlay.querySelector("#authBaseMoreHint");
+        const authBaseError = overlay.querySelector("#authBaseError");
+        const authBaseSelectAllBtn = overlay.querySelector("#authBaseSelectAllBtn");
+        const authBaseClearAllBtn = overlay.querySelector("#authBaseClearAllBtn");
+        const allAvailableBases = [...new Set(allRoles.map(r => r.department).filter(Boolean))];
+        const selectedAuthBases = new Set(); // 持久跟踪选中基地
+
+        // 渲染checkbox列表（默认前20，搜索时全部匹配）
+        function renderAuthBaseList(keyword = "") {
+            if (!authBaseCheckList) return;
+            const kw = keyword.trim().toLowerCase();
+            const isSearching = !!kw;
+            const maxShow = isSearching ? 9999 : 20; // 搜索时全量，默认20
+            let matched = allAvailableBases;
+            if (isSearching) {
+                matched = matched.filter(b => b.toLowerCase().includes(kw));
+            }
+            const display = matched.slice(0, maxShow);
+
+            authBaseCheckList.innerHTML = display.map(b => `
+                <label class="auth-base-cb-item" data-base="${b}" style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:13px;transition:background 0.1s;background:${selectedAuthBases.has(b)?'#ecf5ff':''};">
+                    <input type="checkbox" class="auth-base-cb" data-base="${b}" style="margin:0;" ${selectedAuthBases.has(b)?'checked':''}>
+                    ${b}
+                </label>
+            `).join("");
+
+            // 底部提示
+            if (authBaseMoreHint) {
+                const hidden = matched.length - maxShow;
+                if (!isSearching && hidden > 0) {
+                    authBaseMoreHint.style.display = "";
+                    authBaseMoreHint.textContent = `还有 ${hidden} 个基地，请输入关键字搜索筛选`;
+                } else if (isSearching && matched.length > 100) {
+                    authBaseMoreHint.style.display = "";
+                    authBaseMoreHint.textContent = `匹配 ${matched.length} 个，继续输入缩小范围`;
+                } else if (display.length === 0) {
+                    authBaseMoreHint.style.display = "";
+                    authBaseMoreHint.textContent = isSearching ? '无匹配基地' : '';
+                } else {
+                    authBaseMoreHint.style.display = "none";
+                }
+            }
+
+            // 同步面板全选checkbox
+            if (authBaseCheckAll) {
+                authBaseCheckAll.checked = display.length > 0 && display.every(b => selectedAuthBases.has(b));
+            }
+
+            // 面板内计数
+            if (authBaseCheckCount) {
+                authBaseCheckCount.textContent = `已选 ${selectedAuthBases.size} 个`;
+            }
+        }
+
+        // 更新标签和trigger
+        function refreshAuthBaseDisplay() {
+            // 标签
+            if (authBaseTags) {
+                if (selectedAuthBases.size === 0) {
+                    authBaseTags.innerHTML = "";
+                } else {
+                    authBaseTags.innerHTML = [...selectedAuthBases].map(b =>
+                        `<span class="menu-tag" style="font-size:11px;padding:2px 8px;cursor:default;">${b}<span class="remove-auth-base" data-base="${b.replace(/"/g,'&quot;')}" style="cursor:pointer;margin-left:4px;opacity:0.8;">✕</span></span>`
+                    ).join("");
+                    authBaseTags.querySelectorAll(".remove-auth-base").forEach(btn => {
+                        btn.addEventListener("click", (e) => {
+                            e.stopPropagation();
+                            selectedAuthBases.delete(btn.dataset.base);
+                            renderAuthBaseList(authBaseSearch ? authBaseSearch.value : "");
+                            refreshAuthBaseDisplay();
+                            if (authBaseError) authBaseError.hidden = true;
+                            renderModalRoles(roleSearch ? roleSearch.value : "");
+                        });
+                    });
+                }
+            }
+            // trigger 文字
+            if (authBaseTriggerText) {
+                authBaseTriggerText.textContent = selectedAuthBases.size === 0 ? "🔍 点击展开选择基地..." : `已选 ${selectedAuthBases.size} 个基地`;
+                authBaseTriggerText.style.color = selectedAuthBases.size === 0 ? "#909399" : "#303133";
+            }
+            if (authBaseTriggerCount) {
+                authBaseTriggerCount.textContent = selectedAuthBases.size > 0 ? `(${selectedAuthBases.size})` : "";
+            }
+            if (authBaseCheckCount) {
+                authBaseCheckCount.textContent = `已选 ${selectedAuthBases.size} 个`;
+            }
+            // 同步面板全选checkbox
+            if (authBaseCheckAll && authBaseCheckList) {
+                const cbs = authBaseCheckList.querySelectorAll(".auth-base-cb");
+                authBaseCheckAll.checked = cbs.length > 0 && [...cbs].every(c => c.checked);
+            }
+            renderModalRoles(roleSearch ? roleSearch.value : "");
+        }
+
+        // 获取选中基地集合
+        function getSelectedAuthBases() {
+            return selectedAuthBases;
+        }
+
+        // 面板开关
+        if (authBaseTrigger && authBasePanel) {
+            authBaseTrigger.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const open = authBasePanel.style.display === "block";
+                authBasePanel.style.display = open ? "none" : "block";
+                authBaseTrigger.style.borderColor = open ? "#d0d5dd" : "#409eff";
+                authBaseTrigger.style.boxShadow = open ? "none" : "0 0 0 2px rgba(64,158,255,0.15)";
+                if (!open) {
+                    if (authBaseSearch) authBaseSearch.value = "";
+                    renderAuthBaseList("");
+                }
+            });
+            document.addEventListener("click", (e) => {
+                if (!authBaseTrigger.contains(e.target) && !authBasePanel.contains(e.target)) {
+                    authBasePanel.style.display = "none";
+                    authBaseTrigger.style.borderColor = "#d0d5dd";
+                    authBaseTrigger.style.boxShadow = "none";
+                }
+            });
+        }
+
+        // 面板内搜索
+        if (authBaseSearch) {
+            authBaseSearch.addEventListener("input", () => renderAuthBaseList(authBaseSearch.value));
+            authBaseSearch.addEventListener("click", e => e.stopPropagation());
+        }
+
+        // 面板全选checkbox
+        if (authBaseCheckAll) {
+            authBaseCheckAll.addEventListener("change", () => {
+                const cbs = authBaseCheckList.querySelectorAll(".auth-base-cb");
+                cbs.forEach(cb => {
+                    if (authBaseCheckAll.checked) {
+                        selectedAuthBases.add(cb.dataset.base);
+                        cb.checked = true;
+                    } else {
+                        selectedAuthBases.delete(cb.dataset.base);
+                        cb.checked = false;
+                    }
+                });
+                refreshAuthBaseDisplay();
+                if (authBaseError) authBaseError.hidden = true;
+            });
+        }
+
+        // 单个checkbox
+        if (authBaseCheckList) {
+            authBaseCheckList.addEventListener("change", (e) => {
+                if (!e.target.classList.contains("auth-base-cb")) return;
+                const cb = e.target;
+                const base = cb.dataset.base;
+                if (cb.checked) {
+                    selectedAuthBases.add(base);
+                    cb.parentElement.style.background = "#ecf5ff";
+                } else {
+                    selectedAuthBases.delete(base);
+                    cb.parentElement.style.background = "";
+                }
+                // 同步全选
+                const allCbs = authBaseCheckList.querySelectorAll(".auth-base-cb");
+                if (authBaseCheckAll) authBaseCheckAll.checked = [...allCbs].every(c => c.checked);
+                refreshAuthBaseDisplay();
+                if (authBaseError) authBaseError.hidden = true;
+            });
+        }
+
+        // 外部全选（全量）
+        if (authBaseSelectAllBtn) {
+            authBaseSelectAllBtn.addEventListener("click", () => {
+                allAvailableBases.forEach(b => selectedAuthBases.add(b));
+                renderAuthBaseList(authBaseSearch ? authBaseSearch.value : "");
+                refreshAuthBaseDisplay();
+                if (authBaseError) authBaseError.hidden = true;
+            });
+        }
+        if (authBaseClearAllBtn) {
+            authBaseClearAllBtn.addEventListener("click", () => {
+                selectedAuthBases.clear();
+                renderAuthBaseList(authBaseSearch ? authBaseSearch.value : "");
+                refreshAuthBaseDisplay();
+            });
+        }
+
+        // 点击外部关闭建议列表
+        document.addEventListener("click", (e) => {
+            if (authBaseSuggest && !e.target.closest("#authBaseInput") && !e.target.closest("#authBaseSuggest")) {
+                authBaseSuggest.style.display = "none";
+            }
+        });
+
         // 默认显示查询结果中的角色（如有），否则显示前20个
         const defaultCheckedIds = new Set(queryResults.map(r => r.id));
         function renderModalRoles(keyword = "") {
             const kw = keyword.toLowerCase();
             let filtered = allRoles;
+
+            // PDA模式：按选中的基地过滤角色
+            if (currentTab === "pda") {
+                const selBases = getSelectedAuthBases();
+                if (selBases.size > 0) {
+                    filtered = filtered.filter(r => selBases.has(r.department));
+                }
+            }
+
             if (kw) {
-                filtered = allRoles.filter(r =>
+                filtered = filtered.filter(r =>
                     r.name.toLowerCase().includes(kw) || r.code.toLowerCase().includes(kw) || r.department.toLowerCase().includes(kw)
                 );
             }
@@ -1604,6 +1845,16 @@
 
         // 确认授权
         overlay.querySelector("#modalConfirmBtn").addEventListener("click", () => {
+            // PDA模式：校验授权目标基地必填
+            if (currentTab === "pda") {
+                const selBases = getSelectedAuthBases();
+                if (selBases.size === 0) {
+                    if (authBaseError) authBaseError.hidden = false;
+                    if (authBaseTrigger) authBaseTrigger.scrollIntoView({ behavior: "smooth", block: "center" });
+                    return;
+                }
+            }
+
             const selectedRoleIds = [];
             roleListContainer.querySelectorAll(".modal-role-cb").forEach(cb => {
                 if (cb.checked) selectedRoleIds.push(cb.dataset.roleId);
@@ -1619,6 +1870,12 @@
                 return r ? r.name : id;
             }).join("、");
 
+            // 构建授权描述文本
+            const selBasesForInfo = getSelectedAuthBases();
+            const baseInfo = (currentTab === "pda" && selBasesForInfo.size > 0)
+                ? `\n授权基地：${[...selBasesForInfo].join("、")}`
+                : "";
+
             // 弹出覆盖/累加选择弹窗
             const choiceOverlay = document.createElement("div");
             choiceOverlay.className = "modal-overlay";
@@ -1629,7 +1886,7 @@
                     </div>
                     <div class="modal-body" style="text-align:center;">
                         <p style="margin-bottom:12px;">为 <b>${selectedRoleIds.length}</b> 个角色授权 <b>${menuNames.length}</b> 个菜单</p>
-                        <p style="font-size:12px;color:#909399;margin-bottom:16px;">角色：${roleNames}</p>
+                        <p style="font-size:12px;color:#909399;margin-bottom:16px;">角色：${roleNames}${baseInfo}</p>
                     </div>
                     <div class="modal-footer" style="justify-content:center;gap:16px;">
                         <button class="btn btn-default" id="choiceCancel">取消</button>
@@ -1658,8 +1915,10 @@
                 closeModal();
                 queryRoles();
                 const actionType = (isOverwrite ? "覆盖授权" : "累加授权") + "(" + currentTab.toUpperCase() + ")";
-                addOperationLog(actionType, `${menuNames.length}个菜单 → ${selectedRoleIds.length}个角色（${roleNames}）`);
-                alert(`✅ 已${isOverwrite ? "覆盖" : "累加"}授权 ${menuNames.length} 个菜单给 ${selectedRoleIds.length} 个角色`);
+                const baseLogInfo = (currentTab === "pda" && selBasesForInfo.size > 0)
+                    ? ` · 基地：${[...selBasesForInfo].join("、")}` : "";
+                addOperationLog(actionType, `${menuNames.length}个菜单 → ${selectedRoleIds.length}个角色（${roleNames}）${baseLogInfo}`);
+                alert(`✅ 已${isOverwrite ? "覆盖" : "累加"}授权 ${menuNames.length} 个菜单给 ${selectedRoleIds.length} 个角色${baseInfo}`);
             };
 
             choiceOverlay.querySelector("#choiceOverwrite").addEventListener("click", () => doAuthorize(true));
@@ -1700,10 +1959,22 @@
                         </div>
                     </div>
                     <div style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
-                        <label style="font-size:13px;font-weight:600;">📋 目标角色（复制给谁）：${currentTab === "pda" ? `<select id="copyTargetBaseFilter" style="padding:3px 8px;border:1px solid #d0d5dd;border-radius:4px;font-size:12px;outline:none;margin-left:4px;">
-                            <option value="">🏭 全部基地</option>
-                            ${(() => { const permBases = new Set(); for (const ids of Object.values(menuRoleMapping)) { ids.forEach(rid => { const r = allRoles.find(r2 => r2.id === rid); if (r && r.bases) r.bases.forEach(b => permBases.add(b)); }); } return [...permBases].sort().map(b => `<option value="${b}" ${b === '珠海基地' ? 'selected' : ''}>${b}</option>`).join(""); })()}
-                        </select>` : ""}</label>
+                        <label style="font-size:13px;font-weight:600;">📋 目标角色（复制给谁）：${currentTab === "pda" ? `
+                            <span id="copyTargetBaseTrigger" style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border:1px solid #d0d5dd;border-radius:4px;font-size:12px;cursor:pointer;background:#fff;margin-left:4px;position:relative;vertical-align:middle;">
+                                <span id="copyTargetBaseText" style="color:#909399;">🏭 全部基地</span>
+                                <span id="copyTargetBaseCnt" style="color:#909399;font-size:11px;"></span>
+                                <span style="color:#909399;font-size:10px;">▼</span>
+                                <div id="copyTargetBasePanel" style="display:none;position:absolute;top:100%;left:0;z-index:201;background:#fff;border:1px solid #d0d5dd;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.12);width:220px;overflow:hidden;">
+                                    <div style="padding:4px 8px;border-bottom:1px solid #eee;">
+                                        <input type="text" id="copyTargetBaseSearch" placeholder="🔍 搜索..." style="width:100%;padding:4px 8px;border:1px solid #e0e0e0;border-radius:3px;font-size:11px;outline:none;">
+                                    </div>
+                                    <div style="padding:2px 8px;border-bottom:1px solid #f0f0f0;">
+                                        <label style="font-size:11px;cursor:pointer;"><input type="checkbox" id="copyTargetBaseAll"> <b>全选</b></label>
+                                    </div>
+                                    <div id="copyTargetBaseList" style="max-height:160px;overflow-y:auto;padding:2px 0;"></div>
+                                </div>
+                            </span>
+                        ` : ""}</label>
                         <label><input type="checkbox" id="copyTargetAll"> <b>全选/取消</b></label>
                     </div>
                     <input type="text" class="modal-search" id="copyTargetSearch" placeholder="🔍 模糊搜索目标角色..." style="width:100%;padding:7px 12px;border:1px solid #d0d5dd;border-radius:6px;font-size:12px;outline:none;margin-bottom:10px;">
@@ -1725,7 +1996,14 @@
         const targetCount = overlay.querySelector("#copyTargetCount");
         const selectAllTarget = overlay.querySelector("#copyTargetAll");
         const copySourceBaseFilter = overlay.querySelector("#copySourceBaseFilter");
-        const copyTargetBaseFilter = overlay.querySelector("#copyTargetBaseFilter");
+        const copyTargetBaseTrigger = overlay.querySelector("#copyTargetBaseTrigger");
+        const copyTargetBasePanel = overlay.querySelector("#copyTargetBasePanel");
+        const copyTargetBaseText = overlay.querySelector("#copyTargetBaseText");
+        const copyTargetBaseCnt = overlay.querySelector("#copyTargetBaseCnt");
+        const copyTargetBaseSearch = overlay.querySelector("#copyTargetBaseSearch");
+        const copyTargetBaseAll = overlay.querySelector("#copyTargetBaseAll");
+        const copyTargetBaseList = overlay.querySelector("#copyTargetBaseList");
+        const copyTargetBases = new Set(); // 已选目标基地（空=全部）
         let selectedSourceId = null;
 
         // 源角色搜索下拉（受基地筛选影响）
@@ -1763,8 +2041,81 @@
                 renderTargetRoles(targetSearch ? targetSearch.value : "");
             });
         }
-        if (copyTargetBaseFilter) {
-            copyTargetBaseFilter.addEventListener("change", () => {
+
+        // === 目标角色基地多选面板 ===
+        const allCopyBases = [...new Set(allRoles.map(r => r.department).filter(Boolean))];
+
+        function renderCopyTargetBaseList() {
+            if (!copyTargetBaseList) return;
+            const selected = copyTargetBases.size;
+            // 显示文字
+            if (copyTargetBaseText) {
+                copyTargetBaseText.textContent = selected === 0 ? "🏭 全部基地" : `🏭 已选 ${selected} 个`;
+                copyTargetBaseText.style.color = selected === 0 ? "#909399" : "#4099A3";
+            }
+            if (copyTargetBaseCnt) {
+                copyTargetBaseCnt.textContent = selected > 0 ? `(${selected})` : "";
+            }
+            // 渲染checkbox列表
+            const kw = (copyTargetBaseSearch ? copyTargetBaseSearch.value : "").toLowerCase();
+            let display = allCopyBases;
+            if (kw) display = display.filter(b => b.toLowerCase().includes(kw));
+            copyTargetBaseList.innerHTML = display.map(b => `
+                <label style="display:flex;align-items:center;gap:6px;padding:4px 10px;cursor:pointer;font-size:12px;background:${copyTargetBases.has(b)?'#ecf5ff':''};">
+                    <input type="checkbox" class="copy-target-base-cb" data-base="${b}" ${copyTargetBases.has(b)?'checked':''}> ${b}
+                </label>
+            `).join("") || '<div style="padding:6px 10px;color:#999;font-size:11px;">无匹配</div>';
+            // 同步全选
+            if (copyTargetBaseAll) {
+                const cbs = copyTargetBaseList.querySelectorAll(".copy-target-base-cb");
+                copyTargetBaseAll.checked = cbs.length > 0 && [...cbs].every(c => c.checked);
+            }
+        }
+
+        // 面板开关
+        if (copyTargetBaseTrigger && copyTargetBasePanel) {
+            copyTargetBaseTrigger.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const open = copyTargetBasePanel.style.display === "block";
+                copyTargetBasePanel.style.display = open ? "none" : "block";
+                if (!open) { renderCopyTargetBaseList(); }
+            });
+            document.addEventListener("click", (e) => {
+                if (copyTargetBasePanel && !copyTargetBaseTrigger.contains(e.target) && !copyTargetBasePanel.contains(e.target)) {
+                    copyTargetBasePanel.style.display = "none";
+                }
+            });
+        }
+
+        // 搜索
+        if (copyTargetBaseSearch) {
+            copyTargetBaseSearch.addEventListener("input", () => renderCopyTargetBaseList());
+            copyTargetBaseSearch.addEventListener("click", e => e.stopPropagation());
+        }
+
+        // 全选checkbox
+        if (copyTargetBaseAll) {
+            copyTargetBaseAll.addEventListener("change", () => {
+                const cbs = copyTargetBaseList.querySelectorAll(".copy-target-base-cb");
+                cbs.forEach(cb => {
+                    if (copyTargetBaseAll.checked) { copyTargetBases.add(cb.dataset.base); cb.checked = true; cb.parentElement.style.background = "#ecf5ff"; }
+                    else { copyTargetBases.delete(cb.dataset.base); cb.checked = false; cb.parentElement.style.background = ""; }
+                });
+                renderCopyTargetBaseList();
+                renderTargetRoles(targetSearch ? targetSearch.value : "");
+            });
+        }
+
+        // 单个checkbox
+        if (copyTargetBaseList) {
+            copyTargetBaseList.addEventListener("change", (e) => {
+                if (!e.target.classList.contains("copy-target-base-cb")) return;
+                const cb = e.target;
+                if (cb.checked) { copyTargetBases.add(cb.dataset.base); cb.parentElement.style.background = "#ecf5ff"; }
+                else { copyTargetBases.delete(cb.dataset.base); cb.parentElement.style.background = ""; }
+                const allCbs = copyTargetBaseList.querySelectorAll(".copy-target-base-cb");
+                if (copyTargetBaseAll) copyTargetBaseAll.checked = [...allCbs].every(c => c.checked);
+                renderCopyTargetBaseList();
                 renderTargetRoles(targetSearch ? targetSearch.value : "");
             });
         }
@@ -1795,9 +2146,11 @@
         // 目标角色搜索过滤 + 显示前 20
         function renderTargetRoles(keyword = "") {
             const kw = keyword.toLowerCase();
-            const srcBase = copyTargetBaseFilter ? copyTargetBaseFilter.value : "";
             let filtered = allRoles;
-            if (srcBase) filtered = filtered.filter(r => r.department === srcBase || (r.bases && r.bases.includes(srcBase)));
+            // PDA模式：按选中的目标基地过滤（空=全部）
+            if (currentTab === "pda" && copyTargetBases.size > 0) {
+                filtered = filtered.filter(r => copyTargetBases.has(r.department));
+            }
             if (kw) {
                 filtered = filtered.filter(r =>
                     r.name.toLowerCase().includes(kw) || r.code.toLowerCase().includes(kw) || r.department.toLowerCase().includes(kw)
