@@ -1720,6 +1720,8 @@
                     renderAuthBaseList("");
                 }
             });
+            // 阻止面板内点击冒泡，保持面板打开
+            authBasePanel.addEventListener("click", (e) => e.stopPropagation());
             document.addEventListener("click", (e) => {
                 if (!authBaseTrigger.contains(e.target) && !authBasePanel.contains(e.target)) {
                     authBasePanel.style.display = "none";
@@ -1790,13 +1792,6 @@
                 refreshAuthBaseDisplay();
             });
         }
-
-        // 点击外部关闭建议列表
-        document.addEventListener("click", (e) => {
-            if (authBaseSuggest && !e.target.closest("#authBaseInput") && !e.target.closest("#authBaseSuggest")) {
-                authBaseSuggest.style.display = "none";
-            }
-        });
 
         // 默认显示查询结果中的角色（如有），否则显示前20个
         const defaultCheckedIds = new Set(queryResults.map(r => r.id));
@@ -2080,6 +2075,8 @@
                 copyTargetBasePanel.style.display = open ? "none" : "block";
                 if (!open) { renderCopyTargetBaseList(); }
             });
+            // 阻止面板内所有点击冒泡，保持面板打开
+            copyTargetBasePanel.addEventListener("click", (e) => e.stopPropagation());
             document.addEventListener("click", (e) => {
                 if (copyTargetBasePanel && !copyTargetBaseTrigger.contains(e.target) && !copyTargetBasePanel.contains(e.target)) {
                     copyTargetBasePanel.style.display = "none";
