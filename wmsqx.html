@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -1704,7 +1703,7 @@
                             <label><input type="checkbox" id="modalSelectAll"> <b>全选/取消</b></label>
                             <span style="margin-left:12px;font-size:11px;color:#999;" id="modalRoleCount"></span>
                         </div>
-                        <div id="modalRoleList" style="max-height:320px;overflow-y:auto;"></div>
+                        <div id="modalRoleList" style="max-height:340px;overflow-y:auto;"></div>
                     </div>
                     <!-- 右侧：已选菜单树 -->
                     <div style="width:280px;flex-shrink:0;border-left:1px solid #e8ecf0;padding-left:14px;display:flex;flex-direction:column;">
@@ -1714,9 +1713,14 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div style="padding:8px 16px;border-top:1px solid #eee;background:#fafbfc;display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:12px;color:#606266;font-weight:600;white-space:nowrap;">已选角色：</span>
+                    <div id="modalSelectedRoles" style="display:flex;flex-wrap:wrap;gap:4px;flex:1;min-height:0;max-height:60px;overflow-y:auto;"></div>
+                </div>
+                <div class="modal-footer" style="justify-content:flex-end;gap:10px;">
                     <button class="btn btn-default" id="modalCancelBtn">取消</button>
-                    <button class="btn btn-primary" id="modalConfirmBtn">✅ 确认授权</button>
+                    <button class="btn btn-primary" id="modalAppendBtn" style="background:#4099A3;">➕ 累加授权</button>
+                    <button class="btn btn-primary" id="modalOverwriteBtn" style="background:#4099A3;">🔄 覆盖授权</button>
                 </div>
             </div>
         `;
@@ -1957,9 +1961,52 @@
         renderModalRoles();
         roleSearch.addEventListener("input", () => renderModalRoles(roleSearch.value));
 
+        // 刷新已选角色标签
+        const modalSelectedRoles = overlay.querySelector("#modalSelectedRoles");
+        function refreshSelectedRoleTags() {
+            if (!modalSelectedRoles) return;
+            const checkedIds = [];
+            roleListContainer.querySelectorAll(".modal-role-cb").forEach(cb => {
+                if (cb.checked) checkedIds.push(cb.dataset.roleId);
+            });
+            if (checkedIds.length === 0) {
+                modalSelectedRoles.innerHTML = "";
+                return;
+            }
+            modalSelectedRoles.innerHTML = checkedIds.map(rid => {
+                const r = allRoles.find(r => r.id === rid);
+                return r ? `<span class="menu-tag" style="font-size:10px;padding:1px 7px;cursor:default;">${r.name}<span class="remove-modal-role" data-role-id="${rid}" style="cursor:pointer;margin-left:3px;opacity:0.8;">✕</span></span>` : '';
+            }).join("") + `<span class="menu-tag" style="font-size:10px;padding:1px 7px;background:#f56c6c;cursor:pointer;" id="clearAllSelectedRoles">清空</span>`;
+            modalSelectedRoles.querySelectorAll(".remove-modal-role").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    const cb = roleListContainer.querySelector(`.modal-role-cb[data-role-id="${btn.dataset.roleId}"]`);
+                    if (cb) cb.checked = false;
+                    if (selectAll) selectAll.checked = false;
+                    refreshSelectedRoleTags();
+                });
+            });
+            const clearAll = modalSelectedRoles.querySelector("#clearAllSelectedRoles");
+            if (clearAll) {
+                clearAll.addEventListener("click", () => {
+                    roleListContainer.querySelectorAll(".modal-role-cb").forEach(cb => { cb.checked = false; });
+                    if (selectAll) selectAll.checked = false;
+                    refreshSelectedRoleTags();
+                });
+            }
+        }
+
         // 全选/取消（仅影响当前可见的复选框）
         selectAll.addEventListener("change", () => {
             roleListContainer.querySelectorAll(".modal-role-cb").forEach(cb => { cb.checked = selectAll.checked; });
+            refreshSelectedRoleTags();
+        });
+
+        // 单个角色勾选 → 更新标签
+        roleListContainer.addEventListener("change", (e) => {
+            if (e.target.classList.contains("modal-role-cb")) {
+                refreshSelectedRoleTags();
+            }
         });
 
         // 关闭
@@ -1968,88 +2015,86 @@
         overlay.querySelector("#modalCancelBtn").addEventListener("click", closeModal);
         overlay.addEventListener("click", (e) => { if (e.target === overlay) closeModal(); });
 
-        // 确认授权
-        overlay.querySelector("#modalConfirmBtn").addEventListener("click", () => {
-            // PDA模式：校验授权目标基地必填
+        // 累加授权
+        overlay.querySelector("#modalAppendBtn").addEventListener("click", () => {
+            if (!validateAuth()) return;
+            const selectedRoleIds = getSelectedRoleIds();
+            const roleNames = getSelectedRoleNames(selectedRoleIds);
+            const baseInfo = getBaseInfo();
+            doAuthorize(false, selectedRoleIds, roleNames, baseInfo);
+        });
+
+        // 覆盖授权
+        overlay.querySelector("#modalOverwriteBtn").addEventListener("click", () => {
+            if (!validateAuth()) return;
+            const selectedRoleIds = getSelectedRoleIds();
+            const roleNames = getSelectedRoleNames(selectedRoleIds);
+            const baseInfo = getBaseInfo();
+            doAuthorize(true, selectedRoleIds, roleNames, baseInfo);
+        });
+
+        // 校验和获取选中角色
+        function validateAuth() {
             if (currentTab === "pda") {
                 const selBases = getSelectedAuthBases();
                 if (selBases.size === 0) {
                     if (authBaseError) authBaseError.hidden = false;
                     if (authBaseTrigger) authBaseTrigger.scrollIntoView({ behavior: "smooth", block: "center" });
-                    return;
+                    return false;
                 }
             }
+            return true;
+        }
 
-            const selectedRoleIds = [];
+        function getSelectedRoleIds() {
+            const ids = [];
             roleListContainer.querySelectorAll(".modal-role-cb").forEach(cb => {
-                if (cb.checked) selectedRoleIds.push(cb.dataset.roleId);
+                if (cb.checked) ids.push(cb.dataset.roleId);
             });
+            return ids;
+        }
 
+        function getSelectedRoleNames(ids) {
+            return ids.map(id => {
+                const r = allRoles.find(r => r.id === id);
+                return r ? r.name : id;
+            }).join("、");
+        }
+
+        function getBaseInfo() {
+            const selBases = getSelectedAuthBases();
+            return (currentTab === "pda" && selBases.size > 0)
+                ? `\n授权基地：${[...selBases].join("、")}`
+                : "";
+        }
+
+        function doAuthorize(isOverwrite, selectedRoleIds, roleNames, baseInfo) {
             if (selectedRoleIds.length === 0) {
                 alert("请至少选择一个角色");
                 return;
             }
 
-            const roleNames = selectedRoleIds.map(id => {
-                const r = allRoles.find(r => r.id === id);
-                return r ? r.name : id;
-            }).join("、");
-
-            // 构建授权描述文本
-            const selBasesForInfo = getSelectedAuthBases();
-            const baseInfo = (currentTab === "pda" && selBasesForInfo.size > 0)
-                ? `\n授权基地：${[...selBasesForInfo].join("、")}`
-                : "";
-
-            // 弹出覆盖/累加选择弹窗
-            const choiceOverlay = document.createElement("div");
-            choiceOverlay.className = "modal-overlay";
-            choiceOverlay.innerHTML = `
-                <div class="modal" style="width:440px;">
-                    <div class="modal-header">
-                        <span>⚠️ 选择授权模式</span>
-                    </div>
-                    <div class="modal-body" style="text-align:center;">
-                        <p style="margin-bottom:12px;">为 <b>${selectedRoleIds.length}</b> 个角色授权 <b>${menuNames.length}</b> 个菜单</p>
-                        <p style="font-size:12px;color:#909399;margin-bottom:16px;">角色：${roleNames}${baseInfo}</p>
-                    </div>
-                    <div class="modal-footer" style="justify-content:center;gap:16px;">
-                        <button class="btn btn-default" id="choiceCancel">取消</button>
-                        <button class="btn btn-primary" id="choiceOverwrite" style="background:#d64045;min-width:100px;">🔄 覆盖授权<br><span style="font-size:10px;font-weight:normal;">替换角色已有权限</span></button>
-                        <button class="btn btn-primary" id="choiceAppend" style="background:#4099A3;min-width:100px;">➕ 累加授权<br><span style="font-size:10px;font-weight:normal;">追加到已有权限</span></button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(choiceOverlay);
-
-            const doAuthorize = (isOverwrite) => {
-                choiceOverlay.remove();
-                for (const menuId of selectedMenuIds) {
-                    if (isOverwrite) {
-                        for (const key of Object.keys(menuRoleMapping)) {
-                            menuRoleMapping[key] = menuRoleMapping[key].filter(rid => !selectedRoleIds.includes(rid));
-                        }
-                    }
-                    if (!menuRoleMapping[menuId]) menuRoleMapping[menuId] = [];
-                    for (const rid of selectedRoleIds) {
-                        if (!menuRoleMapping[menuId].includes(rid)) {
-                            menuRoleMapping[menuId].push(rid);
-                        }
+            for (const menuId of selectedMenuIds) {
+                if (isOverwrite) {
+                    for (const key of Object.keys(menuRoleMapping)) {
+                        menuRoleMapping[key] = menuRoleMapping[key].filter(rid => !selectedRoleIds.includes(rid));
                     }
                 }
-                closeModal();
-                queryRoles();
-                const actionType = (isOverwrite ? "覆盖授权" : "累加授权") + "(" + currentTab.toUpperCase() + ")";
-                const baseLogInfo = (currentTab === "pda" && selBasesForInfo.size > 0)
-                    ? ` · 基地：${[...selBasesForInfo].join("、")}` : "";
-                addOperationLog(actionType, `${menuNames.length}个菜单 → ${selectedRoleIds.length}个角色（${roleNames}）${baseLogInfo}`);
-                alert(`✅ 已${isOverwrite ? "覆盖" : "累加"}授权 ${menuNames.length} 个菜单给 ${selectedRoleIds.length} 个角色${baseInfo}`);
-            };
-
-            choiceOverlay.querySelector("#choiceOverwrite").addEventListener("click", () => doAuthorize(true));
-            choiceOverlay.querySelector("#choiceAppend").addEventListener("click", () => doAuthorize(false));
-            choiceOverlay.querySelector("#choiceCancel").addEventListener("click", () => choiceOverlay.remove());
-        });
+                if (!menuRoleMapping[menuId]) menuRoleMapping[menuId] = [];
+                for (const rid of selectedRoleIds) {
+                    if (!menuRoleMapping[menuId].includes(rid)) {
+                        menuRoleMapping[menuId].push(rid);
+                    }
+                }
+            }
+            closeModal();
+            queryRoles();
+            const actionType = (isOverwrite ? "覆盖授权" : "累加授权") + "(" + currentTab.toUpperCase() + ")";
+            const baseLogInfo = (currentTab === "pda" && baseInfo)
+                ? ` · 基地：${[...getSelectedAuthBases()].join("、")}` : "";
+            addOperationLog(actionType, `${menuNames.length}个菜单 → ${selectedRoleIds.length}个角色（${roleNames}）${baseLogInfo}`);
+            alert(`✅ 已${isOverwrite ? "覆盖" : "累加"}授权 ${menuNames.length} 个菜单给 ${selectedRoleIds.length} 个角色${baseInfo}`);
+        }
     }
 
     // 复制角色权限：将源角色的全部权限复制给目标角色（覆盖）
