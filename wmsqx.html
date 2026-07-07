@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -154,7 +155,7 @@
 
         /* 左侧菜单树面板 */
         .menu-panel {
-            width: 380px;
+            width: 420px;
             background: white;
             border-radius: 12px;
             box-shadow: 0 2px 12px rgba(0,0,0,0.05);
@@ -618,6 +619,11 @@
                     <b style="color:#409eff;">全选菜单</b>
                 </label>
                 <span style="font-size:11px;color:#909399;">勾选后将选中全部菜单进行查询</span>
+                <label id="showSelectedLabel" style="font-size:12px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:4px;margin-left:8px;">
+                    <input type="checkbox" id="showOnlySelected" style="width:14px;height:14px;accent-color:#409eff;">
+                    <b style="color:#409eff;">查看已选</b>
+                </label>
+                <span id="menuNodeCount" style="margin-left:auto;font-size:11px;color:#606266;font-weight:600;"></span>
             </div>
             <div class="menu-tree-container" id="menuTreeContainer">
                 <!-- 动态渲染菜单树 -->
@@ -924,7 +930,19 @@
     function switchMenuTree(tab) {
         menuTreeData = (tab === "pda") ? pdaMenuTreeData : pcMenuTreeData;
         expandedNodes.clear();
-        menuTreeData.forEach(node => expandedNodes.add(node.id));
+        initExpand();
+        // Debug: check deep nodes
+        if (tab === "pda") {
+            let deepCount = 0;
+            function countDeep(nodes, depth) {
+                nodes.forEach(n => {
+                    if (depth >= 3) deepCount++;
+                    if (n.children && n.children.length) countDeep(n.children, depth + 1);
+                });
+            }
+            countDeep(menuTreeData, 1);
+            console.log('PDA deep nodes (>= level 3):', deepCount, 'total expanded nodes:', expandedNodes.size);
+        }
         selectedMenuIds.clear();
         selectedRoleIds.clear();
         queryResults = [];
@@ -1039,7 +1057,8 @@
     let queryResults = [];  // 查询结果角色列表
     let filterRoleId = null;      // 按角色过滤菜单（null=未启用）
     let filterBaseDepartment = ""; // 按基地过滤菜单（空=未启用）
-    let currentTab = "pc";         // 当前端别：pc 或 pda
+    let currentTab = (() => { try { return localStorage.getItem("menuTab") || "pda"; } catch(e) { return "pda"; } })();  // 默认 PDA，保存选择
+    let showOnlySelected = false; // 仅查看已选菜单
 
     // 获取菜单名称
     function getMenuName(menuId, data = menuTreeData) {
@@ -1232,7 +1251,7 @@
         return false;
     }
 
-    // 渲染菜单树
+    // 渲染菜单树（默认全部展开，expandedNodes仅控制▼/▶图标）
     function renderMenuTree(nodes, level = 0) {
         if (!nodes || !nodes.length) return document.createDocumentFragment();
         
@@ -1242,12 +1261,20 @@
         
         for (const node of nodes) {
             if (!matchesSearch(node, currentSearchKeyword)) continue;
+            // 查看已选模式：隐藏自身及所有后代均未选中的节点
+            if (showOnlySelected && !selectedMenuIds.has(node.id)) {
+                const hasSelectedDescendant = node.children && node.children.some(c => {
+                    function anySelected(n) { return selectedMenuIds.has(n.id) || (n.children && n.children.some(anySelected)); }
+                    return anySelected(c);
+                });
+                if (!hasSelectedDescendant) continue;
+            }
             
             const li = document.createElement("li");
             const nodeDiv = document.createElement("div");
             nodeDiv.className = "menu-node";
             
-            const hasChildren = node.children && node.children.length;
+            const hasChildren = node.children && node.children.length > 0;
             const expandIcon = document.createElement("span");
             expandIcon.className = "expand-icon";
             if (hasChildren) {
@@ -1275,7 +1302,6 @@
                 e.stopPropagation();
                 updateNodeCheck(node, checkbox.checked);
                 refreshMenuTree();
-                // 清空查询结果（因为选中菜单变化了）
                 queryResults = [];
                 renderRolesTable([]);
             };
@@ -1284,16 +1310,13 @@
             const labelSpan = document.createElement("span");
             labelSpan.className = "menu-label";
             labelSpan.textContent = node.name;
-            // 按角色过滤时，高亮该角色拥有的菜单（绿色）
             if (filterRoleId && menuRoleMapping[node.id] && menuRoleMapping[node.id].includes(filterRoleId)) {
                 labelSpan.style.color = "#2a9d5c";
                 labelSpan.style.fontWeight = "600";
             }
-            // 按基地过滤时，高亮该基地下角色拥有的菜单（蓝色）
             if (filterBaseDepartment && menuRoleMapping[node.id]) {
                 const baseRoleIds = new Set(allRoles.filter(r => r.bases && r.bases.includes(filterBaseDepartment)).map(r => r.id));
-                const hasBaseRole = menuRoleMapping[node.id].some(rid => baseRoleIds.has(rid));
-                if (hasBaseRole) {
+                if (menuRoleMapping[node.id].some(rid => baseRoleIds.has(rid))) {
                     labelSpan.style.color = "#4099A3";
                     labelSpan.style.fontWeight = "600";
                 }
@@ -1307,7 +1330,7 @@
             nodeDiv.appendChild(checkboxSpan);
             nodeDiv.appendChild(labelSpan);
 
-            // 父级节点：增加全选按钮（已全选变绿色，未全选蓝色）
+            // 父级"全选/取消全选"按钮
             if (hasChildren) {
                 const allChildrenIds = getAllChildrenIds(node);
                 const allSelected = node.children.every(c => selectedMenuIds.has(c.id)) && selectedMenuIds.has(node.id);
@@ -1319,31 +1342,24 @@
                 selectAllBtn.style.cssText = `font-size:10px;color:${btnColor};cursor:pointer;margin-left:6px;padding:1px 6px;border:1px solid ${btnColor};border-radius:3px;user-select:none;white-space:nowrap;background:${btnBg};`;
                 selectAllBtn.onmouseover = () => {
                     selectAllBtn.style.background = allSelected ? "#fde2e2" : "#ecf5ff";
-                    // 高亮父级行及所有可见子级行
-                    nodeDiv.style.background = "#e6f7ff";
-                    nodeDiv.style.borderRadius = "4px";
-                    const childNodes = li.querySelectorAll(".menu-node");
-                    childNodes.forEach(cn => { if (cn !== nodeDiv) { cn.style.background = "#f0faff"; cn.style.borderRadius = "4px"; } });
+                    nodeDiv.style.background = "#e6f7ff"; nodeDiv.style.borderRadius = "4px";
+                    li.querySelectorAll(".menu-node").forEach(cn => { if (cn !== nodeDiv) { cn.style.background = "#f0faff"; cn.style.borderRadius = "4px"; } });
                 };
                 selectAllBtn.onmouseout = () => {
                     selectAllBtn.style.background = btnBg;
                     nodeDiv.style.background = "";
-                    const childNodes = li.querySelectorAll(".menu-node");
-                    childNodes.forEach(cn => { cn.style.background = ""; });
+                    li.querySelectorAll(".menu-node").forEach(cn => { cn.style.background = ""; });
                 };
                 selectAllBtn.onclick = (e) => {
                     e.stopPropagation();
                     if (allSelected) {
-                        // 已全选：取消父级+所有子级
                         selectedMenuIds.delete(node.id);
                         allChildrenIds.forEach(id => selectedMenuIds.delete(id));
-                        // 检查祖先是否需要取消
                         const ancestorIds = getAllParentIds(node.id, menuTreeData) || [];
                         for (const aid of ancestorIds) {
                             const ancestor = findNodeById(aid, menuTreeData);
-                            if (ancestor && ancestor.children && ancestor.children.length > 0) {
-                                const anyChildChecked = ancestor.children.some(c => selectedMenuIds.has(c.id));
-                                if (!anyChildChecked) selectedMenuIds.delete(aid);
+                            if (ancestor && ancestor.children && ancestor.children.length) {
+                                if (!ancestor.children.some(c => selectedMenuIds.has(c.id))) selectedMenuIds.delete(aid);
                             }
                         }
                     } else {
@@ -1358,14 +1374,17 @@
             }
 
             nodeDiv.appendChild(codeSpan);
-            
             li.appendChild(nodeDiv);
             
-            if (hasChildren && expandedNodes.has(node.id)) {
+            // 渲染子级（默认展开，expandedNodes 控制折叠）
+            if (hasChildren) {
                 const childrenUl = renderMenuTree(node.children, level + 1);
                 const childrenContainer = document.createElement("div");
                 childrenContainer.className = "children";
                 childrenContainer.appendChild(childrenUl);
+                if (!expandedNodes.has(node.id)) {
+                    childrenContainer.style.display = "none";
+                }
                 li.appendChild(childrenContainer);
             }
             
@@ -1458,17 +1477,32 @@
     }
 
     function refreshMenuTree() {
+        // 首次渲染/切换端别时强制全部展开
+        if (expandedNodes.size === 0) {
+            function forceExpandAll(node) {
+                expandedNodes.add(node.id);
+                if (node.children && node.children.length) {
+                    node.children.forEach(forceExpandAll);
+                }
+            }
+            menuTreeData.forEach(forceExpandAll);
+        }
+        
         const container = document.getElementById("menuTreeContainer");
         const fragment = renderMenuTree(menuTreeData);
         container.innerHTML = "";
         container.appendChild(fragment);
 
-        // 同步全选复选框状态
+        // 显示总节点数
         const allIds = getAllMenuIds();
         const selectAll = document.getElementById("menuSelectAll");
         if (selectAll) {
             selectAll.checked = allIds.length > 0 && allIds.every(id => selectedMenuIds.has(id));
         }
+        
+        // 更新节点计数提示
+        const cntEl = document.getElementById("menuNodeCount");
+        if (cntEl) cntEl.textContent = `共 ${allIds.length} 个菜单节点`;
         
         if (container.children.length === 0 || (container.children[0].children && container.children[0].children.length === 0)) {
             container.innerHTML = '<div style="text-align: center; padding: 40px; color: #909399;">未找到匹配的菜单</div>';
@@ -1589,6 +1623,33 @@
         });
     }
 
+    // 构建已选菜单的简单树形HTML（用于授权弹窗右侧）
+    function buildSimpleMenuTree(menuIds) {
+        if (!menuIds || menuIds.length === 0) return '<div style="color:#909399;text-align:center;padding:12px;">暂无选中菜单</div>';
+        const paths = menuIds.map(id => ({ id, path: getMenuPath(id) || [], name: getMenuName(id) || id }));
+        const root = {};
+        paths.forEach(p => {
+            let current = root;
+            const fullPath = [...p.path, p.name];
+            fullPath.forEach(seg => {
+                if (!current[seg]) current[seg] = { _children: {} };
+                current = current[seg]._children;
+            });
+        });
+        function renderTree(obj, level) {
+            return Object.entries(obj).map(([name, data]) => {
+                const sub = renderTree(data._children, level + 1);
+                const hasSub = sub.length > 0;
+                return `<div style="padding:2px 0;padding-left:${level * 16}px;">
+                    <span style="color:#909399;font-size:11px;">${hasSub ? '📁' : '📄'}</span>
+                    <span style="font-size:12px;color:#303133;">${name}</span>
+                    ${sub ? `<div>${sub}</div>` : ''}
+                </div>`;
+            }).join('');
+        }
+        return renderTree(root, 0) || '<div style="color:#999;font-size:12px;">无</div>';
+    }
+
     // 批量授权：弹出模态框，从所有角色中选择并授权
     function batchAuthorize() {
         if (selectedMenuIds.size === 0) {
@@ -1601,49 +1662,57 @@
         // 构建模态框
         const overlay = document.createElement("div");
         overlay.className = "modal-overlay";
+        const menuTreeHTML = buildSimpleMenuTree(Array.from(selectedMenuIds));
         overlay.innerHTML = `
-            <div class="modal">
+            <div class="modal" style="width:780px;">
                 <div class="modal-header">
-                    <span>📋 授权 — 选择角色</span>
+                    <span>📋 授权 — 选择角色（已选 ${menuNames.length} 个菜单）</span>
                     <button class="modal-close">✕</button>
                 </div>
-                <div class="modal-body">
-                    <div class="modal-info">将以下 <b>${menuNames.length}</b> 个菜单授权给选中的角色：<br>👉 ${menuNames.join("、")}</div>
-                    ${currentTab === "pda" ? `
-                    <!-- PDA模式：授权目标基地（面板checkbox多选、必填） -->
-                    <div style="margin-bottom:10px;">
-                        <label style="font-size:13px;font-weight:600;color:#d64045;">🏭 授权目标基地 <span style="color:#d64045;">*必填（多选）</span>：</label>
-                        <span id="authBaseSelectAllBtn" style="cursor:pointer;color:#4099A3;font-size:12px;margin-left:8px;user-select:none;">📋 全选</span>
-                        <span id="authBaseClearAllBtn" style="cursor:pointer;color:#909399;font-size:12px;margin-left:4px;user-select:none;">清空</span>
-                        <div id="authBaseTags" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;min-height:0;"></div>
-                        <div style="position:relative;margin-top:4px;">
-                            <div id="authBaseTrigger" style="display:flex;align-items:center;padding:6px 10px;border:1px solid #d0d5dd;border-radius:6px;cursor:pointer;background:#fff;min-height:34px;gap:4px;">
-                                <span style="color:#909399;font-size:12px;flex:1;" id="authBaseTriggerText">🔍 点击展开选择基地...</span>
-                                <span style="color:#909399;font-size:12px;" id="authBaseTriggerCount"></span>
-                                <span style="color:#909399;font-size:10px;">▼</span>
+                <div class="modal-body" style="display:flex;gap:16px;padding:12px 16px;">
+                    <!-- 左侧：角色选择 -->
+                    <div style="flex:1;min-width:0;">
+                        ${currentTab === "pda" ? `
+                        <div style="margin-bottom:10px;">
+                            <label style="font-size:13px;font-weight:600;color:#d64045;">🏭 授权目标基地 <span style="color:#d64045;">*必填（多选）</span>：</label>
+                            <span id="authBaseSelectAllBtn" style="cursor:pointer;color:#4099A3;font-size:12px;margin-left:8px;user-select:none;">📋 全选</span>
+                            <span id="authBaseClearAllBtn" style="cursor:pointer;color:#909399;font-size:12px;margin-left:4px;user-select:none;">清空</span>
+                            <div id="authBaseTags" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;min-height:0;"></div>
+                            <div style="position:relative;margin-top:4px;">
+                                <div id="authBaseTrigger" style="display:flex;align-items:center;padding:6px 10px;border:1px solid #d0d5dd;border-radius:6px;cursor:pointer;background:#fff;min-height:34px;gap:4px;">
+                                    <span style="color:#909399;font-size:12px;flex:1;" id="authBaseTriggerText">🔍 点击展开选择基地...</span>
+                                    <span style="color:#909399;font-size:12px;" id="authBaseTriggerCount"></span>
+                                    <span style="color:#909399;font-size:10px;">▼</span>
+                                </div>
+                                <div id="authBasePanel" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:#fff;border:1px solid #d0d5dd;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.12);margin-top:2px;overflow:hidden;">
+                                    <div style="padding:6px 8px;border-bottom:1px solid #eee;">
+                                        <input type="text" id="authBaseSearch" placeholder="🔍 搜索基地..." style="width:100%;padding:6px 10px;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;outline:none;">
+                                    </div>
+                                    <div style="padding:4px 10px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:8px;">
+                                        <label style="font-size:12px;cursor:pointer;"><input type="checkbox" id="authBaseCheckAll"> <b>全选</b></label>
+                                        <span style="font-size:11px;color:#909399;" id="authBaseCheckCount"></span>
+                                    </div>
+                                    <div id="authBaseCheckList" style="max-height:180px;overflow-y:auto;padding:4px 0;"></div>
+                                    <div id="authBaseMoreHint" style="display:none;padding:8px 12px;color:#909399;font-size:11px;text-align:center;border-top:1px solid #f0f0f0;"></div>
+                                </div>
                             </div>
-                            <div id="authBasePanel" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:#fff;border:1px solid #d0d5dd;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.12);margin-top:2px;overflow:hidden;">
-                                <div style="padding:6px 8px;border-bottom:1px solid #eee;">
-                                    <input type="text" id="authBaseSearch" placeholder="🔍 搜索基地..." style="width:100%;padding:6px 10px;border:1px solid #e0e0e0;border-radius:4px;font-size:12px;outline:none;">
-                                </div>
-                                <div style="padding:4px 10px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:8px;">
-                                    <label style="font-size:12px;cursor:pointer;"><input type="checkbox" id="authBaseCheckAll"> <b>全选</b></label>
-                                    <span style="font-size:11px;color:#909399;" id="authBaseCheckCount"></span>
-                                </div>
-                                <div id="authBaseCheckList" style="max-height:220px;overflow-y:auto;padding:4px 0;">
-                                </div>
-                                <div id="authBaseMoreHint" style="display:none;padding:8px 12px;color:#909399;font-size:11px;text-align:center;border-top:1px solid #f0f0f0;"></div>
-                            </div>
+                            <div style="font-size:11px;color:#d64045;margin-top:2px;" id="authBaseError" hidden>⚠️ 请至少选择一个授权目标基地</div>
                         </div>
-                        <div style="font-size:11px;color:#d64045;margin-top:2px;" id="authBaseError" hidden>⚠️ 请至少选择一个授权目标基地</div>
+                        ` : ""}
+                        <input type="text" id="modalRoleSearch" placeholder="🔍 模糊搜索角色（名称/编码/基地）..." style="width:100%;padding:7px 12px;border:1px solid #d0d5dd;border-radius:6px;font-size:12px;outline:none;margin-bottom:8px;">
+                        <div style="margin-bottom:8px;">
+                            <label><input type="checkbox" id="modalSelectAll"> <b>全选/取消</b></label>
+                            <span style="margin-left:12px;font-size:11px;color:#999;" id="modalRoleCount"></span>
+                        </div>
+                        <div id="modalRoleList" style="max-height:320px;overflow-y:auto;"></div>
                     </div>
-                    ` : ""}
-                    <input type="text" id="modalRoleSearch" placeholder="🔍 模糊搜索角色（名称/编码/基地）..." style="width:100%;padding:7px 12px;border:1px solid #d0d5dd;border-radius:6px;font-size:12px;outline:none;margin-bottom:8px;">
-                    <div style="margin-bottom:8px;">
-                        <label><input type="checkbox" id="modalSelectAll"> <b>全选/取消</b></label>
-                        <span style="margin-left:12px;font-size:11px;color:#999;" id="modalRoleCount"></span>
+                    <!-- 右侧：已选菜单树 -->
+                    <div style="width:280px;flex-shrink:0;border-left:1px solid #e8ecf0;padding-left:14px;display:flex;flex-direction:column;">
+                        <div style="font-size:13px;font-weight:600;color:#303133;margin-bottom:8px;">📋 本次授权菜单（${menuNames.length}个）</div>
+                        <div id="authMenuTree" style="flex:1;overflow-y:auto;font-size:12px;max-height:380px;border:1px solid #f0f0f0;border-radius:6px;padding:8px;">
+                            ${menuTreeHTML}
+                        </div>
                     </div>
-                    <div id="modalRoleList" style="max-height:280px;overflow-y:auto;"></div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn btn-default" id="modalCancelBtn">取消</button>
@@ -2566,13 +2635,22 @@
         });
     }
 
-    // 初始化展开一级菜单
+    // 初始化展开全部层级
     function initExpand() {
-        menuTreeData.forEach(node => expandedNodes.add(node.id));
+        function expandAll(node) {
+            expandedNodes.add(node.id);
+            if (node.children && node.children.length) {
+                node.children.forEach(expandAll);
+            }
+        }
+        menuTreeData.forEach(expandAll);
+        console.log('initExpand: expandedNodes size =', expandedNodes.size, 'menuTreeData root length =', menuTreeData.length);
     }
 
     // 初始化
     function init() {
+        // 先根据保存的端别设置正确的菜单树
+        menuTreeData = (currentTab === "pda") ? pdaMenuTreeData : pcMenuTreeData;
         initExpand();
         refreshMenuTree();
         initSearch();
@@ -2656,14 +2734,17 @@
         const tabSelect = document.getElementById("tabSelect");
         const baseFilterRow = document.getElementById("baseFilterRow");
         if (tabSelect) {
+            // 恢复上次选择的端别
+            tabSelect.value = currentTab;
             tabSelect.addEventListener("change", () => {
                 currentTab = tabSelect.value;
+                localStorage.setItem("menuTab", currentTab);
                 if (baseFilterRow) baseFilterRow.style.display = currentTab === "pda" ? "block" : "none";
                 switchMenuTree(currentTab);
             });
         }
-        // 初始 PC 模式隐藏基地选项
-        if (baseFilterRow) baseFilterRow.style.display = "none";
+        // 根据当前端别设置基地选项显示
+        if (baseFilterRow) baseFilterRow.style.display = currentTab === "pda" ? "block" : "none";
 
         // 基地输入框自动补全（PDA模式）
         const baseFilterInput = document.getElementById("baseFilterInput");
@@ -2756,6 +2837,11 @@
             refreshMenuTree();
             updateSelectedMenusDisplay();
             renderRolesTable([]);
+        });
+        // "查看已选" 勾选 → 仅显示已选中的菜单节点
+        document.getElementById("showOnlySelected").addEventListener("change", (e) => {
+            showOnlySelected = e.target.checked;
+            refreshMenuTree();
         });
         // 初始化完成，启用所有操作按钮
         ["queryBtn","clearBtn","batchAuthBtn","deletePermBtn","exportBtn"].forEach(id => {
