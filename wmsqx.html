@@ -1065,14 +1065,11 @@
         return null;
     }
 
-    // 更新节点勾选（联动）
+    // 更新节点勾选（联动）：勾选子级自动勾选父级，父级可独立勾选/取消
     function updateNodeCheck(node, checked) {
         if (checked) {
             selectedMenuIds.add(node.id);
-            // 勾选当前节点 → 自动勾选所有子节点
-            const descendIds = getAllChildrenIds(node);
-            descendIds.forEach(id => selectedMenuIds.add(id));
-            // 自动勾选所有祖先节点
+            // 自动勾选所有祖先节点（子勾选→父自动勾选）
             const ancestorIds = getAllParentIds(node.id, menuTreeData) || [];
             ancestorIds.forEach(id => selectedMenuIds.add(id));
         } else {
@@ -1092,6 +1089,19 @@
                 }
             }
         }
+        updateSelectedMenusDisplay();
+    }
+
+    // 全选节点（父级+所有子级）
+    function selectNodeWithAllChildren(nodeId) {
+        const node = findNodeById(nodeId, menuTreeData);
+        if (!node) return;
+        selectedMenuIds.add(nodeId);
+        const descendIds = getAllChildrenIds(node);
+        descendIds.forEach(id => selectedMenuIds.add(id));
+        // 自动勾选所有祖先节点
+        const ancestorIds = getAllParentIds(nodeId, menuTreeData) || [];
+        ancestorIds.forEach(id => selectedMenuIds.add(id));
         updateSelectedMenusDisplay();
     }
 
@@ -1292,10 +1302,61 @@
             const codeSpan = document.createElement("span");
             codeSpan.className = "menu-code";
             codeSpan.textContent = node.code;
-            
+
             nodeDiv.appendChild(expandIcon);
             nodeDiv.appendChild(checkboxSpan);
             nodeDiv.appendChild(labelSpan);
+
+            // 父级节点：增加全选按钮（已全选变绿色，未全选蓝色）
+            if (hasChildren) {
+                const allChildrenIds = getAllChildrenIds(node);
+                const allSelected = node.children.every(c => selectedMenuIds.has(c.id)) && selectedMenuIds.has(node.id);
+                const btnColor = allSelected ? "#f56c6c" : "#4099A3";
+                const btnBg = allSelected ? "#fef0f0" : "";
+
+                const selectAllBtn = document.createElement("span");
+                selectAllBtn.textContent = allSelected ? "取消全选" : "全选";
+                selectAllBtn.style.cssText = `font-size:10px;color:${btnColor};cursor:pointer;margin-left:6px;padding:1px 6px;border:1px solid ${btnColor};border-radius:3px;user-select:none;white-space:nowrap;background:${btnBg};`;
+                selectAllBtn.onmouseover = () => {
+                    selectAllBtn.style.background = allSelected ? "#fde2e2" : "#ecf5ff";
+                    // 高亮父级行及所有可见子级行
+                    nodeDiv.style.background = "#e6f7ff";
+                    nodeDiv.style.borderRadius = "4px";
+                    const childNodes = li.querySelectorAll(".menu-node");
+                    childNodes.forEach(cn => { if (cn !== nodeDiv) { cn.style.background = "#f0faff"; cn.style.borderRadius = "4px"; } });
+                };
+                selectAllBtn.onmouseout = () => {
+                    selectAllBtn.style.background = btnBg;
+                    nodeDiv.style.background = "";
+                    const childNodes = li.querySelectorAll(".menu-node");
+                    childNodes.forEach(cn => { cn.style.background = ""; });
+                };
+                selectAllBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    if (allSelected) {
+                        // 已全选：取消父级+所有子级
+                        selectedMenuIds.delete(node.id);
+                        allChildrenIds.forEach(id => selectedMenuIds.delete(id));
+                        // 检查祖先是否需要取消
+                        const ancestorIds = getAllParentIds(node.id, menuTreeData) || [];
+                        for (const aid of ancestorIds) {
+                            const ancestor = findNodeById(aid, menuTreeData);
+                            if (ancestor && ancestor.children && ancestor.children.length > 0) {
+                                const anyChildChecked = ancestor.children.some(c => selectedMenuIds.has(c.id));
+                                if (!anyChildChecked) selectedMenuIds.delete(aid);
+                            }
+                        }
+                    } else {
+                        selectNodeWithAllChildren(node.id);
+                    }
+                    updateSelectedMenusDisplay();
+                    refreshMenuTree();
+                    queryResults = [];
+                    renderRolesTable([]);
+                };
+                nodeDiv.appendChild(selectAllBtn);
+            }
+
             nodeDiv.appendChild(codeSpan);
             
             li.appendChild(nodeDiv);
