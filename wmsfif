@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管控天数配置 - 格力WMS系统</title>
+  <style>
+    /* ===== WMS Design System ===== */
+    :root {
+      --primary: #3F99A3;
+      --primary-light: #DBEEEC;
+      --link: #409EFF;
+      --header-bg: #3F99A3;
+      --text-title: #333333;
+      --text-body: #606266;
+      --text-secondary: #909399;
+      --text-placeholder: #C0C4CC;
+      --bg-white: #FFFFFF;
+      --bg-page: #F5F7FA;
+      --bg-header: #FAFAFA;
+      --border: #DCDFE6;
+      --border-light: #EBEEF5;
+      --success: #67C23A;
+      --warning: #E6A23C;
+      --danger: #F56C6C;
+      --info: #909399;
+      --font: -apple-system, "PingFang SC", "Microsoft Yahei", sans-serif;
+      --radius: 4px;
+      --radius-sm: 3px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font);
+      font-size: 14px;
+      color: var(--text-body);
+      background: var(--bg-page);
+    }
+
+    /* Header */
+    .wms-header {
+      height: 50px; background: var(--primary); color: #fff;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px; font-size: 18px; font-weight: 500;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    }
+    .header-left { display: flex; align-items: center; gap: 8px; }
+    .header-right { display: flex; align-items: center; gap: 16px; font-size: 13px; font-weight: 400; }
+    .header-right .user-info { color: rgba(255,255,255,0.9); }
+    .header-right .sep { color: rgba(255,255,255,0.5); margin: 0 4px; }
+    .header-right a { color: #fff; text-decoration: none; cursor: pointer; }
+    .header-right a:hover { text-decoration: underline; }
+    .header-btn { height: 28px; padding: 0 12px; font-size: 12px; background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.3); border-radius: var(--radius-sm); cursor: pointer; }
+    .header-btn:hover { background: rgba(255,255,255,0.3); }
+
+    /* Layout */
+    .wms-layout { display: flex; padding-top: 50px; min-height: 100vh; }
+    .wms-sidebar {
+      width: 200px; background: var(--bg-white);
+      border-right: 1px solid var(--border-light); flex-shrink: 0; padding: 0;
+    }
+    .menu-group {
+      padding: 10px 16px 6px; font-size: 13px; color: var(--text-title); font-weight: 600;
+      display: flex; align-items: center; gap: 4px; cursor: pointer;
+    }
+    .menu-group .arrow-icon { font-size: 10px; transition: transform 0.2s; }
+    .menu-group.collapsed .arrow-icon { transform: rotate(-90deg); }
+    .menu-item { height: 38px; line-height: 38px; padding: 0 20px 0 28px; font-size: 13px; color: rgba(0,0,0,0.65); cursor: pointer; }
+    .menu-item:hover { background: var(--bg-page); }
+    .menu-item.active { background: var(--primary-light); color: var(--primary); font-weight: 500; }
+
+    /* Main */
+    .wms-main { flex: 1; padding: 12px 20px 20px; overflow: auto; }
+    .wms-breadcrumb { font-size: 14px; color: var(--text-body); margin-bottom: 12px; }
+    .wms-breadcrumb .sep { margin: 0 6px; color: var(--text-placeholder); }
+    .wms-breadcrumb .current { color: var(--text-title); font-weight: 500; }
+
+    /* Tabs */
+    .wms-tabs { display: flex; border-bottom: 2px solid var(--border-light); margin-bottom: 16px; }
+    .wms-tab { height: 40px; line-height: 40px; padding: 0 20px; font-size: 14px; color: var(--text-body); cursor: pointer; position: relative; border: none; background: none; }
+    .wms-tab.active { color: var(--primary); font-weight: 500; }
+    .wms-tab.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: var(--primary); }
+
+    /* Content Card */
+    .wms-card { background: var(--bg-white); border-radius: var(--radius); padding: 16px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+
+    /* Query Bar */
+    .query-bar {
+      display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap;
+      margin-bottom: 12px; padding-bottom: 12px;
+      border-bottom: 1px dashed var(--border-light);
+    }
+    .query-item { display: flex; align-items: center; gap: 6px; }
+    .query-label { font-size: 14px; color: var(--text-title); white-space: nowrap; font-weight: 500; }
+    .query-item .sel-trigger { width: 180px; min-height: 32px; }
+    .query-input { height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; color: var(--text-body); outline: none; width: 180px; box-sizing: border-box; }
+    .query-input:focus { border-color: var(--link); }
+    .query-input::placeholder { color: var(--text-placeholder); }
+
+    /* Buttons */
+    .action-bar { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; }
+    .wms-btn { height: 32px; padding: 0 16px; font-size: 14px; border-radius: var(--radius-sm); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s; }
+    .wms-btn-primary { background: var(--primary); color: #fff; border: none; }
+    .wms-btn-primary:hover { background: #358A94; }
+    .wms-btn-default { background: #fff; color: var(--text-body); border: 1px solid var(--border); }
+    .wms-btn-default:hover { color: var(--primary); border-color: var(--primary); }
+    .wms-btn-danger { background: #fff; color: var(--danger); border: 1px solid var(--danger); }
+    .wms-btn-danger:hover { background: var(--danger); color: #fff; }
+    .wms-btn-text { background: none; border: none; color: var(--link); padding: 0 6px; height: 28px; cursor: pointer; font-size: 14px; }
+    .wms-btn-text:hover { color: var(--primary); }
+    .wms-btn-text.danger { color: var(--danger); }
+    .wms-btn-text.danger:hover { color: #d9363e; }
+    .wms-btn-sm { height: 28px; padding: 0 12px; font-size: 13px; }
+
+    /* Row link */
+    .row-link { color: var(--link); cursor: pointer; text-decoration: none; font-size: 14px; }
+    .row-link:hover { color: var(--primary); text-decoration: underline; }
+
+    /* Pagination */
+    .wms-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+    .wms-pagination .total { font-size: 13px; color: var(--text-secondary); }
+    .wms-pagination button {
+      height: 30px; min-width: 30px; padding: 0 8px; font-size: 13px;
+      border: 1px solid var(--border); background: #fff; color: var(--text-body);
+      border-radius: var(--radius-sm); cursor: pointer;
+    }
+    .wms-pagination button:hover { border-color: var(--primary); color: var(--primary); }
+    .wms-pagination button:disabled { color: var(--text-placeholder); cursor: not-allowed; }
+    .wms-pagination button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .page-size-select {
+      height: 30px; padding: 0 8px; font-size: 13px; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-body); outline: none; cursor: pointer;
+    }
+
+    /* Toast */
+    .toast { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); padding: 10px 24px; border-radius: var(--radius); font-size: 14px; color: #fff; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    .toast.show { opacity: 1; }
+    .toast.success { background: var(--success); }
+    .toast.error { background: var(--danger); }
+
+    /* Table */
+    .wms-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .wms-table thead th { background: var(--bg-header); color: var(--text-title); font-weight: 500; font-size: 13px; height: 40px; padding: 0 12px; text-align: left; border-bottom: 1px solid var(--border-light); }
+    .wms-table tbody td { padding: 0 12px; color: var(--text-body); border-bottom: 1px solid var(--border-light); vertical-align: middle; }
+    .wms-table tbody td { height: 48px; }
+    .wms-table tbody tr:nth-child(even) { background: #FAFAFA; }
+    .wms-table tbody tr:hover { background: #F5F7FA; }
+    .wms-table tbody tr.editing { background: #FFF8E6; }
+    .wms-table tbody tr.editing:hover { background: #FFF0C2; }
+    .wms-table tbody tr.editing td { height: auto; vertical-align: top; padding-top: 8px; padding-bottom: 8px; }
+    .wms-table .checkbox { width: 16px; height: 16px; cursor: pointer; }
+
+    /* Inline Input */
+    .wms-input-inline { height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; color: var(--text-body); outline: none; width: 100%; box-sizing: border-box; }
+    .wms-input-inline:focus { border-color: var(--link); }
+    .wms-input-inline::placeholder { color: var(--text-placeholder); }
+    .wms-input-inline.is-error { border-color: var(--danger) !important; background: #FFF5F5; }
+
+    /* ========== SELECT TRIGGER (shared) ========== */
+    .sel-trigger {
+      min-height: 32px; padding: 3px 28px 3px 8px;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      background: #fff; cursor: pointer; position: relative;
+      font-size: 14px; width: 100%; box-sizing: border-box;
+      display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+      user-select: none; transition: border-color 0.2s;
+      line-height: 1.4;
+    }
+    .sel-trigger:hover { border-color: var(--link); }
+    .sel-trigger.is-error { border-color: var(--danger) !important; background: #FFF5F5; }
+    .sel-trigger .arrow {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      font-size: 11px; color: var(--text-placeholder); transition: transform 0.2s;
+    }
+    .sel-trigger.open .arrow { transform: translateY(-50%) rotate(180deg); }
+    .sel-trigger .placeholder { color: var(--text-placeholder); font-size: 14px; line-height: 26px; }
+
+    /* Multi-select chip */
+    .sel-chip {
+      display: inline-flex; align-items: center;
+      height: 24px; line-height: 22px;
+      padding: 0 4px 0 8px;
+      font-size: 12px; border-radius: 3px;
+      background: rgba(63,153,163,0.1); color: var(--primary);
+      border: 1px solid rgba(63,153,163,0.25);
+      white-space: nowrap; gap: 2px;
+    }
+    .sel-chip .chip-close {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 16px; height: 16px; font-size: 11px; color: rgba(63,153,163,0.6);
+      border-radius: 50%; cursor: pointer; transition: all 0.15s;
+    }
+    .sel-chip .chip-close:hover { color: #fff; background: var(--primary); }
+
+    /* Single-select trigger */
+    .sel-trigger-single .sel-value {
+      color: var(--text-body); font-size: 14px; line-height: 26px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .single-clear {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 18px; height: 18px; font-size: 12px; color: var(--text-placeholder);
+      border-radius: 50%; cursor: pointer; margin-left: 2px;
+      flex-shrink: 0; line-height: 1;
+    }
+    .single-clear:hover { color: #fff; background: var(--danger); }
+
+    /* ========== DROPDOWN PANEL ========== */
+    .sel-dropdown {
+      position: fixed; z-index: 2000;
+      background: #fff; border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      min-width: 180px; max-height: 240px; overflow-y: auto;
+      display: none; padding: 4px 0;
+    }
+    .sel-dropdown.show { display: block; }
+    .sel-dropdown::-webkit-scrollbar { width: 6px; }
+    .sel-dropdown::-webkit-scrollbar-thumb { background: var(--text-placeholder); border-radius: 3px; }
+
+    .sel-dropdown .dd-search {
+      margin: 4px 8px 6px; height: 30px; padding: 0 8px;
+      border: 1px solid var(--border-light); border-radius: 3px;
+      font-size: 13px; outline: none; width: calc(100% - 16px); box-sizing: border-box;
+    }
+    .sel-dropdown .dd-search:focus { border-color: var(--link); }
+    .sel-dropdown .dd-search::placeholder { color: var(--text-placeholder); }
+
+    .sel-dropdown .dd-item {
+      display: flex; align-items: center; gap: 8px;
+      height: 34px; padding: 0 12px; cursor: pointer;
+      font-size: 13px; color: var(--text-body);
+      transition: background 0.1s;
+    }
+    .sel-dropdown .dd-item:hover { background: #F5F7FA; }
+    .sel-dropdown .dd-item.selected { color: var(--primary); font-weight: 500; background: var(--primary-light); }
+    .sel-dropdown .dd-item.hidden { display: none; }
+    .sel-dropdown .dd-empty { padding: 16px; text-align: center; color: var(--text-placeholder); font-size: 13px; }
+
+    /* Checkbox inside dropdown item (multi-select) */
+    .dd-checkbox {
+      width: 14px; height: 14px; border: 2px solid var(--border);
+      border-radius: 2px; flex-shrink: 0; position: relative;
+      transition: all 0.15s;
+    }
+    .dd-item.selected .dd-checkbox { background: var(--primary); border-color: var(--primary); }
+    .dd-item.selected .dd-checkbox::after {
+      content: ''; position: absolute; left: 3px; top: 0px;
+      width: 4px; height: 8px;
+      border: solid #fff; border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+
+    /* Radio dot inside dropdown item (single-select) */
+    .dd-radio {
+      width: 14px; height: 14px; border: 2px solid var(--border);
+      border-radius: 50%; flex-shrink: 0; position: relative;
+      transition: all 0.15s;
+    }
+    .dd-item.selected .dd-radio { border-color: var(--primary); }
+    .dd-item.selected .dd-radio::after {
+      content: ''; position: absolute; left: 3px; top: 3px;
+      width: 6px; height: 6px; border-radius: 50%; background: var(--primary);
+    }
+
+    /* Validation tips */
+    .val-tip { font-size: 12px; margin-top: 4px; line-height: 1.4; color: var(--text-placeholder); }
+    .val-tip.error { color: var(--danger); }
+    .val-tip.warning { color: var(--warning); }
+
+    /* Cell helpers */
+    .cell-actions { display: flex; gap: 8px; align-items: center; }
+    .cell-wrap { display: flex; flex-direction: column; }
+    .cell-muted { color: var(--text-secondary); }
+    .cell-required::before { content: '*'; color: var(--danger); margin-right: 2px; }
+
+    /* Table wrapper */
+    .table-wrapper { overflow-x: auto; }
+    .table-wrapper::-webkit-scrollbar { height: 8px; }
+    .table-wrapper::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+
+    /* Confirm modal */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 1000; justify-content: center; align-items: center; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: #fff; border-radius: 8px; padding: 24px 28px; max-width: 400px; width: 90%; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+    .modal h3 { font-size: 16px; font-weight: 500; color: var(--text-title); margin-bottom: 12px; }
+    .modal p { font-size: 14px; color: var(--text-body); margin-bottom: 20px; line-height: 1.8; }
+    .modal .btn-row { display: flex; gap: 10px; justify-content: flex-end; }
+  </style>
+<script src="https://beacon.cdn.qq.com/sdk/4.5.9/beacon_web.min.js"></script>
+<script>
+(function(){
+  try{
+    var beacon=new BeaconAction({
+      appkey:'0WEB06U85YBSLJNL',
+      versionCode:'1.0.0',
+      channelID:'share',
+      delay:1000,
+      sessionDuration:30*60*1000,
+      isOversea:false,
+      needReportRqdEvent:false
+    });
+    beacon.onDirectUserAction('preview_page_view',{
+      'url':location.href,
+      'referrer':document.referrer,
+      'title':document.title,
+      'sandbox_id':'046ab18c540649b3a64411849e98d4a6'
+    });
+  }catch(e){}
+})();
+</script></head>
+<body>
+
+  <!-- Header -->
+  <header class="wms-header">
+    <div class="header-left">
+      <span>格力WMS系统</span>
+    </div>
+    <div class="header-right">
+      <span class="user-info">👤 admin 管理员</span>
+      <span class="sep">|</span>
+      <span class="user-info">当前操作C4成品仓</span>
+      <span class="sep">|</span>
+      <a href="#">退出</a>
+      <button class="header-btn" onclick="openLogModal()">📋 日志</button>
+      <button class="header-btn">初始化全部</button>
+    </div>
+  </header>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Log Modal -->
+  <div class="modal-overlay" id="logModal">
+    <div class="modal" style="max-width:600px;">
+      <h3>操作日志</h3>
+      <div style="max-height:360px;overflow-y:auto;">
+        <table class="wms-table" style="font-size:13px;">
+          <thead>
+            <tr>
+              <th style="width:60px;">序号</th>
+              <th style="width:180px;">操作日期</th>
+              <th>动作</th>
+            </tr>
+          </thead>
+          <tbody id="logTableBody"></tbody>
+        </table>
+        <div id="logEmpty" style="text-align:center;padding:40px;color:var(--text-placeholder);display:none;">暂无操作日志</div>
+      </div>
+      <div class="btn-row" style="margin-top:16px;">
+        <button class="wms-btn wms-btn-default" onclick="closeLogModal()">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Modal -->
+  <div class="modal-overlay" id="importModal">
+    <div class="modal" style="max-width:480px;">
+      <h3>导入管控天数配置</h3>
+      <p style="margin-bottom:8px;">请先下载导入模版，按模版格式填写数据后上传。</p>
+      <div class="btn-row" style="margin-bottom:16px;">
+        <button class="wms-btn wms-btn-primary" onclick="downloadTemplate()" style="height:36px;">📥 下载模版</button>
+      </div>
+      <div style="border:2px dashed var(--border);border-radius:8px;padding:24px;text-align:center;margin-bottom:16px;background:#FAFAFA;">
+        <p style="color:var(--text-secondary);margin-bottom:12px;">选择文件上传（.xlsx / .csv）</p>
+        <input type="file" id="importFileInput" accept=".xlsx,.csv" style="display:none;" onchange="handleFileSelect(event)">
+        <button class="wms-btn wms-btn-primary wms-btn-sm" onclick="document.getElementById('importFileInput').click()">选择文件</button>
+      </div>
+      <div class="btn-row">
+        <button class="wms-btn wms-btn-default" onclick="closeImportModal()">关闭</button>
+        <button class="wms-btn wms-btn-primary" onclick="confirmImport()">确认导入</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal">
+      <h3>确认删除</h3>
+      <p>确定要删除选中的配置记录吗？此操作不可撤销。</p>
+      <div class="btn-row">
+        <button class="wms-btn wms-btn-default" onclick="closeDeleteModal()">取消</button>
+        <button class="wms-btn wms-btn-danger" onclick="confirmDelete()">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global dropdown (appended to body, positioned via JS) -->
+  <div class="sel-dropdown" id="globalDropdown"></div>
+
+  <!-- Layout -->
+  <div class="wms-layout">
+    <aside class="wms-sidebar">
+      <div class="menu-group">▼ 基础设置</div>
+      <div class="menu-item">物料资料</div>
+      <div class="menu-item">品类管理</div>
+      <div class="menu-item">仓库资料</div>
+      <div class="menu-item active">派仓规则配置</div>
+      <div class="menu-item">管控天数配置</div>
+      <div class="menu-item">其他配置</div>
+      <div class="menu-group">▼ 入库管理</div>
+      <div class="menu-item">入库任务</div>
+      <div class="menu-item">入库记录</div>
+      <div class="menu-group">▼ 出库管理</div>
+      <div class="menu-item">出库任务</div>
+    </aside>
+
+    <main class="wms-main">
+      <div class="wms-breadcrumb">
+        配置管理 <span class="sep">/</span> <span class="current">管控天数配置</span>
+      </div>
+
+      <div class="wms-tabs">
+        <button class="wms-tab active">管控天数配置</button>
+      </div>
+
+      <div class="wms-card">
+        <!-- 查询条件 -->
+        <div class="query-bar">
+          <div class="query-item">
+            <span class="query-label">基地：</span>
+            <div class="sel-trigger" id="q-trigger-base" onclick="openQueryDropdown('base',event)">
+              <span class="placeholder">请选择基地（可多选）</span>
+              <span class="arrow">▼</span>
+            </div>
+          </div>
+          <div class="query-item">
+            <span class="query-label">仓库：</span>
+            <div class="sel-trigger" id="q-trigger-warehouse" onclick="openQueryDropdown('warehouse',event)">
+              <span class="placeholder">请选择仓库（可多选）</span>
+              <span class="arrow">▼</span>
+            </div>
+          </div>
+          <div class="query-item">
+            <span class="query-label">物料编码：</span>
+            <input type="text" class="query-input" id="q-input-material" placeholder="请输入物料编码" oninput="this.value=this.value.replace(/[^a-zA-Z0-9]/g,'')">
+          </div>
+          <div class="query-item" style="align-self:center;">
+            <button class="wms-btn wms-btn-primary" onclick="doQuery()">查询</button>
+            <button class="wms-btn wms-btn-default" style="margin-left:6px;" onclick="resetQuery()">重置</button>
+          </div>
+        </div>
+
+        <div class="action-bar">
+          <button class="wms-btn wms-btn-primary" onclick="addRow()">新增</button>
+          <button class="wms-btn wms-btn-default" onclick="openImportModal()">导入</button>
+          <button class="wms-btn wms-btn-default">导出</button>
+          <button class="wms-btn wms-btn-danger" onclick="openDeleteModal()">删除</button>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="wms-table" id="configTable">
+            <thead>
+              <tr>
+                <th style="width:50px;"><input type="checkbox" class="checkbox" id="selectAll" onclick="toggleSelectAll()"></th>
+                <th style="width:56px;">序号</th>
+                <th style="width:80px;">操作</th>
+                <th style="width:140px;">仓库</th>
+                <th style="width:140px;"><span class="cell-required">物料编码（顶）</span></th>
+                <th style="width:140px;"><span class="cell-required">管控周期（大于等于）</span></th>
+                <th style="width:90px;"><span class="cell-required">管控单位</span></th>
+                <th style="width:130px;">更新人</th>
+                <th style="width:150px;">更新时间</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="wms-pagination">
+          <select class="page-size-select" id="pageSizeSelect" onchange="changePageSize()">
+            <option value="all" selected>全部</option>
+            <option value="15">15条/页</option>
+            <option value="30">30条/页</option>
+            <option value="50">50条/页</option>
+          </select>
+          <span class="total" id="totalCount">共 4 条</span>
+          <button disabled>上一页</button>
+          <button class="active">1</button>
+          <button>下一页</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // ===== 选项数据 =====
+    const warehouseOptions = ['801', '802', '803', '805', '806', '808', '810', '812', '815', '820'];
+    const materialOptions  = ['ww000111', 'ww000112', 'ww000113', 'ww000114', 'ww000115', 'ww000116', 'ww000117', 'ww000118'];
+    const periodOptions    = ['年', '月'];
+    const businessTypeOptions = ['出库', '备货', '转库'];
+
+    // ===== 查询条件选项 =====
+    const baseOptions = ['合肥', '珠海'];
+    const filterWarehouseOptions = ['801', '802'];
+
+    // ===== 查询条件状态 =====
+    let queryFilters = {
+      base: new Set(['合肥']),
+      warehouse: new Set(),
+      material: ''
+    };
+    let queryDropdownMeta = null; // { type: 'base'|'warehouse', searchText: '' }
+
+    // ===== 查询栏渲染 =====
+    function renderQueryBar() {
+      const baseSet = queryFilters.base;
+      const whSet = queryFilters.warehouse;
+
+      // 基地 trigger
+      const baseTrigger = document.getElementById('q-trigger-base');
+      if (baseTrigger) {
+        if (baseSet.size === 0) {
+          baseTrigger.innerHTML = '<span class="placeholder">请选择基地（可多选）</span><span class="arrow">▼</span>';
+        } else {
+          baseTrigger.innerHTML = Array.from(baseSet).map(v =>
+            `<span class="sel-chip">${esc(v)}<span class="chip-close" onclick="event.stopPropagation();removeQueryChip('base','${esc(v)}')">×</span></span>`
+          ).join('') + '<span class="arrow">▼</span>';
+        }
+      }
+
+      // 仓库 trigger
+      const whTrigger = document.getElementById('q-trigger-warehouse');
+      if (whTrigger) {
+        if (whSet.size === 0) {
+          whTrigger.innerHTML = '<span class="placeholder">请选择仓库（可多选）</span><span class="arrow">▼</span>';
+        } else {
+          whTrigger.innerHTML = Array.from(whSet).map(v =>
+            `<span class="sel-chip">${esc(v)}<span class="chip-close" onclick="event.stopPropagation();removeQueryChip('warehouse','${esc(v)}')">×</span></span>`
+          ).join('') + '<span class="arrow">▼</span>';
+        }
+      }
+    }
+
+    function removeQueryChip(type, value) {
+      if (type === 'base') queryFilters.base.delete(value);
+      else queryFilters.warehouse.delete(value);
+      renderQueryBar();
+    }
+
+    // ===== 查询下拉面板 =====
+    function openQueryDropdown(type, event) {
+      event.stopPropagation();
+      const triggerId = type === 'base' ? 'q-trigger-base' : 'q-trigger-warehouse';
+      const trigger = document.getElementById(triggerId);
+      if (!trigger) return;
+
+      // 如果已经打开同一类型的下拉，关闭
+      if (queryDropdownMeta && queryDropdownMeta.type === type) {
+        closeQueryDropdown();
+        return;
+      }
+
+      closeQueryDropdown();
+      queryDropdownMeta = { type, searchText: '' };
+
+      const rect = trigger.getBoundingClientRect();
+      const dropdown = document.getElementById('globalDropdown');
+      const options = type === 'base' ? baseOptions : filterWarehouseOptions;
+      const selectedSet = type === 'base' ? queryFilters.base : queryFilters.warehouse;
+
+      let html = `<input class="dd-search" id="q-ddSearch" placeholder="搜索..." oninput="filterQueryDropdown()" onkeydown="event.stopPropagation()">`;
+
+      const filtered = filterOptions(options, queryDropdownMeta.searchText);
+      if (filtered.length === 0) {
+        html += `<div class="dd-empty">无匹配选项</div>`;
+      } else {
+        filtered.forEach(opt => {
+          const isSel = selectedSet.has(opt);
+          const selClass = isSel ? ' selected' : '';
+          html += `<div class="dd-item${selClass}" onclick="event.stopPropagation();selectQueryOption('${type}','${esc(opt)}')">
+            <span class="dd-checkbox"></span>${esc(opt)}
+          </div>`;
+        });
+      }
+
+      dropdown.innerHTML = html;
+      dropdown.style.top  = (rect.bottom + 4) + 'px';
+      dropdown.style.left = rect.left + 'px';
+      dropdown.style.minWidth = Math.max(rect.width, 180) + 'px';
+      dropdown.classList.add('show');
+      trigger.classList.add('open');
+
+      setTimeout(() => {
+        const s = document.getElementById('q-ddSearch');
+        if (s) s.focus();
+      }, 50);
+    }
+
+    function filterQueryDropdown() {
+      if (!queryDropdownMeta) return;
+      const search = document.getElementById('q-ddSearch');
+      if (search) queryDropdownMeta.searchText = search.value;
+
+      const options = queryDropdownMeta.type === 'base' ? baseOptions : filterWarehouseOptions;
+      const filtered = filterOptions(options, queryDropdownMeta.searchText);
+      const selectedSet = queryDropdownMeta.type === 'base' ? queryFilters.base : queryFilters.warehouse;
+
+      const dropdown = document.getElementById('globalDropdown');
+      const items = dropdown.querySelectorAll('.dd-item');
+      items.forEach(item => {
+        const text = item.textContent.trim();
+        if (filtered.includes(text)) {
+          item.classList.remove('hidden');
+          if (selectedSet.has(text)) item.classList.add('selected'); else item.classList.remove('selected');
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+
+      const empty = dropdown.querySelector('.dd-empty');
+      const visibleItems = dropdown.querySelectorAll('.dd-item:not(.hidden)');
+      if (empty) empty.style.display = visibleItems.length === 0 ? '' : 'none';
+    }
+
+    function selectQueryOption(type, value) {
+      const set = type === 'base' ? queryFilters.base : queryFilters.warehouse;
+      if (set.has(value)) set.delete(value); else set.add(value);
+      renderQueryBar();
+      closeQueryDropdown();
+    }
+
+    function closeQueryDropdown() {
+      const dropdown = document.getElementById('globalDropdown');
+      dropdown.classList.remove('show');
+      dropdown.innerHTML = '';
+
+      if (queryDropdownMeta) {
+        const triggerId = queryDropdownMeta.type === 'base' ? 'q-trigger-base' : 'q-trigger-warehouse';
+        const trigger = document.getElementById(triggerId);
+        if (trigger) trigger.classList.remove('open');
+      }
+      queryDropdownMeta = null;
+    }
+
+    // ===== 查询 / 重置 =====
+    function doQuery() {
+      // 读取物料编码输入
+      const matInput = document.getElementById('q-input-material');
+      queryFilters.material = matInput ? matInput.value.trim() : '';
+      renderTable();
+      const total = getFilteredData().length;
+      showToast(`查询完成，共 ${total} 条记录`, 'success');
+    }
+
+    function resetQuery() {
+      queryFilters.base = new Set(['合肥']);
+      queryFilters.warehouse = new Set();
+      queryFilters.material = '';
+      const matInput = document.getElementById('q-input-material');
+      if (matInput) matInput.value = '';
+      renderQueryBar();
+      renderTable();
+    }
+
+    // ===== 获取过滤后的数据 =====
+    function getFilteredData() {
+      let data = configData;
+      // 编辑状态下不过滤，确保编辑行始终可见
+      if (editingId !== null) return data;
+      // 按基地筛选（这里基地筛选模拟：合肥→仓库801,802；珠海→仓库803,805）
+      if (queryFilters.base.size > 0) {
+        const baseWhMap = { '合肥': ['801', '802'], '珠海': ['803', '805'] };
+        data = data.filter(row => {
+          const rowWhs = (row.warehouse || '').split(',').map(s => s.trim()).filter(Boolean);
+          return Array.from(queryFilters.base).some(base => {
+            const allowedWhs = baseWhMap[base] || [];
+            return rowWhs.some(w => allowedWhs.includes(w));
+          });
+        });
+      }
+      // 按仓库筛选
+      if (queryFilters.warehouse.size > 0) {
+        data = data.filter(row => {
+          const rowWhs = (row.warehouse || '').split(',').map(s => s.trim()).filter(Boolean);
+          return rowWhs.some(w => queryFilters.warehouse.has(w));
+        });
+      }
+      // 按物料编码精确搜索
+      if (queryFilters.material) {
+        data = data.filter(row => row.material === queryFilters.material);
+      }
+      return data;
+    }
+
+    // ===== 配置数据 =====
+    let configData = [
+      { id: 1, warehouse: '801,802', material: 'ww000111', days: '6', period: '月', businessType: '出库,备货', creator: '小王10001', createTime: '2026/7/10 16:05', updater: '小李10002', updateTime: '2026/7/10 16:05' },
+      { id: 2, warehouse: '801', material: 'ww000111', days: '8', period: '月', businessType: '出库', creator: '小王10001', createTime: '2026/7/8 09:30', updater: '小王10001', updateTime: '2026/7/8 09:30' },
+      { id: 3, warehouse: '801,805', material: 'ww000112', days: '8', period: '年', businessType: '转库', creator: '小张10003', createTime: '2026/7/5 14:20', updater: '', updateTime: '' },
+      { id: 4, warehouse: '', material: 'ww000113', days: '12', period: '月', businessType: '', creator: '', createTime: '', updater: '', updateTime: '' },
+      { id: 5, warehouse: '', material: 'ww000115', days: '5', period: '年', businessType: '备货,转库', creator: '赵工10005', createTime: '2026/7/13 10:30', updater: '赵工10005', updateTime: '2026/7/13 10:30' },
+    ];
+    let nextId = 6;
+    let editingId = null;
+    let editBackup = null;
+    let editErrors = {};
+
+    // ===== 编辑态选择状态 =====
+    // key: rowId, value: Set of selected warehouse codes
+    const selWarehouses = {};
+    // key: rowId, value: selected material string
+    const selMaterials = {};
+    // key: rowId, value: selected period string ('年' or '月')
+    const selPeriods = {};
+    // key: rowId, value: Set of selected business types
+    const selBusinessTypes = {};
+
+    // ===== 下拉面板状态 =====
+    let dropdownMeta = null; // { rowId, type: 'warehouse'|'material', searchText: '' }
+
+    function getSelWh(rowId) {
+      if (!selWarehouses[rowId]) selWarehouses[rowId] = new Set();
+      return selWarehouses[rowId];
+    }
+    function getSelMt(rowId) {
+      return selMaterials[rowId] || '';
+    }
+    function getSelPd(rowId) {
+      return selPeriods[rowId] || '';
+    }
+    function getSelBt(rowId) {
+      if (!selBusinessTypes[rowId]) selBusinessTypes[rowId] = new Set();
+      return selBusinessTypes[rowId];
+    }
+
+    function parseWarehouses(csv) {
+      return new Set((csv || '').split(',').map(s => s.trim()).filter(Boolean));
+    }
+
+    function clearSelection(rowId) {
+      delete selWarehouses[rowId];
+      delete selMaterials[rowId];
+      delete selPeriods[rowId];
+      delete selBusinessTypes[rowId];
+    }
+
+    function initSelFromRow(row) {
+      selWarehouses[row.id] = parseWarehouses(row.warehouse);
+      selMaterials[row.id]   = row.material || '';
+      selPeriods[row.id]     = row.period || '';
+      selBusinessTypes[row.id] = parseWarehouses(row.businessType);
+    }
+
+    // ===== 渲染表格 =====
+    function renderTable() {
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+      const data = getFilteredData();
+      data.forEach((row, idx) => {
+        const isEditing = row.id === editingId;
+        const tr = document.createElement('tr');
+        if (isEditing) tr.className = 'editing';
+        tr.innerHTML = `
+          <td><input type="checkbox" class="checkbox row-checkbox" data-id="${row.id}"></td>
+          <td style="color:var(--text-secondary);">${String(idx + 1).padStart(2, '0')}</td>
+          ${isEditing ? renderEditRow(row) : renderViewRow(row)}
+        `;
+        tbody.appendChild(tr);
+      });
+      document.getElementById('totalCount').textContent = `共 ${data.length} 条`;
+    }
+
+    // ===== 查看行 =====
+    function renderViewRow(row) {
+      const whArr = (row.warehouse || '').split(',').map(s => s.trim()).filter(Boolean);
+      const whDisplay = whArr.length > 0
+        ? whArr.map(w => `<span style="display:inline-block;background:rgba(63,153,163,0.1);color:var(--primary);font-size:12px;padding:1px 6px;border-radius:3px;margin-right:3px;">${esc(w)}</span>`).join('')
+        : '<span style="color:var(--text-placeholder);">--</span>';
+      return `
+        <td>
+          <a class="row-link" onclick="editRow(${row.id})">修改</a>
+        </td>
+        <td>${whDisplay}</td>
+        <td>${esc(row.material) || '<span style="color:var(--text-placeholder);">--</span>'}</td>
+        <td>${esc(row.days)}</td>
+        <td>${esc(row.period)}</td>
+        <td class="cell-muted">${esc(row.updater) || '--'}</td>
+        <td class="cell-muted">${esc(row.updateTime) || '--'}</td>
+      `;
+    }
+
+    // ===== 编辑行 =====
+    function renderEditRow(row) {
+      const whErr = editErrors.warehouse || '';
+      const mtErr = editErrors.material || '';
+      const dyErr = editErrors.days || '';
+      const pdErr = editErrors.period || '';
+
+      const whSet = getSelWh(row.id);
+
+      return `
+        <td>
+          <div class="cell-actions">
+            <button class="wms-btn wms-btn-text wms-btn-sm" style="color:var(--primary);" onclick="saveRow(${row.id})">保存</button>
+            <button class="wms-btn wms-btn-text wms-btn-sm danger" onclick="cancelEdit()">取消</button>
+          </div>
+        </td>
+        <td>
+          <div class="cell-wrap">
+            <div class="sel-trigger ${whErr ? 'is-error' : ''}" id="wh-trigger-${row.id}" onclick="openDropdown(${row.id},'warehouse',event)">
+              ${whSet.size === 0
+                ? '<span class="placeholder">请选择仓库（可多选）</span>'
+                : Array.from(whSet).map(w => `<span class="sel-chip">${esc(w)}<span class="chip-close" onclick="event.stopPropagation();removeWhChip(${row.id},'${esc(w)}')">×</span></span>`).join('')
+              }
+              <span class="arrow">▼</span>
+            </div>
+            ${whErr ? `<div class="val-tip error">${whErr}</div>` : '<div class="val-tip">仓库/物料编码，至少必填其中一个</div>'}
+          </div>
+        </td>
+        <td>
+          <div class="cell-wrap">
+            <div class="sel-trigger sel-trigger-single ${mtErr ? 'is-error' : ''}" id="mt-trigger-${row.id}" onclick="openDropdown(${row.id},'material',event)">
+              ${getSelMt(row.id)
+                ? `<span class="sel-value">${esc(getSelMt(row.id))}</span><span class="single-clear" onclick="event.stopPropagation();clearSel(${row.id},'material')">×</span>`
+                : '<span class="placeholder">请选择物料编码</span>'
+              }
+              <span class="arrow">▼</span>
+            </div>
+            ${mtErr ? `<div class="val-tip error">${mtErr}</div>` : '<div class="val-tip">仓库/物料编码，至少必填其中一个</div>'}
+          </div>
+        </td>
+        <td>
+          <div class="cell-wrap">
+            <input type="text" class="wms-input-inline ${dyErr ? 'is-error' : ''}" id="edit-days-${row.id}" placeholder="请输入整数" value="${esc(row.days)}" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+            ${dyErr ? `<div class="val-tip error">${dyErr}</div>` : '<div class="val-tip">请输入大于0的整数</div>'}
+          </div>
+        </td>
+        <td>
+          <div class="cell-wrap">
+            <div class="sel-trigger sel-trigger-single ${pdErr ? 'is-error' : ''}" id="pd-trigger-${row.id}" onclick="openDropdown(${row.id},'period',event)">
+              ${getSelPd(row.id)
+                ? `<span class="sel-value">${esc(getSelPd(row.id))}</span><span class="single-clear" onclick="event.stopPropagation();clearSel(${row.id},'period')">×</span>`
+                : '<span class="placeholder">请选择</span>'
+              }
+              <span class="arrow">▼</span>
+            </div>
+            ${pdErr ? `<div class="val-tip error">${pdErr}</div>` : '<div class="val-tip">请选择年或月</div>'}
+          </div>
+        </td>
+        <td class="cell-muted">${esc(row.updater) || '--'}</td>
+        <td class="cell-muted">${esc(row.updateTime) || '--'}</td>
+      `;
+    }
+
+    // ===== 下拉面板 =====
+    function openDropdown(rowId, type, event) {
+      event.stopPropagation();
+      const prefix = type === 'warehouse' ? 'wh' : (type === 'period' ? 'pd' : (type === 'businessType' ? 'bt' : 'mt'));
+      const trigger = document.getElementById(`${prefix}-trigger-${rowId}`);
+      if (!trigger) return;
+
+      // If already open for same row+type, close
+      if (dropdownMeta && dropdownMeta.rowId === rowId && dropdownMeta.type === type) {
+        closeDropdown();
+        return;
+      }
+
+      closeDropdown();
+      dropdownMeta = { rowId, type, searchText: '' };
+
+      const rect = trigger.getBoundingClientRect();
+      const dropdown = document.getElementById('globalDropdown');
+      const options = type === 'warehouse' ? warehouseOptions : (type === 'period' ? periodOptions : (type === 'businessType' ? businessTypeOptions : materialOptions));
+
+      const selectedSet = (type === 'warehouse' || type === 'businessType') ? (type === 'warehouse' ? getSelWh(rowId) : getSelBt(rowId)) : null;
+      const selectedVal = type === 'material' ? getSelMt(rowId) : (type === 'period' ? getSelPd(rowId) : null);
+
+      let html = (type === 'warehouse' || type === 'businessType')
+        ? `<input class="dd-search" id="ddSearch" placeholder="搜索..." oninput="filterDropdown(${rowId})" onkeydown="event.stopPropagation()">`
+        : '';
+
+      const filtered = filterOptions(options, dropdownMeta.searchText);
+      if (filtered.length === 0) {
+        html += `<div class="dd-empty">无匹配选项</div>`;
+      } else {
+        filtered.forEach(opt => {
+          const isSel = (type === 'warehouse' || type === 'businessType') ? selectedSet.has(opt) : (opt === selectedVal);
+          const selClass = isSel ? ' selected' : '';
+          html += `<div class="dd-item${selClass}" onclick="event.stopPropagation();selectOption(${rowId},'${type}','${esc(opt)}')">
+            ${(type === 'warehouse' || type === 'businessType')
+              ? `<span class="dd-checkbox"></span>`
+              : `<span class="dd-radio"></span>`
+            }${esc(opt)}
+          </div>`;
+        });
+      }
+
+      dropdown.innerHTML = html;
+      dropdown.style.top  = (rect.bottom + 4) + 'px';
+      dropdown.style.left = rect.left + 'px';
+      dropdown.style.minWidth = Math.max(rect.width, type === 'warehouse' ? 180 : 160) + 'px';
+      dropdown.classList.add('show');
+      trigger.classList.add('open');
+
+      // Focus search if multi-select
+      if (type === 'warehouse' || type === 'businessType') {
+        setTimeout(() => {
+          const s = document.getElementById('ddSearch');
+          if (s) s.focus();
+        }, 50);
+      }
+    }
+
+    function filterOptions(options, searchText) {
+      if (!searchText) return options;
+      const kw = searchText.toLowerCase();
+      return options.filter(o => o.toLowerCase().includes(kw));
+    }
+
+    function filterDropdown(rowId) {
+      if (!dropdownMeta || dropdownMeta.rowId !== rowId) return;
+      const search = document.getElementById('ddSearch');
+      if (search) dropdownMeta.searchText = search.value;
+
+      const type = dropdownMeta.type;
+      const options = type === 'warehouse' ? warehouseOptions : (type === 'period' ? periodOptions : (type === 'businessType' ? businessTypeOptions : materialOptions));
+      const filtered = filterOptions(options, dropdownMeta.searchText);
+
+      const dropdown = document.getElementById('globalDropdown');
+      const items = dropdown.querySelectorAll('.dd-item');
+      const selectedSet = (type === 'warehouse' || type === 'businessType') ? (type === 'warehouse' ? getSelWh(rowId) : getSelBt(rowId)) : null;
+      const selectedVal = type === 'material' ? getSelMt(rowId) : (type === 'period' ? getSelPd(rowId) : null);
+
+      items.forEach(item => {
+        const text = item.textContent.trim();
+        if (filtered.includes(text)) {
+          item.classList.remove('hidden');
+          const isSel = (type === 'warehouse' || type === 'businessType') ? selectedSet.has(text) : (text === selectedVal);
+          if (isSel) item.classList.add('selected'); else item.classList.remove('selected');
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+
+      // show/hide empty
+      const empty = dropdown.querySelector('.dd-empty');
+      const visibleItems = dropdown.querySelectorAll('.dd-item:not(.hidden)');
+      if (empty) empty.style.display = visibleItems.length === 0 ? '' : 'none';
+    }
+
+    function selectOption(rowId, type, value) {
+      if (type === 'warehouse') {
+        const set = getSelWh(rowId);
+        if (set.has(value)) set.delete(value); else set.add(value);
+      } else if (type === 'businessType') {
+        const set = getSelBt(rowId);
+        if (set.has(value)) set.delete(value); else set.add(value);
+      } else if (type === 'period') {
+        selPeriods[rowId] = value;
+      } else {
+        selMaterials[rowId] = value;
+      }
+      syncInputsToRow(rowId);
+      closeDropdown();
+      renderTable();
+    }
+
+    function removeWhChip(rowId, value) {
+      const set = getSelWh(rowId);
+      set.delete(value);
+      syncInputsToRow(rowId);
+      renderTable();
+    }
+
+    function removeBtChip(rowId, value) {
+      const set = getSelBt(rowId);
+      set.delete(value);
+      renderTable();
+    }
+
+    function clearSel(rowId, type) {
+      if (type === 'material') selMaterials[rowId] = '';
+      else if (type === 'period') selPeriods[rowId] = '';
+      renderTable();
+    }
+
+    // 在 renderTable 前将文本框的当前值写回 data，防止重建 DOM 后丢失
+    function syncInputsToRow(rowId) {
+      const row = configData.find(r => r.id === rowId);
+      if (!row) return;
+      const daysInput = document.getElementById(`edit-days-${rowId}`);
+      if (daysInput) row.days = daysInput.value;
+    }
+
+    function closeDropdown() {
+      const dropdown = document.getElementById('globalDropdown');
+      dropdown.classList.remove('show');
+      dropdown.innerHTML = '';
+
+      if (dropdownMeta) {
+        const prefix = dropdownMeta.type === 'warehouse' ? 'wh' : (dropdownMeta.type === 'period' ? 'pd' : (dropdownMeta.type === 'businessType' ? 'bt' : 'mt'));
+        const trigger = document.getElementById(`${prefix}-trigger-${dropdownMeta.rowId}`);
+        if (trigger) trigger.classList.remove('open');
+      }
+      dropdownMeta = null;
+    }
+
+    // Close dropdown on outside click
+    document.addEventListener('click', function(e) {
+      if (dropdownMeta && !e.target.closest('.sel-dropdown') && !e.target.closest('.sel-trigger')) {
+        closeDropdown();
+      }
+      if (queryDropdownMeta && !e.target.closest('.sel-dropdown') && !e.target.closest('.sel-trigger')) {
+        closeQueryDropdown();
+      }
+    });
+
+    // ===== 新增行 =====
+    function addRow() {
+      if (editingId !== null) cancelEdit();
+      const newRow = { id: nextId++, warehouse: '', material: '', days: '', period: '', businessType: '', creator: '', createTime: '', updater: '', updateTime: '' };
+      configData.unshift(newRow);
+      editingId = newRow.id;
+      editBackup = null;
+      clearEditErrors();
+      initSelFromRow(newRow);
+      getSelBt(newRow.id).add('出库');  // 默认业务类型：出库
+      addLog('新增配置记录');
+      renderTable();
+    }
+
+    // ===== 编辑行 =====
+    function editRow(id) {
+      if (editingId !== null && editingId !== id) cancelEdit();
+      const row = configData.find(r => r.id === id);
+      if (!row) return;
+      editingId = id;
+      editBackup = { ...row };
+      clearEditErrors();
+      initSelFromRow(row);
+      renderTable();
+    }
+
+    // ===== 取消编辑 =====
+    function cancelEdit() {
+      if (editingId === null) return;
+      if (editBackup) {
+        const idx = configData.findIndex(r => r.id === editingId);
+        if (idx >= 0) configData[idx] = { ...editBackup };
+      } else {
+        configData = configData.filter(r => r.id !== editingId);
+      }
+      clearSelection(editingId);
+      editingId = null;
+      editBackup = null;
+      clearEditErrors();
+      closeDropdown();
+      renderTable();
+    }
+
+    // ===== 验证 =====
+    function validateRow(id) {
+      const whSet = getSelWh(id);
+      const mtVal = getSelMt(id);
+      const days   = document.getElementById(`edit-days-${id}`)?.value.trim()   || '';
+      const period = getSelPd(id);
+
+      clearEditErrors();
+      let hasError = false;
+
+      if (whSet.size === 0 && !mtVal) {
+        editErrors.warehouse = '仓库编码和物料编码至少填写一个';
+        editErrors.material  = '仓库编码和物料编码至少填写一个';
+        hasError = true;
+      }
+      // 仓库编码有效性校验
+      if (whSet.size > 0) {
+        const invalidWh = Array.from(whSet).filter(w => !warehouseOptions.includes(w));
+        if (invalidWh.length > 0) {
+          editErrors.warehouse = `仓库编码 ${invalidWh.join(',')} 无效`;
+          hasError = true;
+        }
+      }
+      // 物料编码有效性校验
+      if (mtVal && !materialOptions.includes(mtVal)) {
+        editErrors.material = `物料编码 ${mtVal} 无效`;
+        hasError = true;
+      }
+      if (!days) { editErrors.days = '请输入管控天数'; hasError = true; }
+      else if (!/^\d+$/.test(days) || parseInt(days) <= 0) { editErrors.days = '管控天数必须为大于0的整数'; hasError = true; }
+      if (!period) { editErrors.period = '请选择年或月'; hasError = true; }
+
+      // 检查仓库+物料组合是否重复
+      if (!hasError) {
+        const whStr = Array.from(whSet).sort().join(',');
+        const otherRow = configData.find(r => {
+          if (r.id === id) return false;
+          const rWh = (r.warehouse || '').split(',').map(s => s.trim()).filter(Boolean).sort().join(',');
+          return rWh === whStr && r.material === mtVal;
+        });
+        if (otherRow) {
+          editErrors.warehouse = '物料编码与仓库组合不可重复';
+          editErrors.material  = '物料编码与仓库组合不可重复';
+          hasError = true;
+        }
+      }
+
+      return !hasError;
+    }
+
+    // ===== 保存 =====
+    function saveRow(id) {
+      const isValid = validateRow(id);
+      renderTable();
+      if (!isValid) { showToast('请完善必填项后再保存', 'error'); return; }
+
+      const whSet = getSelWh(id);
+      const warehouse = Array.from(whSet).join(',');
+      const material  = getSelMt(id);
+      const days      = document.getElementById(`edit-days-${id}`).value.trim();
+      const period    = getSelPd(id);
+
+      const idx = configData.findIndex(r => r.id === id);
+      if (idx >= 0) {
+        const now = new Date();
+        const timeStr = `${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        configData[idx].warehouse = warehouse;
+        configData[idx].material  = material;
+        configData[idx].days      = days;
+        configData[idx].period    = period;
+        configData[idx].businessType = Array.from(getSelBt(id)).join(',');
+        configData[idx].updater   = '小王10001';
+        configData[idx].updateTime = timeStr;
+        if (!configData[idx].creator) { configData[idx].creator = '小王10001'; configData[idx].createTime = timeStr; }
+      }
+
+      clearSelection(id);
+      editingId = null;
+      editBackup = null;
+      clearEditErrors();
+      renderTable();
+      showToast('保存成功', 'success');
+      addLog(`保存配置：仓库[${warehouse}] 物料[${material}] 管控${days}${period}`);
+    }
+
+    function clearEditErrors() { editErrors = { warehouse: '', material: '', days: '', period: '', businessType: '' }; }
+
+    // ===== 删除 =====
+    function deleteRow(id) {
+      if (editingId === id) { editingId = null; editBackup = null; clearEditErrors(); clearSelection(id); }
+      configData = configData.filter(r => r.id !== id);
+      renderTable();
+      showToast('删除成功', 'success');
+    }
+
+    function openDeleteModal() {
+      const checked = document.querySelectorAll('.row-checkbox:checked');
+      if (checked.length === 0) { showToast('请先选择要删除的记录', 'error'); return; }
+      document.getElementById('deleteModal').classList.add('show');
+    }
+    function closeDeleteModal() { document.getElementById('deleteModal').classList.remove('show'); }
+    function confirmDelete() {
+      const ids = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => parseInt(cb.dataset.id));
+      ids.forEach(id => { if (editingId === id) { editingId = null; editBackup = null; clearEditErrors(); clearSelection(id); } });
+      configData = configData.filter(r => !ids.includes(r.id));
+      addLog(`批量删除 ${ids.length} 条配置记录`);
+      closeDeleteModal();
+      renderTable();
+      showToast(`已删除 ${ids.length} 条记录`, 'success');
+    }
+
+    // ===== 全选 =====
+    function toggleSelectAll() {
+      const checked = document.getElementById('selectAll').checked;
+      document.querySelectorAll('.row-checkbox').forEach(cb => { cb.checked = checked; });
+    }
+
+    // ===== 分页 =====
+    function changePageSize() {
+      const size = document.getElementById('pageSizeSelect').value;
+      if (size === 'all') {
+        showToast('已切换为显示全部记录', 'success');
+      } else {
+        showToast(`已切换为每页 ${size} 条（演示）`, 'success');
+      }
+    }
+
+    // ===== Toast =====
+    let toastTimer;
+    function showToast(msg, type) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.className = `toast ${type} show`;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { toast.classList.remove('show'); }, 2000);
+    }
+
+    function esc(str) {
+      if (!str) return '';
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ===== 操作日志 =====
+    const operationLogs = [];
+
+    function addLog(action) {
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+      operationLogs.unshift({ date: dateStr, action });
+      if (operationLogs.length > 100) operationLogs.pop();
+    }
+
+    function openLogModal() {
+      const tbody = document.getElementById('logTableBody');
+      const empty = document.getElementById('logEmpty');
+      if (operationLogs.length === 0) {
+        tbody.innerHTML = '';
+        empty.style.display = '';
+      } else {
+        empty.style.display = 'none';
+        tbody.innerHTML = operationLogs.map((log, i) => `
+          <tr>
+            <td style="color:var(--text-secondary);">${String(i + 1).padStart(2, '0')}</td>
+            <td>${esc(log.date)}</td>
+            <td>${esc(log.action)}</td>
+          </tr>
+        `).join('');
+      }
+      document.getElementById('logModal').classList.add('show');
+    }
+
+    function closeLogModal() {
+      document.getElementById('logModal').classList.remove('show');
+    }
+
+    // ===== 导入 / 下载模版 =====
+    let importFile = null;
+
+    function openImportModal() {
+      importFile = null;
+      const fileInput = document.getElementById('importFileInput');
+      if (fileInput) fileInput.value = '';
+      document.getElementById('importModal').classList.add('show');
+    }
+
+    function closeImportModal() {
+      document.getElementById('importModal').classList.remove('show');
+    }
+
+    function handleFileSelect(event) {
+      importFile = event.target.files[0];
+      if (importFile) {
+        showToast(`已选择文件：${importFile.name}`, 'success');
+      }
+    }
+
+    function confirmImport() {
+      if (!importFile) { showToast('请先选择要导入的文件', 'error'); return; }
+      // 模拟导入：读取文件并解析（示例仅做提示）
+      showToast('导入成功（模拟）', 'success');
+      closeImportModal();
+    }
+
+    function downloadTemplate() {
+      // 生成 CSV 模版
+      const headers = ['业务类型', '仓库编码', '物料编码', '管控天数', '周期单位'];
+      const example = ['出库,备货', '801,802', 'ww000111', '6', '月'];
+      const csvContent = '\uFEFF' + headers.join(',') + '\n' + example.join(',');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '管控天数配置导入模版.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('模版下载成功', 'success');
+    }
+
+    // ===== 初始渲染 =====
+    renderQueryBar();
+    renderTable();
+  </script>
+</body>
+</html>
