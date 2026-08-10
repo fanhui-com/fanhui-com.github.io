@@ -1,0 +1,2298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>移库任务管理 - 格力WMS系统</title>
+  <style>
+    :root {
+      --primary: #3F99A3;
+      --primary-light: #DBEEEC;
+      --primary-dark: #358A94;
+      --link: #409EFF;
+      --header-bg: #3F99A3;
+      --text-title: #333333;
+      --text-body: #606266;
+      --text-secondary: #909399;
+      --text-placeholder: #C0C4CC;
+      --bg-white: #FFFFFF;
+      --bg-page: #F5F7FA;
+      --bg-header: #FAFAFA;
+      --border: #DCDFE6;
+      --border-light: #EBEEF5;
+      --success: #67C23A;
+      --success-light: #F0F9EB;
+      --warning: #E6A23C;
+      --warning-light: #FDF6EC;
+      --danger: #F56C6C;
+      --danger-light: #FEF0F0;
+      --info: #909399;
+      --info-light: #F4F4F5;
+      --font: -apple-system, "PingFang SC", "Microsoft Yahei", sans-serif;
+      --radius: 4px;
+      --radius-sm: 3px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:var(--font); font-size:14px; color:var(--text-body); background:var(--bg-page); }
+
+    /* Header */
+    .wms-header { height:50px; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:space-between; padding:0 24px; font-size:18px; font-weight:500; position:fixed; top:0; left:0; right:0; z-index:100; }
+    .header-left { display:flex; align-items:center; gap:8px; }
+    .header-right { display:flex; align-items:center; gap:16px; font-size:13px; font-weight:400; }
+    .header-right .user-info { color:rgba(255,255,255,0.9); }
+    .header-right .sep { color:rgba(255,255,255,0.5); margin:0 4px; }
+    .header-right a { color:#fff; text-decoration:none; cursor:pointer; }
+
+    /* Layout */
+    .wms-layout { display:flex; padding-top:50px; min-height:100vh; }
+    .wms-sidebar { width:200px; background:var(--bg-white); border-right:1px solid var(--border-light); flex-shrink:0; }
+    .menu-group { padding:10px 16px 6px; font-size:13px; color:var(--text-title); font-weight:600; cursor:pointer; }
+    .menu-item { height:38px; line-height:38px; padding:0 20px 0 28px; font-size:13px; color:rgba(0,0,0,0.65); cursor:pointer; }
+    .menu-item:hover { background:var(--bg-page); }
+    .menu-item.active { background:var(--primary-light); color:var(--primary); font-weight:500; }
+
+    /* Main */
+    .wms-main { flex:1; padding:12px 20px 20px; overflow:auto; }
+    .wms-breadcrumb { font-size:14px; color:var(--text-body); margin-bottom:12px; }
+    .wms-breadcrumb .sep { margin:0 6px; color:var(--text-placeholder); }
+    .wms-breadcrumb .current { color:var(--text-title); font-weight:500; }
+    .wms-tabs { display:flex; border-bottom:2px solid var(--border-light); margin-bottom:16px; }
+    .wms-tab { height:40px; line-height:40px; padding:0 20px; font-size:14px; color:var(--text-body); cursor:pointer; position:relative; border:none; background:none; }
+    .wms-tab.active { color:var(--primary); font-weight:500; }
+    .wms-tab.active::after { content:''; position:absolute; bottom:-2px; left:0; right:0; height:2px; background:var(--primary); }
+
+    /* Card */
+    .wms-card { background:var(--bg-white); border-radius:var(--radius); padding:16px 20px; box-shadow:0 1px 4px rgba(0,0,0,0.04); margin-bottom:16px; }
+
+    /* Query */
+    .query-bar { display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; margin-bottom:12px; padding-bottom:12px; border-bottom:1px dashed var(--border-light); }
+    .query-item { display:flex; align-items:center; gap:6px; }
+    .query-label { font-size:14px; color:var(--text-title); white-space:nowrap; font-weight:500; }
+    .query-input { height:32px; padding:0 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:14px; color:var(--text-body); outline:none; width:180px; }
+    .query-input:focus { border-color:var(--link); }
+    .query-input::placeholder { color:var(--text-placeholder); }
+    .query-select { height:32px; padding:0 28px 0 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:14px; color:var(--text-body); outline:none; width:160px; background:#fff; cursor:pointer; }
+
+    /* Buttons */
+    .action-bar { display:flex; gap:8px; margin-bottom:16px; align-items:center; }
+    .wms-btn { height:32px; padding:0 16px; font-size:14px; border-radius:var(--radius-sm); cursor:pointer; display:inline-flex; align-items:center; gap:4px; transition:all 0.2s; border:none; }
+    .wms-btn-primary { background:var(--primary); color:#fff; }
+    .wms-btn-primary:hover { background:var(--primary-dark); }
+    .wms-btn-default { background:#fff; color:var(--text-body); border:1px solid var(--border); }
+    .wms-btn-default:hover { color:var(--primary); border-color:var(--primary); }
+    .wms-btn-danger { background:#fff; color:var(--danger); border:1px solid var(--danger); }
+    .wms-btn-danger:hover { background:var(--danger); color:#fff; }
+    .wms-btn-text { background:none; border:none; color:var(--link); padding:0 6px; height:28px; cursor:pointer; font-size:14px; }
+    .wms-btn-text:hover { color:var(--primary); }
+    .wms-btn-text.danger { color:var(--danger); }
+    .wms-btn-text.danger:hover { color:#d9363e; }
+    .wms-btn-sm { height:28px; padding:0 12px; font-size:13px; }
+
+    /* Status tags */
+    .status-tag { display:inline-flex; align-items:center; gap:4px; height:24px; padding:0 10px; border-radius:3px; font-size:12px; font-weight:500; }
+    .status-draft { background:var(--info-light); color:var(--info); }
+    .status-pending { background:#ecf5ff; color:var(--link); }
+    .status-executing { background:var(--warning-light); color:var(--warning); }
+    .status-completed { background:var(--success-light); color:var(--success); }
+    .status-cancelled { background:#E4E4E4; color:#8C8C8C; }
+    .status-closed { background:var(--danger-light); color:var(--danger); }
+    .status-tag::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; }
+
+    /* Table */
+    .wms-table { width:100%; border-collapse:collapse; font-size:14px; }
+    .wms-table thead th { background:var(--bg-header); color:var(--text-title); font-weight:500; font-size:13px; height:40px; padding:0 12px; text-align:left; border-bottom:1px solid var(--border-light); white-space:nowrap; }
+    .wms-table thead th.sortable { cursor:pointer; user-select:none; position:relative; }
+    .wms-table thead th.sortable:hover { background:var(--bg-hover,#EDF5F6); }
+    .wms-table thead th.sortable .sort-icon { display:inline-block; margin-left:4px; color:var(--text-placeholder); font-size:11px; vertical-align:middle; }
+    .wms-table thead th.sortable.sorted-asc .sort-icon,
+    .wms-table thead th.sortable.sorted-desc .sort-icon { color:var(--primary); }
+    .wms-table tbody td { padding:0 12px; color:var(--text-body); border-bottom:1px solid var(--border-light); vertical-align:middle; height:48px; }
+    .wms-table tbody tr:nth-child(even) { background:#FAFAFA; }
+    .wms-table tbody tr:hover { background:#F5F7FA; }
+    .wms-table tbody tr.editing { background:#FFF8E6; }
+    .wms-table tbody tr.editing:hover { background:#FFF0C2; }
+    .wms-table tbody tr.editing td { height:auto; vertical-align:top; padding-top:8px; padding-bottom:8px; }
+    .wms-table .checkbox { width:16px; height:16px; cursor:pointer; }
+
+    /* Table wrapper */
+    .table-wrapper { overflow-x:auto; }
+
+    /* Pagination */
+    .wms-pagination { display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-top:16px; }
+    .wms-pagination .total { font-size:13px; color:var(--text-secondary); }
+    .wms-pagination button { height:30px; min-width:30px; padding:0 8px; font-size:13px; border:1px solid var(--border); background:#fff; color:var(--text-body); border-radius:var(--radius-sm); cursor:pointer; }
+    .wms-pagination button:hover { border-color:var(--primary); color:var(--primary); }
+    .wms-pagination button:disabled { color:var(--text-placeholder); cursor:not-allowed; }
+    .wms-pagination button.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .page-size-select { height:30px; padding:0 8px; font-size:13px; border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text-body); outline:none; cursor:pointer; }
+
+    /* Row link */
+    .row-link { color:var(--link); cursor:pointer; text-decoration:none; font-size:14px; }
+    .row-link:hover { color:var(--primary); text-decoration:underline; }
+    .qty-link { color:var(--link); cursor:pointer; font-weight:500; text-decoration:none; }
+    .qty-link:hover { color:var(--primary); text-decoration:underline; }
+    .cell-actions { display:flex; gap:8px; align-items:center; }
+    .cell-muted { color:var(--text-secondary); }
+    .cell-required::before { content:'*'; color:var(--danger); margin-right:2px; }
+
+    /* Inputs */
+    .wms-input { height:32px; padding:0 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:14px; color:var(--text-body); outline:none; width:100%; }
+    .wms-input:focus { border-color:var(--link); }
+    .wms-input::placeholder { color:var(--text-placeholder); }
+    .wms-input.is-error { border-color:var(--danger) !important; background:#FFF5F5; }
+
+    /* Select trigger */
+    .sel-trigger { min-height:32px; padding:3px 28px 3px 8px; border:1px solid var(--border); border-radius:var(--radius); background:#fff; cursor:pointer; position:relative; font-size:14px; width:100%; display:flex; align-items:center; gap:4px; flex-wrap:wrap; user-select:none; transition:border-color 0.2s; line-height:1.4; box-sizing:border-box; }
+    .sel-trigger:hover { border-color:var(--link); }
+    .sel-trigger.is-error { border-color:var(--danger) !important; background:#FFF5F5; }
+    .sel-trigger .arrow { position:absolute; right:8px; top:50%; transform:translateY(-50%); font-size:11px; color:var(--text-placeholder); transition:transform 0.2s; }
+    .sel-trigger.open .arrow { transform:translateY(-50%) rotate(180deg); }
+    .sel-trigger .placeholder { color:var(--text-placeholder); font-size:14px; line-height:26px; }
+    .sel-trigger-single .sel-value { color:var(--text-body); font-size:14px; line-height:26px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .sel-chip { display:inline-flex; align-items:center; height:24px; line-height:22px; padding:0 4px 0 8px; font-size:12px; border-radius:3px; background:rgba(63,153,163,0.1); color:var(--primary); border:1px solid rgba(63,153,163,0.25); white-space:nowrap; gap:2px; }
+    .sel-chip .chip-close { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; font-size:11px; color:rgba(63,153,163,0.6); border-radius:50%; cursor:pointer; }
+    .sel-chip .chip-close:hover { color:#fff; background:var(--primary); }
+    .sel-clear { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; font-size:14px; color:var(--text-placeholder); border-radius:50%; cursor:pointer; margin-left:2px; flex-shrink:0; }
+    .sel-clear:hover { color:#fff; background:var(--danger); }
+
+    /* Dropdown */
+    .sel-dropdown { position:fixed; z-index:2000; background:#fff; border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 4px 16px rgba(0,0,0,0.12); min-width:180px; max-height:240px; overflow-y:auto; display:none; padding:4px 0; }
+    .sel-dropdown.show { display:block; }
+    .sel-dropdown .dd-search { margin:4px 8px 6px; height:30px; padding:0 8px; border:1px solid var(--border-light); border-radius:3px; font-size:13px; outline:none; width:calc(100% - 16px); }
+    .sel-dropdown .dd-search:focus { border-color:var(--link); }
+    .sel-dropdown .dd-item { display:flex; align-items:center; gap:8px; height:34px; padding:0 12px; cursor:pointer; font-size:13px; color:var(--text-body); }
+    .sel-dropdown .dd-item:hover { background:#F5F7FA; }
+    .sel-dropdown .dd-item.selected { color:var(--primary); font-weight:500; background:var(--primary-light); }
+    .sel-dropdown .dd-item.hidden { display:none; }
+    .sel-dropdown .dd-empty { padding:16px; text-align:center; color:var(--text-placeholder); font-size:13px; }
+    .dd-checkbox { width:14px; height:14px; border:2px solid var(--border); border-radius:2px; flex-shrink:0; position:relative; }
+    .dd-item.selected .dd-checkbox { background:var(--primary); border-color:var(--primary); }
+    .dd-item.selected .dd-checkbox::after { content:''; position:absolute; left:3px; top:0; width:4px; height:8px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); }
+    .dd-radio { width:14px; height:14px; border:2px solid var(--border); border-radius:50%; flex-shrink:0; position:relative; }
+    .dd-item.selected .dd-radio { border-color:var(--primary); }
+    .dd-item.selected .dd-radio::after { content:''; position:absolute; left:3px; top:3px; width:6px; height:6px; border-radius:50%; background:var(--primary); }
+
+    /* Validation tips */
+    .val-tip { font-size:12px; margin-top:4px; line-height:1.4; color:var(--text-placeholder); }
+    .val-tip.error { color:var(--danger); }
+
+    /* Form grid */
+    .form-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:16px 24px; }
+    .form-item { display:flex; flex-direction:column; gap:4px; }
+    .form-label { font-size:14px; color:var(--text-title); font-weight:500; }
+    .form-label .required { color:var(--danger); }
+    .form-item.full { grid-column:1 / -1; }
+
+    /* Status flow */
+    .status-flow { display:flex; align-items:center; gap:0; margin-bottom:20px; padding:16px 24px; background:var(--bg-white); border-radius:var(--radius); box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+    .sf-step { display:flex; align-items:center; gap:8px; }
+    .sf-circle { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; border:2px solid var(--border); color:var(--text-secondary); background:#fff; transition:all 0.2s; }
+    .sf-step.active .sf-circle { border-color:var(--primary); color:#fff; background:var(--primary); }
+    .sf-step.done .sf-circle { border-color:var(--success); color:#fff; background:var(--success); }
+    .sf-label { font-size:13px; color:var(--text-secondary); }
+    .sf-step.active .sf-label { color:var(--primary); font-weight:500; }
+    .sf-step.done .sf-label { color:var(--success); }
+    .sf-line { width:48px; height:2px; background:var(--border); margin:0 4px; }
+    .sf-line.done { background:var(--success); }
+
+    /* Toast */
+    .toast { position:fixed; top:70px; left:50%; transform:translateX(-50%); padding:10px 24px; border-radius:var(--radius); font-size:14px; color:#fff; z-index:9999; opacity:0; transition:opacity 0.3s; pointer-events:none; }
+    .toast.show { opacity:1; }
+    .toast.success { background:var(--success); }
+    .toast.error { background:var(--danger); }
+
+    /* Modal */
+    .modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.4); z-index:1000; justify-content:center; align-items:center; }
+    .modal-overlay.show { display:flex; }
+    .modal { background:#fff; border-radius:8px; padding:24px 28px; max-width:400px; width:90%; box-shadow:0 4px 16px rgba(0,0,0,0.15); }
+    .modal h3 { font-size:16px; font-weight:500; color:var(--text-title); margin-bottom:12px; }
+    .modal p { font-size:14px; color:var(--text-body); margin-bottom:20px; line-height:1.8; }
+    .modal .btn-row { display:flex; gap:10px; justify-content:flex-end; }
+
+    /* Detail table inline */
+    .type-toggle { display:inline-flex; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+    .type-toggle button { height:28px; padding:0 10px; font-size:12px; border:none; background:#fff; color:var(--text-secondary); cursor:pointer; }
+    .type-toggle button.active { background:var(--primary); color:#fff; }
+
+    .cell-wrap { display:flex; flex-direction:column; }
+
+    /* PDA mockup */
+    .pda-frame { width:340px; margin:0 auto; border:3px solid #333; border-radius:24px; padding:12px; background:#1a1a1a; }
+    .pda-screen { background:var(--bg-page); border-radius:14px; overflow:hidden; height:520px; display:flex; flex-direction:column; }
+    .pda-header { background:var(--primary); color:#fff; padding:10px 16px; font-size:15px; font-weight:500; display:flex; justify-content:space-between; align-items:center; }
+    .pda-body { flex:1; overflow-y:auto; padding:12px; }
+    .pda-task-info { background:#fff; border-radius:var(--radius); padding:10px 12px; margin-bottom:12px; font-size:13px; }
+    .pda-task-info .row { display:flex; justify-content:space-between; margin-bottom:4px; }
+    .pda-task-info .row:last-child { margin-bottom:0; }
+    .pda-task-info .val { color:var(--text-title); font-weight:500; }
+    .pda-progress { background:#fff; border-radius:var(--radius); padding:10px 12px; margin-bottom:12px; }
+    .pda-progress-bar { height:6px; background:var(--border-light); border-radius:3px; margin-top:6px; overflow:hidden; }
+    .pda-progress-fill { height:100%; background:var(--primary); border-radius:3px; transition:width 0.3s; }
+    .pda-scan-area { background:#fff; border-radius:var(--radius); padding:10px 12px; margin-bottom:12px; }
+    .pda-scan-input { height:36px; border:1px solid var(--border); border-radius:var(--radius); font-size:14px; padding:0 10px; outline:none; width:100%; }
+    .pda-scan-input:focus { border-color:var(--primary); }
+    .pda-scan-btn { height:36px; background:var(--primary); color:#fff; border:none; border-radius:var(--radius); font-size:14px; cursor:pointer; width:100%; margin-top:8px; }
+    .pda-item-list { background:#fff; border-radius:var(--radius); padding:4px 0; }
+    .pda-item { display:flex; align-items:center; gap:8px; padding:8px 12px; border-bottom:1px solid var(--border-light); font-size:13px; }
+    .pda-item:last-child { border-bottom:none; }
+    .pda-item .check { width:18px; height:18px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .pda-item.done .check { border-color:var(--success); background:var(--success); }
+    .pda-item.done .check::after { content:''; width:4px; height:8px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); }
+    .pda-item .info { flex:1; }
+    .pda-item .info .code { color:var(--text-title); font-weight:500; }
+    .pda-item .info .qty { color:var(--text-secondary); font-size:12px; }
+    .pda-item .qty-badge { font-size:12px; color:var(--primary); background:var(--primary-light); padding:1px 6px; border-radius:3px; }
+    .pda-footer { padding:8px 12px; background:#fff; border-top:1px solid var(--border-light); display:flex; gap:8px; }
+    .pda-footer button { flex:1; height:36px; border-radius:var(--radius); font-size:14px; border:none; cursor:pointer; }
+    .pda-footer .btn-cancel { background:#fff; color:var(--text-body); border:1px solid var(--border); }
+    .pda-footer .btn-confirm { background:var(--primary); color:#fff; }
+
+    /* Section title */
+    .section-title { font-size:14px; font-weight:600; color:var(--text-title); margin-bottom:12px; display:flex; align-items:center; gap:6px; }
+    .section-title::before { content:''; width:3px; height:14px; background:var(--primary); border-radius:2px; }
+
+    /* Detail action bar */
+    .detail-action-bar { display:flex; gap:8px; margin-bottom:12px; align-items:center; }
+
+    /* Expandable detail row */
+    .wms-table tr.detail-row { cursor:pointer; transition:background .15s; }
+    .wms-table tr.detail-row:hover { background:var(--primary-light); }
+    .wms-table tr.detail-expanded-row td { padding:0 !important; border-top:0; background:#F8FBFB; }
+    .detail-expand-icon { display:inline-block; width:16px; text-align:center; color:var(--text-secondary); font-size:12px; transition:transform .2s; }
+    .detail-expand-icon.open { transform:rotate(90deg); }
+    .barcode-subtable { width:100%; border-collapse:collapse; font-size:13px; }
+    .barcode-subtable th { background:var(--primary-light); color:var(--text-secondary); font-weight:500; padding:6px 10px; text-align:left; white-space:nowrap; border-bottom:1px solid var(--border-light); }
+    .barcode-subtable td { padding:6px 10px; border-bottom:1px solid #F0F0F0; }
+    .barcode-subtable tr:last-child td { border-bottom:0; }
+    .subtable-wrapper { padding:8px 12px; }
+
+    /* Empty state */
+    .empty-state { text-align:center; padding:40px; color:var(--text-placeholder); font-size:14px; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="wms-header">
+    <div class="header-left"><span>格力WMS系统</span></div>
+    <div class="header-right">
+      <span class="user-info">admin 管理员</span>
+      <span class="sep">|</span>
+      <span class="user-info">当前操作C4成品仓</span>
+      <span class="sep">|</span>
+      <a href="#">退出</a>
+    </div>
+  </header>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Global Dropdown -->
+  <div class="sel-dropdown" id="globalDropdown"></div>
+
+  <!-- Layout -->
+  <div class="wms-layout">
+    <aside class="wms-sidebar">
+      <div class="menu-group">基础设置</div>
+      <div class="menu-item">物料资料</div>
+      <div class="menu-item">品类管理</div>
+      <div class="menu-item">仓库资料</div>
+      <div class="menu-item">库位管理</div>
+      <div class="menu-group">入库管理</div>
+      <div class="menu-item">入库任务</div>
+      <div class="menu-item">入库记录</div>
+      <div class="menu-group">出库管理</div>
+      <div class="menu-item">出库任务</div>
+      <div class="menu-item">出库记录</div>
+      <div class="menu-group">移库管理</div>
+      <div class="menu-item active">移库任务</div>
+      <div class="menu-item">移库记录</div>
+    </aside>
+
+    <main class="wms-main">
+      <div class="wms-breadcrumb">
+        移库管理 <span class="sep">/</span> <span class="current">移库任务</span>
+      </div>
+
+      <div class="wms-tabs">
+        <button class="wms-tab active">移库任务管理</button>
+      </div>
+
+      <!-- ============ LIST VIEW ============ -->
+      <div id="listView">
+        <div class="wms-card">
+          <!-- Query Bar -->
+          <div class="query-bar">
+            <div class="query-item">
+              <span class="query-label">任务号：</span>
+              <input type="text" class="query-input" id="qTaskNo" placeholder="请输入任务号">
+            </div>
+            <div class="query-item">
+              <span class="query-label">源库位：</span>
+              <select class="query-select" id="qSourceWh">
+                <option value="">全部</option>
+              </select>
+            </div>
+            <div class="query-item">
+              <span class="query-label">目标库位：</span>
+              <select class="query-select" id="qTargetWh">
+                <option value="">全部</option>
+              </select>
+            </div>
+            <div class="query-item">
+              <span class="query-label">状态：</span>
+              <select class="query-select" id="qStatus">
+                <option value="">全部</option>
+                <option value="draft">草稿</option>
+                <option value="pending">待执行</option>
+                <option value="executing">执行中</option>
+                <option value="completed">完成</option>
+                <option value="cancelled">已取消</option>
+                <option value="closed">异常关闭</option>
+              </select>
+            </div>
+            <div class="query-item">
+              <span class="query-label">指派给：</span>
+              <select class="query-select" id="qAssignee">
+                <option value="">全部</option>
+              </select>
+            </div>
+            <div class="query-item">
+              <span class="query-label">创建人：</span>
+              <input type="text" class="query-input" id="qCreator" placeholder="请输入创建人" style="width:130px;">
+            </div>
+            <div class="query-item">
+              <span class="query-label">创建时间：</span>
+              <input type="date" class="query-input" id="qCreateStart" style="width:140px;">
+              <span style="color:var(--text-secondary);">至</span>
+              <input type="date" class="query-input" id="qCreateEnd" style="width:140px;">
+            </div>
+            <div class="query-item">
+              <span class="query-label">执行人：</span>
+              <input type="text" class="query-input" id="qExecutor" placeholder="请输入执行人" style="width:130px;">
+            </div>
+            <div class="query-item">
+              <span class="query-label">完成时间：</span>
+              <input type="date" class="query-input" id="qFinishStart" style="width:140px;">
+              <span style="color:var(--text-secondary);">至</span>
+              <input type="date" class="query-input" id="qFinishEnd" style="width:140px;">
+            </div>
+            <div class="query-item" style="align-self:center;">
+              <button class="wms-btn wms-btn-primary" onclick="doQuery()">查询</button>
+              <button class="wms-btn wms-btn-default" style="margin-left:6px;" onclick="resetQuery()">重置</button>
+            </div>
+          </div>
+
+          <!-- Action Bar -->
+          <div class="action-bar">
+            <button class="wms-btn wms-btn-primary" onclick="showCreateView()">新增移库任务</button>
+            <button class="wms-btn wms-btn-default" onclick="openImportModal()">导入</button>
+            <button class="wms-btn wms-btn-default" onclick="exportTasks()">导出</button>
+            <span style="width:1px;height:24px;background:var(--border-light);margin:0 4px;"></span>
+            <button class="wms-btn wms-btn-danger" onclick="batchDelete()">批量删除</button>
+            <button class="wms-btn wms-btn-default" style="color:var(--link);border-color:var(--link);" onclick="batchSubmit()">批量提交</button>
+            <button class="wms-btn wms-btn-default" style="color:var(--text-secondary);border-color:var(--border);" onclick="batchCancel()">批量取消</button>
+            <button class="wms-btn wms-btn-default" style="color:var(--danger);border-color:var(--danger);" onclick="batchClose()">批量异常关闭</button>
+          </div>
+
+          <!-- Table -->
+          <div class="table-wrapper">
+            <table class="wms-table" id="taskTable">
+              <thead>
+                <tr>
+                  <th style="width:40px;"><input type="checkbox" class="checkbox" id="selectAll" onclick="toggleSelectAll()"></th>
+                  <th style="width:50px;">序号</th>
+                  <th style="width:80px;">操作</th>
+                  <th class="sortable" style="width:80px;" onclick="sortBy('status')">状态<span class="sort-icon" id="sortIcon-status"></span></th>
+                  <th class="sortable" style="width:130px;" onclick="sortBy('taskNo')">任务号<span class="sort-icon" id="sortIcon-taskNo"></span></th>
+                  <th class="sortable" style="width:90px;" onclick="sortBy('sourceWh')">源库位<span class="sort-icon" id="sortIcon-sourceWh"></span></th>
+                  <th class="sortable" style="width:90px;" onclick="sortBy('targetWh')">目标库位<span class="sort-icon" id="sortIcon-targetWh"></span></th>
+                  <th style="width:60px;">数量</th>
+                  <th style="width:90px;">是否指定条码</th>
+                  <th style="width:70px;">机型种类</th>
+                  <th style="width:110px;">要求完成时间</th>
+                  <th style="width:120px;">执行班组/人</th>
+                  <th style="width:80px;">创建人</th>
+                  <th style="width:120px;">创建时间</th>
+                  <th style="width:80px;">执行人</th>
+                  <th style="width:120px;">完成时间</th>
+                  <th style="width:120px;">原因</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="wms-pagination">
+            <select class="page-size-select" id="pageSizeSelect">
+              <option value="all" selected>全部</option>
+              <option value="15">15条/页</option>
+              <option value="30">30条/页</option>
+            </select>
+            <span class="total" id="totalCount">共 0 条</span>
+            <button disabled>上一页</button>
+            <button class="active">1</button>
+            <button disabled>下一页</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ CREATE / EDIT VIEW ============ -->
+      <div id="editView" style="display:none;">
+        <!-- Status Flow -->
+        <div class="status-flow" id="statusFlow">
+          <div class="sf-step active" data-step="draft">
+            <div class="sf-circle">1</div>
+            <span class="sf-label">草稿</span>
+          </div>
+          <div class="sf-line"></div>
+          <div class="sf-step" data-step="pending">
+            <div class="sf-circle">2</div>
+            <span class="sf-label">待执行</span>
+          </div>
+          <div class="sf-line"></div>
+          <div class="sf-step" data-step="executing">
+            <div class="sf-circle">3</div>
+            <span class="sf-label">执行中</span>
+          </div>
+          <div class="sf-line"></div>
+          <div class="sf-step" data-step="completed">
+            <div class="sf-circle">4</div>
+            <span class="sf-label">完成</span>
+          </div>
+        </div>
+
+        <!-- Task Header -->
+        <div class="wms-card">
+          <div class="section-title">任务信息</div>
+          <div class="form-grid">
+            <div class="form-item">
+              <label class="form-label">任务号</label>
+              <input type="text" class="wms-input" id="editTaskNo" placeholder="保存自动生成" readonly>
+            </div>
+            <div class="form-item">
+              <label class="form-label">源库位</label>
+              <div class="sel-trigger sel-trigger-single" id="trigger-sourceWh" onclick="openFormDropdown('sourceWh',event)">
+                <span class="placeholder">请选择源库位（非必填）</span>
+                <span class="arrow">&#9660;</span>
+              </div>
+            </div>
+            <div class="form-item">
+              <label class="form-label"><span class="required">*</span>目标库位</label>
+              <div class="sel-trigger sel-trigger-single" id="trigger-targetWh" onclick="openFormDropdown('targetWh',event)">
+                <span class="placeholder">请选择目标库位</span>
+                <span class="arrow">&#9660;</span>
+              </div>
+            </div>
+            <div class="form-item">
+              <label class="form-label">要求完成时间</label>
+              <input type="date" class="wms-input" id="editDeadline" placeholder="选择日期">
+            </div>
+            <div class="form-item">
+              <label class="form-label">执行班组/人</label>
+              <div class="sel-trigger" id="trigger-assignees" onclick="openAssigneeDropdown(event)">
+                <span class="placeholder">请选择执行班组/人</span>
+                <span class="arrow">&#9660;</span>
+              </div>
+            </div>
+            <div class="form-item full">
+              <label class="form-label">备注</label>
+              <input type="text" class="wms-input" id="editRemark" placeholder="请输入备注信息">
+            </div>
+          </div>
+          <div id="headerErrors" style="margin-top:8px;"></div>
+        </div>
+
+        <!-- Task Details -->
+        <div class="wms-card">
+          <div style="display:flex;align-items:center;margin-bottom:12px;">
+            <div class="section-title" style="margin-bottom:0;">任务明细</div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:12px;font-size:14px;color:var(--text-title);">
+              <span style="font-weight:500;">是否指定条码：</span>
+              <label style="cursor:pointer;display:flex;align-items:center;gap:4px;">
+                <input type="radio" name="specifyBarcode" value="0" checked onchange="onSpecifyBarcodeChange()"> 不指定
+              </label>
+              <label style="cursor:pointer;display:flex;align-items:center;gap:4px;">
+                <input type="radio" name="specifyBarcode" value="1" onchange="onSpecifyBarcodeChange()"> 指定
+              </label>
+            </div>
+          </div>
+          <div class="detail-action-bar" id="detailActionBar">
+            <button class="wms-btn wms-btn-primary wms-btn-sm" onclick="addDetailRow()">+ 添加明细</button>
+            <button class="wms-btn wms-btn-default wms-btn-sm" onclick="openDetailImportModal()">导入明细</button>
+            <button class="wms-btn wms-btn-default wms-btn-sm" onclick="downloadDetailTemplate()">下载导入模版</button>
+            <span style="width:1px;height:20px;background:var(--border-light);margin:0 4px;"></span>
+            <button class="wms-btn wms-btn-danger wms-btn-sm" onclick="batchDeleteDetails()">批量删除明细</button>
+            <span style="margin-left:auto;font-size:13px;color:var(--warning);" id="detailTip">⚠ 指定条码：条码/箱号或栈板号 | 不指定：物料编码（顶）</span>
+          </div>
+          <div class="table-wrapper">
+            <table class="wms-table" id="detailTable">
+              <thead id="detailTableHead"></thead>
+              <tbody id="detailTableBody"></tbody>
+            </table>
+          </div>
+          <div id="detailEmpty" class="empty-state" style="display:none;">暂无明细，点击「添加明细」或「导入明细」</div>
+        </div>
+
+        <!-- Bottom Actions -->
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button type="button" class="wms-btn wms-btn-default" onclick="backToList()">返回列表</button>
+          <button type="button" class="wms-btn wms-btn-default" id="btnCancelEdit" onclick="cancelEdit()">取消</button>
+          <button type="button" class="wms-btn wms-btn-primary" id="btnSaveDraft" onclick="saveDraft()">保存草稿</button>
+          <button type="button" class="wms-btn wms-btn-primary" id="btnSubmit" onclick="submitTask()" style="background:var(--link);">提交（待执行）</button>
+          <button type="button" class="wms-btn wms-btn-primary" id="btnExecute" onclick="execFromEdit()" style="background:var(--success);display:none;">执行（PDA扫码）</button>
+          <button type="button" class="wms-btn wms-btn-primary" id="btnContinue" onclick="execFromEdit()" style="background:var(--warning);display:none;">继续执行</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============ PDA MODAL ============ -->
+  <div class="modal-overlay" id="pdaModal">
+    <div class="modal" style="max-width:380px;padding:16px;">
+      <h3 style="text-align:center;">PDA 移库执行（模拟）</h3>
+      <div class="pda-frame">
+        <div class="pda-screen">
+          <div class="pda-header">
+            <span>移库执行</span>
+            <span style="font-size:12px;cursor:pointer;" onclick="closePDAModal()">关闭</span>
+          </div>
+          <div class="pda-body" id="pdaBody">
+            <div class="pda-task-info">
+              <div class="row"><span>任务号</span><span class="val" id="pdaTaskNo">--</span></div>
+              <div class="row"><span>源库位</span><span class="val" id="pdaSourceWh">--</span></div>
+              <div class="row"><span>目标库位</span><span class="val" id="pdaTargetWh">--</span></div>
+            </div>
+            <div class="pda-progress">
+              <div style="display:flex;justify-content:space-between;font-size:13px;">
+                <span>执行进度</span><span id="pdaProgressText" style="color:var(--primary);font-weight:500;">0 / 0</span>
+              </div>
+              <div class="pda-progress-bar"><div class="pda-progress-fill" id="pdaProgressFill" style="width:0%;"></div></div>
+            </div>
+            <div class="pda-scan-area">
+              <input type="text" class="pda-scan-input" id="pdaScanInput" placeholder="扫码 / 输入条码或物料编码" onkeydown="if(event.key==='Enter')pdaScan()">
+              <button class="pda-scan-btn" onclick="pdaScan()">扫码确认</button>
+            </div>
+            <div class="pda-item-list" id="pdaItemList"></div>
+          </div>
+          <div class="pda-footer">
+            <button class="btn-cancel" onclick="closePDAModal()">退出</button>
+            <button class="btn-confirm" id="pdaCompleteBtn" onclick="pdaComplete()" style="display:none;">全部完成</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ IMPORT MODAL ============ -->
+  <div class="modal-overlay" id="importModal">
+    <div class="modal" style="max-width:480px;">
+      <h3>导入移库任务明细</h3>
+      <p style="margin-bottom:8px;">请先下载导入模版，按模版格式填写数据后上传。物料编码、条码二选一填写。导入后可在明细表中修改、调整。</p>
+      <div class="btn-row" style="margin-bottom:16px;">
+        <button class="wms-btn wms-btn-primary" onclick="downloadDetailTemplate()" style="height:36px;">下载模版</button>
+      </div>
+      <div style="border:2px dashed var(--border);border-radius:8px;padding:24px;text-align:center;margin-bottom:16px;background:#FAFAFA;">
+        <p style="color:var(--text-secondary);margin-bottom:12px;">选择文件上传（.xlsx / .csv）</p>
+        <input type="file" id="importFileInput" accept=".xlsx,.csv" style="display:none;" onchange="handleFileSelect(event)">
+        <button class="wms-btn wms-btn-primary wms-btn-sm" onclick="document.getElementById('importFileInput').click()">选择文件</button>
+        <span id="importFileName" style="margin-left:8px;font-size:13px;color:var(--text-secondary);"></span>
+      </div>
+      <div class="btn-row">
+        <button class="wms-btn wms-btn-default" onclick="closeImportModal()">关闭</button>
+        <button class="wms-btn wms-btn-primary" onclick="confirmImport()">确认导入</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DELETE MODAL ============ -->
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal">
+      <h3>确认删除</h3>
+      <p>确定要删除选中的移库任务吗？此操作不可撤销。（仅草稿状态可删除）</p>
+      <div class="btn-row">
+        <button class="wms-btn wms-btn-default" onclick="closeDeleteModal()">取消</button>
+        <button class="wms-btn wms-btn-danger" onclick="confirmDelete()">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ EXEC DETAIL MODAL ============ -->
+  <div class="modal-overlay" id="execDetailModal">
+    <div class="modal" style="max-width:1100px;width:95%;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="margin:0;">条码明细 — <span id="execDetailTaskNo" style="color:var(--primary);"></span></h3>
+        <span style="cursor:pointer;color:var(--text-secondary);font-size:18px;" onclick="closeExecDetailModal()">&times;</span>
+      </div>
+      <div class="table-wrapper" style="max-height:400px;overflow-y:auto;">
+        <table class="wms-table" id="execDetailTable">
+          <thead>
+            <tr>
+              <th style="width:50px;">序号</th>
+              <th style="width:140px;">条码/箱号</th>
+              <th style="width:60px;">数量</th>
+              <th style="width:120px;">物料编码</th>
+              <th style="width:80px;">批次</th>
+              <th style="width:120px;">源库位</th>
+              <th style="width:120px;">目标库位</th>
+              <th style="width:80px;">扫码人</th>
+              <th style="width:130px;">扫码时间</th>
+              <th style="width:90px;">栈板号</th>
+            </tr>
+          </thead>
+          <tbody id="execDetailBody"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:16px;text-align:right;">
+        <button class="wms-btn wms-btn-default" onclick="closeExecDetailModal()">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== 选项数据 =====
+    const warehouseOptions = ['801','802','803','805','806','808','810','812','815','820'];
+    const assigneeOptions = [
+      { id:'TEAM-A', name:'甲班' },
+      { id:'TEAM-B', name:'乙班' },
+      { id:'TEAM-C', name:'丙班' },
+      { id:'P001', name:'张三' },
+      { id:'P002', name:'李四' },
+      { id:'P003', name:'王五' },
+      { id:'P004', name:'赵六' },
+      { id:'P005', name:'钱七' },
+      { id:'P006', name:'孙八' },
+      { id:'P007', name:'周九' }
+    ];
+    const locationOptions = [
+      { code:'100481', type:'存储库位' },
+      { code:'100482', type:'存储库位' },
+      { code:'100483', type:'存储库位' },
+      { code:'200481', type:'待处理库位' },
+      { code:'200482', type:'待处理库位' },
+      { code:'200483', type:'待处理库位' },
+      { code:'300481', type:'车间库位' },
+      { code:'300482', type:'车间库位' },
+      { code:'400481', type:'质控库位' },
+      { code:'400482', type:'质控库位' },
+      { code:'809',   type:'待处理库位' },
+      { code:'810',   type:'待处理库位' },
+      { code:'500481', type:'存储库位' },
+      { code:'500482', type:'车间库位' }
+    ];
+    function locDisplay(code){
+      if(!code) return '';
+      const o = locationOptions.find(x=>x.code===code);
+      return o ? `${o.code}(${o.type})` : code;
+    }
+    function locType(code){
+      if(!code) return '';
+      const o = locationOptions.find(x=>x.code===code);
+      return o ? o.type : '';
+    }
+    // 库位流转规则
+    const locMoveRules = {
+      '存储库位': ['存储库位','待处理库位'],
+      '待处理库位': ['存储库位','待处理库位'],
+      '车间库位': ['车间库位'],
+      '质控库位': ['质控库位']
+    };
+    const materialOptions = ['kw000111','kw000112','kw000113','kw000114','kw000115','kw000116','kw000117','kw000118'];
+    const barcodeOptions = ['BP20260810001','BP20260810002','BP20260810003','BP20260810004','BP20260810005'];
+    const materialMap = {
+      'kw000111': '压缩机壳体A型',
+      'kw000112': '压缩机壳体B型',
+      'kw000113': '曲轴组件A型',
+      'kw000114': '连杆组件',
+      'kw000115': '活塞组件A',
+      'kw000116': '活塞组件B',
+      'kw000117': '气缸体A型',
+      'kw000118': '气缸体B型'
+    };
+
+    const statusMap = {
+      draft:     { label:'草稿',     cls:'status-draft' },
+      pending:   { label:'待执行',   cls:'status-pending' },
+      executing: { label:'执行中',   cls:'status-executing' },
+      completed: { label:'完成',     cls:'status-completed' },
+      cancelled: { label:'已取消',   cls:'status-cancelled' },
+      closed:    { label:'异常关闭', cls:'status-closed' }
+    };
+
+    // ===== 初始数据 =====
+    let tasks = [
+      {
+        id: 1, taskNo: 'YN552608100001', sourceWh:'', targetWh:'100481', status:'pending', remark:'成品仓移库至备用仓',
+        creator:'admin', createTime:'2026/08/10 09:00', completeTime:'',
+        deadline:'2026/08/12', executor:'', assignees:['TEAM-A','P001','P002'],
+        details:[
+          { id:1, material:'kw000111', barcode:'', qty:100, targetLoc:'100481' },
+          { id:2, material:'kw000112', barcode:'', qty:50,  targetLoc:'100482' },
+          { id:3, material:'', barcode:'BP20260810001', qty:1, targetLoc:'400481' }
+        ]
+      },
+      {
+        id: 2, taskNo: 'YN552608100002', sourceWh:'', targetWh:'200481', status:'draft', remark:'',
+        creator:'admin', createTime:'2026/08/10 09:30', completeTime:'',
+        deadline:'', executor:'', assignees:[],
+        details:[
+          { id:1, material:'kw000113', barcode:'', qty:200, targetLoc:'300482' }
+        ]
+      },
+      {
+        id: 3, taskNo: 'YN55260809001', sourceWh:'100481', targetWh:'200481', status:'completed', remark:'紧急调拨',
+        creator:'admin', createTime:'2026/08/09 14:00', completeTime:'2026/08/09 16:30',
+        deadline:'2026/08/10', executor:'zhangsan', assignees:['TEAM-B','P003'],
+        details:[
+          { id:1, material:'kw000111', barcode:'', qty:80,  targetLoc:'200481', scanned:true, execQty:80, sourceLoc:'100481', execTime:'2026/08/09 15:10' },
+          { id:2, material:'kw000114', barcode:'', qty:60,  targetLoc:'100483', scanned:true, execQty:60, sourceLoc:'100482', execTime:'2026/08/09 15:30' },
+          { id:3, material:'', barcode:'BP20260810002', qty:1, targetLoc:'300481', scanned:true, execQty:1, sourceLoc:'400481', execTime:'2026/08/09 15:45' },
+          { id:4, material:'kw000115', barcode:'', qty:120, targetLoc:'300482', scanned:true, execQty:120, sourceLoc:'100483', execTime:'2026/08/09 16:00' },
+          { id:5, material:'kw000116', barcode:'', qty:40,  targetLoc:'200483', scanned:true, execQty:40, sourceLoc:'100481', execTime:'2026/08/09 16:20' }
+        ]
+      },
+      {
+        id: 4, taskNo: 'YN55260809002', sourceWh:'100483', targetWh:'200481', status:'executing', remark:'常规移库',
+        creator:'admin', createTime:'2026/08/09 15:00', completeTime:'',
+        deadline:'2026/08/11', executor:'lisi', assignees:['TEAM-C','P004','P005'],
+        details:[
+          { id:1, material:'kw000117', barcode:'', qty:90,  targetLoc:'100481', scanned:true, execQty:90, sourceLoc:'100483', execTime:'2026/08/09 15:20' },
+          { id:2, material:'kw000118', barcode:'', qty:70,  targetLoc:'100482', scanned:false, execQty:0, sourceLoc:'', execTime:'' },
+          { id:3, material:'', barcode:'BP20260810003', qty:1, targetLoc:'400481', scanned:false, execQty:0, sourceLoc:'', execTime:'' },
+          { id:4, material:'kw000114', barcode:'', qty:30,  targetLoc:'400482', scanned:false, execQty:0, sourceLoc:'', execTime:'' }
+        ]
+      },
+      {
+        id: 5, taskNo: 'YN55260808001', sourceWh:'300481', targetWh:'400481', status:'cancelled', remark:'客户取消',
+        creator:'admin', createTime:'2026/08/08 10:00', completeTime:'',
+        deadline:'2026/08/09', executor:'', assignees:['TEAM-A'],
+        cancelReason:'客户临时取消订单',
+        cancelTime:'2026/08/08 11:20',
+        details:[
+          { id:1, material:'kw000115', barcode:'', qty:80, targetLoc:'100481' },
+          { id:2, material:'kw000116', barcode:'', qty:60, targetLoc:'100482' }
+        ]
+      },
+      {
+        id: 6, taskNo: 'YN55260807001', sourceWh:'400481', targetWh:'400482', status:'closed', remark:'系统异常中断',
+        creator:'admin', createTime:'2026/08/07 14:00', completeTime:'',
+        deadline:'2026/08/08', executor:'wangwu', assignees:['P006','P007'],
+        closeReason:'PDA设备故障，无法继续扫码',
+        closeTime:'2026/08/07 15:30',
+        details:[
+          { id:1, material:'kw000113', barcode:'', qty:50, targetLoc:'100483', scanned:true, execQty:50, sourceLoc:'300482', execTime:'2026/08/07 14:30' },
+          { id:2, material:'', barcode:'BP20260810004', qty:1, targetLoc:'300481', scanned:false, execQty:0, sourceLoc:'', execTime:'' }
+        ]
+      }
+    ];
+    let nextTaskId = 7;
+    let editingTask = null;
+    let editingDetails = [];
+    let nextDetailId = 1;
+    let editForm = { sourceWh:'', targetWh:'', remark:'', assignees:[] };
+    let formDropdownMeta = null;
+    let assigneeDropdownOpen = false;
+    // 排序状态
+    let sortField = null;
+    let sortDir = 'asc';
+    const statusOrder = { draft:1, pending:2, executing:3, completed:4, cancelled:5, closed:6 };
+    let pdaTask = null;
+    let pdaScanned = new Set();
+    let importFile = null;
+    let detailExpanded = new Set();
+    let editingDetailRowId = null;  // 当前正在行编辑的明细ID
+
+    // ===== 初始化下拉选项 =====
+    function initSelects(){
+      ['qSourceWh','qTargetWh'].forEach(id=>{
+        const sel = document.getElementById(id);
+        locationOptions.forEach(loc=>{
+          const opt = document.createElement('option');
+          opt.value = loc.code; opt.textContent = locDisplay(loc.code);
+          sel.appendChild(opt);
+        });
+      });
+      // 指派给下拉：班组 + 人员
+      const qAssignee = document.getElementById('qAssignee');
+      const teams = assigneeOptions.filter(o=>o.id.startsWith('TEAM'));
+      const persons = assigneeOptions.filter(o=>!o.id.startsWith('TEAM'));
+      const teamGroup = document.createElement('optgroup');
+      teamGroup.label = '班组';
+      teams.forEach(o=>{ const opt=document.createElement('option'); opt.value=o.id; opt.textContent=o.name; teamGroup.appendChild(opt); });
+      const personGroup = document.createElement('optgroup');
+      personGroup.label = '人员';
+      persons.forEach(o=>{ const opt=document.createElement('option'); opt.value=o.id; opt.textContent=o.name; personGroup.appendChild(opt); });
+      qAssignee.appendChild(teamGroup);
+      qAssignee.appendChild(personGroup);
+    }
+
+    // ===== 排序 =====
+    function sortBy(field){
+      if(sortField===field){
+        sortDir = sortDir==='asc' ? 'desc' : 'asc';
+      } else {
+        sortField = field;
+        sortDir = 'asc';
+      }
+      updateSortIcons();
+      renderTaskList();
+    }
+
+    function updateSortIcons(){
+      ['status','taskNo','sourceWh','targetWh'].forEach(f=>{
+        const el = document.getElementById('sortIcon-'+f);
+        const th = el ? el.parentElement : null;
+        if(!el) return;
+        if(f===sortField){
+          el.textContent = sortDir==='asc' ? '\u25B2' : '\u25BC';
+          th.classList.remove('sorted-asc','sorted-desc');
+          th.classList.add(sortDir==='asc' ? 'sorted-asc' : 'sorted-desc');
+        } else {
+          el.textContent = '\u2195';
+          th.classList.remove('sorted-asc','sorted-desc');
+        }
+      });
+    }
+
+    // ===== 列表渲染 =====
+    function renderTaskList(){
+      const tbody = document.getElementById('tableBody');
+      const qNo = document.getElementById('qTaskNo').value.trim().toLowerCase();
+      const qSrc = document.getElementById('qSourceWh').value;
+      const qTgt = document.getElementById('qTargetWh').value;
+      const qStat = document.getElementById('qStatus').value;
+      const qAssignee = document.getElementById('qAssignee').value;
+      const qCreator = document.getElementById('qCreator').value.trim().toLowerCase();
+      const qCreateStart = document.getElementById('qCreateStart').value;
+      const qCreateEnd = document.getElementById('qCreateEnd').value;
+      const qExecutor = document.getElementById('qExecutor').value.trim().toLowerCase();
+      const qFinishStart = document.getElementById('qFinishStart').value;
+      const qFinishEnd = document.getElementById('qFinishEnd').value;
+
+      let data = tasks.filter(t=>{
+        if(qNo && !t.taskNo.toLowerCase().includes(qNo)) return false;
+        if(qSrc && t.sourceWh!==qSrc) return false;
+        if(qTgt && t.targetWh!==qTgt) return false;
+        if(qStat && t.status!==qStat) return false;
+        if(qAssignee && !(t.assignees && t.assignees.includes(qAssignee))) return false;
+        if(qCreator && !(t.creator||'').toLowerCase().includes(qCreator)) return false;
+        if(qCreateStart && t.createTime < qCreateStart) return false;
+        if(qCreateEnd && t.createTime > qCreateEnd+' 23:59:59') return false;
+        if(qExecutor && !(t.executor||'').toLowerCase().includes(qExecutor)) return false;
+        if(qFinishStart && (!t.completeTime || t.completeTime < qFinishStart)) return false;
+        if(qFinishEnd && (!t.completeTime || t.completeTime > qFinishEnd+' 23:59:59')) return false;
+        return true;
+      });
+
+      // 排序
+      if(sortField){
+        data.sort((a,b)=>{
+          let va, vb;
+          if(sortField==='status'){
+            va = statusOrder[a.status] || 99;
+            vb = statusOrder[b.status] || 99;
+          } else {
+            va = a[sortField] || '';
+            vb = b[sortField] || '';
+          }
+          if(va < vb) return sortDir==='asc' ? -1 : 1;
+          if(va > vb) return sortDir==='asc' ? 1 : -1;
+          return 0;
+        });
+      }
+
+      tbody.innerHTML = '';
+      if(data.length===0){
+        tbody.innerHTML = '<tr><td colspan="17" class="empty-state">暂无数据</td></tr>';
+      } else {
+        data.forEach((t,idx)=>{
+          const tr = document.createElement('tr');
+          const st = statusMap[t.status];
+          const actLabel = t.status==='draft' ? '编辑' : '查看';
+          // 计算汇总：需求数量 = 全部 qty 之和；执行数量 = 已扫描明细 qty 之和
+          const totalQty = t.details.reduce((s,d)=>s+(Number(d.qty)||0),0);
+          const executedQty = t.details.filter(d=>d.scanned).reduce((s,d)=>s+(Number(d.qty)||0),0);
+          const matSet = new Set(t.details.filter(d=>d.material).map(d=>d.material));
+          const hasBarcode = t.details.some(d=>d.barcode && d.barcode.trim()!=='');
+          const barcodeText = hasBarcode ? '<span style="color:var(--primary);font-weight:500;">是</span>' : '<span style="color:var(--text-secondary);">否</span>';
+          const deadline = t.deadline || '--';
+          const executor = t.executor || '--';
+          const completeTime = t.completeTime || '--';
+          const reasonText = t.cancelReason || t.closeReason || '--';
+          const assigneeText = (t.assignees && t.assignees.length>0)
+            ? t.assignees.map(a=>{ const o=assigneeOptions.find(x=>x.id===a); return o?o.name:a; }).join('、')
+            : '--';
+          const tr_inner = `
+            <td><input type="checkbox" class="checkbox row-checkbox" data-id="${t.id}"></td>
+            <td style="color:var(--text-secondary);">${String(idx+1).padStart(2,'0')}</td>
+            <td><a class="row-link" onclick="showEditView(${t.id})">${actLabel}</a></td>
+            <td><span class="status-tag ${st.cls}">${st.label}</span></td>
+            <td><a class="row-link" onclick="showEditView(${t.id})">${esc(t.taskNo)}</a></td>
+            <td>${t.sourceWh ? esc(locDisplay(t.sourceWh)) : '--'}</td>
+            <td>${t.targetWh ? esc(locDisplay(t.targetWh)) : '--'}</td>
+            <td><a class="qty-link" onclick="showExecDetail(${t.id})">${executedQty}/${totalQty}</a></td>
+            <td>${barcodeText}</td>
+            <td>${matSet.size}</td>
+            <td class="cell-muted">${esc(deadline)}</td>
+            <td style="font-size:12px;">${esc(assigneeText)}</td>
+            <td class="cell-muted">${esc(t.creator)}</td>
+            <td class="cell-muted">${esc(t.createTime)}</td>
+            <td class="cell-muted">${esc(executor)}</td>
+            <td class="cell-muted">${esc(completeTime)}</td>
+            <td class="cell-muted" style="font-size:12px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(reasonText)}">${esc(reasonText)}</td>
+          `;
+          tr.innerHTML = tr_inner;
+          tbody.appendChild(tr);
+        });
+      }
+      document.getElementById('totalCount').textContent = `共 ${data.length} 条`;
+    }
+
+    function doQuery(){ renderTaskList(); showToast('查询完成','success'); }
+    function resetQuery(){
+      document.getElementById('qTaskNo').value='';
+      document.getElementById('qSourceWh').value='';
+      document.getElementById('qTargetWh').value='';
+      document.getElementById('qStatus').value='';
+      document.getElementById('qAssignee').value='';
+      document.getElementById('qCreator').value='';
+      document.getElementById('qCreateStart').value='';
+      document.getElementById('qCreateEnd').value='';
+      document.getElementById('qExecutor').value='';
+      document.getElementById('qFinishStart').value='';
+      document.getElementById('qFinishEnd').value='';
+      sortField = null;
+      sortDir = 'asc';
+      updateSortIcons();
+      renderTaskList();
+    }
+
+    function toggleSelectAll(){
+      const checked = document.getElementById('selectAll').checked;
+      document.querySelectorAll('.row-checkbox').forEach(cb=>{ cb.checked=checked; });
+    }
+
+    function getSelectedIds(){
+      const ids = [];
+      document.querySelectorAll('.row-checkbox:checked').forEach(cb=>{
+        ids.push(Number(cb.getAttribute('data-id')));
+      });
+      return ids;
+    }
+
+    // ===== 执行明细弹窗 =====
+    function showExecDetail(taskId){
+      const t = tasks.find(x=>x.id===taskId);
+      if(!t) return;
+      document.getElementById('execDetailTaskNo').textContent = t.taskNo;
+      const tbody = document.getElementById('execDetailBody');
+      tbody.innerHTML = '';
+
+      // 生成条码级扫描记录
+      let records = [];
+      t.details.forEach(d=>{
+        const matCode = d.material || '--';
+        const matName = d.material ? (materialMap[d.material] || '') : '';
+        const bc = d.barcode || '--';
+        const batch = d.batch || '--';
+        const srcLoc = d.sourceLoc || '';
+        const tgtLoc = d.targetLoc || '';
+        const execTime = d.execTime || '';
+        const executor = t.executor || '--';
+        const execQty = d.execQty !== undefined ? d.execQty : (d.scanned ? Number(d.qty) : 0);
+
+        if(d.barcode && d.scanned){
+          // 指定条码已扫：1条记录
+          records.push({ bc, qty:1, matCode, matName, batch, srcLoc, tgtLoc, executor, execTime });
+        } else if(d.material && execQty > 0){
+          // 按物料扫码：拆分条码记录
+          const perBatch = Math.ceil(execQty / 10);
+          let remaining = execQty;
+          let batchIdx = 1;
+          while(remaining > 0){
+            const batchQty = Math.min(perBatch, remaining);
+            const seq = String(batchIdx).padStart(3,'0');
+            const genBc = 'BP' + (execTime ? execTime.replace(/[/ :]/g,'').slice(0,8) : '20260809') + seq;
+            records.push({ bc:genBc, qty:batchQty, matCode, matName, batch, srcLoc, tgtLoc, executor, execTime });
+            remaining -= batchQty;
+            batchIdx++;
+          }
+        }
+      });
+
+      if(records.length===0){
+        tbody.innerHTML = '<tr><td colspan="10" class="empty-state">暂无条码明细</td></tr>';
+      } else {
+        records.forEach((r,idx)=>{
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td style="color:var(--text-secondary);">${String(idx+1).padStart(2,'0')}</td>
+            <td style="font-weight:500;">${esc(r.bc)}</td>
+            <td style="text-align:center;">${r.qty}</td>
+            <td>${esc(r.matCode)} ${esc(r.matName)}</td>
+            <td>${esc(r.batch)}</td>
+            <td>${r.srcLoc ? esc(locDisplay(r.srcLoc)) : '--'}</td>
+            <td>${r.tgtLoc ? esc(locDisplay(r.tgtLoc)) : '--'}</td>
+            <td>${esc(r.executor)}</td>
+            <td style="font-size:12px;">${esc(r.execTime)||'--'}</td>
+            <td style="text-align:center;">ZB${String(idx+1).padStart(3,'0')}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+      document.getElementById('execDetailModal').classList.add('show');
+    }
+
+    function closeExecDetailModal(){
+      document.getElementById('execDetailModal').classList.remove('show');
+    }
+
+    // ===== 批量删除（仅草稿）=====
+    function batchDelete(){
+      const ids = getSelectedIds();
+      if(ids.length===0){ showToast('请先勾选任务','error'); return; }
+      const selected = tasks.filter(t=>ids.includes(t.id));
+      const drafts = selected.filter(t=>t.status==='draft');
+      const skipped = selected.length - drafts.length;
+      if(drafts.length===0){ showToast('勾选的任务均非草稿，不可删除','error'); return; }
+      const names = drafts.map(t=>t.taskNo).join('、');
+      if(!confirm(`确定批量删除 ${drafts.length} 条草稿任务？\n${names}${skipped>0?`\n（另 ${skipped} 条非草稿将跳过）`:''}\n此操作不可撤销。`)) return;
+      const idsToDelete = drafts.map(t=>t.id);
+      tasks = tasks.filter(t=>!idsToDelete.includes(t.id));
+      document.getElementById('selectAll').checked = false;
+      renderTaskList();
+      showToast(`已删除 ${drafts.length} 条草稿任务${skipped>0?`，跳过 ${skipped} 条非草稿`:''}`,'success');
+    }
+
+    // ===== 批量提交（仅草稿）=====
+    function batchSubmit(){
+      const ids = getSelectedIds();
+      if(ids.length===0){ showToast('请先勾选任务','error'); return; }
+      const selected = tasks.filter(t=>ids.includes(t.id));
+      const drafts = selected.filter(t=>t.status==='draft');
+      const skipped = selected.length - drafts.length;
+      if(drafts.length===0){ showToast('勾选的任务均非草稿，不可提交','error'); return; }
+      const names = drafts.map(t=>t.taskNo).join('、');
+      if(!confirm(`确定批量提交 ${drafts.length} 条草稿任务？\n${names}${skipped>0?`\n（另 ${skipped} 条非草稿将跳过）`:''}`)) return;
+      let submitted = 0;
+      drafts.forEach(t=>{
+        if(t.details.length===0) return;
+        if(!t.targetWh) return;
+        t.status = 'pending';
+        submitted++;
+      });
+      document.getElementById('selectAll').checked = false;
+      renderTaskList();
+      const skippedTotal = skipped + (drafts.length - submitted);
+      showToast(`已提交 ${submitted} 条任务${skippedTotal>0?`，跳过 ${skippedTotal} 条`:''}`,'success');
+    }
+
+    // ===== 批量取消移库（仅待执行）=====
+    function batchCancel(){
+      const ids = getSelectedIds();
+      if(ids.length===0){ showToast('请先勾选任务','error'); return; }
+      const selected = tasks.filter(t=>ids.includes(t.id));
+      const pendings = selected.filter(t=>t.status==='pending');
+      const skipped = selected.length - pendings.length;
+      if(pendings.length===0){ showToast('勾选的任务均非待执行，不可取消','error'); return; }
+      const reason = prompt(`批量取消 ${pendings.length} 条待执行任务，请输入取消原因：`,'');
+      if(reason===null) return;
+      if(!reason.trim()){ showToast('请填写取消原因','error'); return; }
+      const now = formatNow();
+      pendings.forEach(t=>{
+        t.status = 'cancelled';
+        t.cancelReason = reason.trim();
+        t.cancelTime = now;
+      });
+      document.getElementById('selectAll').checked = false;
+      renderTaskList();
+      showToast(`已取消 ${pendings.length} 条任务${skipped>0?`，跳过 ${skipped} 条非待执行`:''}`,'success');
+    }
+
+    // ===== 批量异常关闭（仅执行中）=====
+    function batchClose(){
+      const ids = getSelectedIds();
+      if(ids.length===0){ showToast('请先勾选任务','error'); return; }
+      const selected = tasks.filter(t=>ids.includes(t.id));
+      const executing = selected.filter(t=>t.status==='executing');
+      const skipped = selected.length - executing.length;
+      if(executing.length===0){ showToast('勾选的任务均非执行中，不可异常关闭','error'); return; }
+      const reason = prompt(`批量异常关闭 ${executing.length} 条执行中任务，请输入异常原因：`,'');
+      if(reason===null) return;
+      if(!reason.trim()){ showToast('请填写异常原因','error'); return; }
+      const now = formatNow();
+      executing.forEach(t=>{
+        t.status = 'closed';
+        t.closeReason = reason.trim();
+        t.closeTime = now;
+      });
+      document.getElementById('selectAll').checked = false;
+      renderTaskList();
+      showToast(`已异常关闭 ${executing.length} 条任务${skipped>0?`，跳过 ${skipped} 条非执行中`:''}`,'success');
+    }
+
+    // ===== 新建/编辑 =====
+    function showCreateView(){
+      editingTask = null;
+      editingDetails = [];
+      editingDetailRowId = null;
+      nextDetailId = 1;
+      editForm = { sourceWh:'', targetWh:'', remark:'', assignees:[] };
+      detailExpanded.clear();
+      document.getElementById('editTaskNo').value = '';
+      document.getElementById('editRemark').value = '';
+      document.getElementById('editDeadline').value = '';
+      updateFormTrigger('sourceWh','');
+      updateFormTrigger('targetWh','');
+      updateAssigneeTrigger([]);
+      document.getElementById('headerErrors').innerHTML='';
+      renderStatusFlow('draft');
+      renderDetailTable();
+      toggleButtons(true);
+      document.getElementById('listView').style.display='none';
+      document.getElementById('editView').style.display='block';
+    }
+
+    function showEditView(id){
+      const t = tasks.find(x=>x.id===id);
+      if(!t) return;
+      editingTask = t;
+      editingDetails = JSON.parse(JSON.stringify(t.details));
+      editingDetailRowId = null;
+      editingDetails.forEach(d=>{ if(d.id>=nextDetailId) nextDetailId=d.id+1; });
+      detailExpanded.clear();
+      editForm = { sourceWh:t.sourceWh, targetWh:t.targetWh, remark:t.remark||'', assignees:[...(t.assignees||[])] };
+      document.getElementById('editTaskNo').value = t.taskNo;
+      document.getElementById('editRemark').value = t.remark||'';
+      document.getElementById('editDeadline').value = t.deadline ? t.deadline.replace(/\//g,'-') : '';
+      updateFormTrigger('sourceWh',t.sourceWh);
+      updateFormTrigger('targetWh',t.targetWh);
+      updateAssigneeTrigger(editForm.assignees);
+      document.getElementById('headerErrors').innerHTML='';
+      renderStatusFlow(t.status);
+      renderDetailTable();
+      toggleButtons(t.status==='draft');
+      document.getElementById('listView').style.display='none';
+      document.getElementById('editView').style.display='block';
+    }
+
+    function backToList(){
+      document.getElementById('editView').style.display='none';
+      document.getElementById('listView').style.display='block';
+      renderTaskList();
+    }
+
+    function cancelEdit(){
+      if(!editingTask){ backToList(); return; }
+      showEditView(editingTask.id);
+    }
+
+    function toggleButtons(isDraft){
+      const status = editingTask ? editingTask.status : 'draft';
+      document.getElementById('btnSaveDraft').style.display = isDraft?'':'none';
+      document.getElementById('btnSubmit').style.display = isDraft?'':'none';
+      document.getElementById('btnCancelEdit').style.display = isDraft?'':'none';
+      document.getElementById('btnExecute').style.display = (status==='pending')?'':'none';
+      document.getElementById('btnContinue').style.display = (status==='executing')?'':'none';
+      document.getElementById('detailActionBar').style.display = isDraft?'':'none';
+      const tip = document.getElementById('detailTip');
+      if(tip) tip.textContent = isDraft ? '⚠ 指定条码：条码/箱号或栈板号 | 不指定：物料编码（顶）' : '当前任务非草稿状态，明细只读';
+      // 非草稿时表单字段只读
+      const assigneeTrigger = document.getElementById('trigger-assignees');
+      if(assigneeTrigger){
+        assigneeTrigger.style.pointerEvents = isDraft ? '' : 'none';
+        assigneeTrigger.style.opacity = isDraft ? '' : '0.7';
+        assigneeTrigger.style.background = isDraft ? '' : '#F5F5F5';
+      }
+    }
+
+    function execFromEdit(){
+      if(editingTask) openPDAModal(editingTask.id);
+    }
+
+    // ===== 状态流 =====
+    function renderStatusFlow(status){
+      const steps = ['draft','pending','executing','completed'];
+      const idx = steps.indexOf(status);
+      const els = document.querySelectorAll('.sf-step');
+      const lines = document.querySelectorAll('.sf-line');
+      els.forEach((el,i)=>{
+        el.classList.remove('active','done');
+        if(i<idx) el.classList.add('done');
+        else if(i===idx) el.classList.add('active');
+      });
+      lines.forEach((el,i)=>{
+        el.classList.toggle('done', i<idx);
+      });
+    }
+
+    // ===== 表单下拉 =====
+    function updateFormTrigger(field, value){
+      const trigger = document.getElementById(field==='sourceWh'?'trigger-sourceWh':'trigger-targetWh');
+      if(value){
+        trigger.innerHTML = `<span class="sel-value">${esc(locDisplay(value))}</span><span class="sel-clear" onclick="event.stopPropagation();clearFormField('${field}')">&times;</span><span class="arrow">&#9660;</span>`;
+      } else {
+        trigger.innerHTML = `<span class="placeholder">请选择${field==='sourceWh'?'源库位（非必填）':'目标库位'}</span><span class="arrow">&#9660;</span>`;
+      }
+    }
+
+    function clearFormField(field){
+      editForm[field] = '';
+      updateFormTrigger(field, '');
+      closeFormDropdown();
+    }
+
+    function openFormDropdown(field, event){
+      event.stopPropagation();
+      const trigger = document.getElementById(field==='sourceWh'?'trigger-sourceWh':'trigger-targetWh');
+      if(formDropdownMeta && formDropdownMeta.field===field){ closeFormDropdown(); return; }
+      closeFormDropdown();
+      formDropdownMeta = { field, searchText:'' };
+
+      const rect = trigger.getBoundingClientRect();
+      const dropdown = document.getElementById('globalDropdown');
+      const currentValue = editForm[field];
+      let html = `<input class="dd-search" id="formDdSearch" placeholder="搜索..." oninput="filterFormDropdown()" onkeydown="event.stopPropagation()">`;
+      const filtered = locationOptions;
+      filtered.forEach(loc=>{
+        const isSel = loc.code===currentValue;
+        html += `<div class="dd-item${isSel?' selected':''}" onclick="event.stopPropagation();selectFormOption('${field}','${esc(loc.code)}')">
+          <span class="dd-radio"></span>${esc(locDisplay(loc.code))}
+        </div>`;
+      });
+      dropdown.innerHTML = html;
+      dropdown.style.top = (rect.bottom+4)+'px';
+      dropdown.style.left = rect.left+'px';
+      dropdown.style.minWidth = Math.max(rect.width,180)+'px';
+      dropdown.classList.add('show');
+      trigger.classList.add('open');
+      setTimeout(()=>{ const s=document.getElementById('formDdSearch'); if(s) s.focus(); },50);
+    }
+
+    function filterFormDropdown(){
+      if(!formDropdownMeta) return;
+      const search = document.getElementById('formDdSearch');
+      if(!search) return;
+      const kw = search.value.toLowerCase();
+      const dropdown = document.getElementById('globalDropdown');
+      const items = dropdown.querySelectorAll('.dd-item');
+      items.forEach(item=>{
+        const text = item.textContent.trim();
+        if(text.toLowerCase().includes(kw)){ item.classList.remove('hidden'); }
+        else{ item.classList.add('hidden'); }
+      });
+    }
+
+    function selectFormOption(field, value){
+      editForm[field] = value;
+      updateFormTrigger(field, value);
+      closeFormDropdown();
+    }
+
+    function closeFormDropdown(){
+      const dropdown = document.getElementById('globalDropdown');
+      dropdown.classList.remove('show');
+      dropdown.innerHTML='';
+      if(formDropdownMeta){
+        const trigger = document.getElementById(formDropdownMeta.field==='sourceWh'?'trigger-sourceWh':'trigger-targetWh');
+        if(trigger) trigger.classList.remove('open');
+      }
+      formDropdownMeta = null;
+    }
+
+    // ===== 执行班组/人多选 =====
+    function openAssigneeDropdown(event){
+      event.stopPropagation();
+      const isDraft = !editingTask || editingTask.status==='draft';
+      if(!isDraft) return;
+      closeFormDropdown();
+      const trigger = document.getElementById('trigger-assignees');
+      assigneeDropdownOpen = !assigneeDropdownOpen;
+      if(!assigneeDropdownOpen){ closeAssigneeDropdown(); return; }
+      const rect = trigger.getBoundingClientRect();
+      const dropdown = document.getElementById('globalDropdown');
+      let html = '<input class="dd-search" id="assigneeDdSearch" placeholder="搜索班组/人员..." oninput="filterAssigneeDropdown()" onkeydown="event.stopPropagation()">';
+      // 分组：班组在前，人员在后
+      const teams = assigneeOptions.filter(o=>o.id.startsWith('TEAM'));
+      const persons = assigneeOptions.filter(o=>!o.id.startsWith('TEAM'));
+      html += '<div style="font-size:11px;color:var(--text-placeholder);padding:4px 12px;">班组</div>';
+      teams.forEach(o=>{
+        const isSel = editForm.assignees.includes(o.id);
+        html += `<div class="dd-item${isSel?' selected':''}" data-id="${o.id}" data-name="${esc(o.name)}" onclick="event.stopPropagation();toggleAssignee('${o.id}')">
+          <span class="dd-checkbox"></span>${esc(o.name)}
+        </div>`;
+      });
+      html += '<div style="font-size:11px;color:var(--text-placeholder);padding:4px 12px;margin-top:4px;">人员</div>';
+      persons.forEach(o=>{
+        const isSel = editForm.assignees.includes(o.id);
+        html += `<div class="dd-item${isSel?' selected':''}" data-id="${o.id}" data-name="${esc(o.name)}" onclick="event.stopPropagation();toggleAssignee('${o.id}')">
+          <span class="dd-checkbox"></span>${esc(o.name)}
+        </div>`;
+      });
+      html += '<div style="border-top:1px solid var(--border-light);padding:6px 12px;display:flex;justify-content:space-between;align-items:center;">';
+      html += '<span style="font-size:12px;color:var(--text-secondary);">已选 '+editForm.assignees.length+' 人/班组</span>';
+      html += '<button class="wms-btn wms-btn-primary wms-btn-sm" onclick="event.stopPropagation();closeAssigneeDropdown()">确定</button>';
+      html += '</div>';
+      dropdown.innerHTML = html;
+      dropdown.style.top = (rect.bottom+4)+'px';
+      dropdown.style.left = rect.left+'px';
+      dropdown.style.minWidth = Math.max(rect.width,200)+'px';
+      dropdown.classList.add('show');
+      trigger.classList.add('open');
+      setTimeout(()=>{ const s=document.getElementById('assigneeDdSearch'); if(s) s.focus(); },50);
+    }
+
+    function filterAssigneeDropdown(){
+      const search = document.getElementById('assigneeDdSearch');
+      if(!search) return;
+      const kw = search.value.toLowerCase();
+      document.querySelectorAll('#globalDropdown .dd-item').forEach(item=>{
+        const text = item.textContent.trim();
+        if(text.toLowerCase().includes(kw)){ item.classList.remove('hidden'); }
+        else{ item.classList.add('hidden'); }
+      });
+    }
+
+    function toggleAssignee(id){
+      const idx = editForm.assignees.indexOf(id);
+      if(idx>=0) editForm.assignees.splice(idx,1);
+      else editForm.assignees.push(id);
+      // 更新下拉项选中状态
+      const item = document.querySelector('#globalDropdown .dd-item[data-id="'+id+'"]');
+      if(item) item.classList.toggle('selected');
+      // 更新已选计数
+      const counter = document.querySelector('#globalDropdown span[style*="已选"]');
+      if(counter) counter.textContent = '已选 '+editForm.assignees.length+' 人/班组';
+      updateAssigneeTrigger(editForm.assignees);
+    }
+
+    function updateAssigneeTrigger(selectedIds){
+      const trigger = document.getElementById('trigger-assignees');
+      if(!trigger) return;
+      // 保留 arrow
+      const arrowHtml = '<span class="arrow">&#9660;</span>';
+      if(!selectedIds || selectedIds.length===0){
+        trigger.innerHTML = '<span class="placeholder">请选择执行班组/人</span>' + arrowHtml;
+        return;
+      }
+      const chips = selectedIds.map(id=>{
+        const o = assigneeOptions.find(x=>x.id===id);
+        const name = o ? o.name : id;
+        return `<span class="sel-chip">${esc(name)}<span class="chip-close" onclick="event.stopPropagation();removeAssignee('${id}')">&times;</span></span>`;
+      }).join('');
+      trigger.innerHTML = chips + arrowHtml;
+    }
+
+    function removeAssignee(id){
+      const idx = editForm.assignees.indexOf(id);
+      if(idx>=0) editForm.assignees.splice(idx,1);
+      updateAssigneeTrigger(editForm.assignees);
+      // 同步下拉选中状态
+      const item = document.querySelector('#globalDropdown .dd-item[data-id="'+id+'"]');
+      if(item) item.classList.remove('selected');
+      const counter = document.querySelector('#globalDropdown span[style*="已选"]');
+      if(counter) counter.textContent = '已选 '+editForm.assignees.length+' 人/班组';
+    }
+
+    function closeAssigneeDropdown(){
+      const dropdown = document.getElementById('globalDropdown');
+      dropdown.classList.remove('show');
+      dropdown.innerHTML='';
+      const trigger = document.getElementById('trigger-assignees');
+      if(trigger) trigger.classList.remove('open');
+      assigneeDropdownOpen = false;
+    }
+
+    // ===== 是否指定条码 =====
+    function getSpecifyBarcode(){
+      const radio = document.querySelector('input[name="specifyBarcode"]:checked');
+      return radio ? radio.value==='1' : false;
+    }
+    function onSpecifyBarcodeChange(){
+      if(editingDetails.length > 0){
+        if(!confirm('切换"是否指定条码"将清空所有已添加的明细行，是否继续？')){ 
+          // 还原单选按钮
+          const radios = document.querySelectorAll('input[name="specifyBarcode"]');
+          radios.forEach(r => r.checked = (r.value === (editingDetails.length>0 && editingDetails[0].barcode ? '1' : '0')));
+          return; 
+        }
+        editingDetails = [];
+        editingDetailRowId = null;
+      }
+      renderDetailTable();
+    }
+
+    // ===== 明细表 =====
+    function renderDetailTable(){
+      const tbody = document.getElementById('detailTableBody');
+      const empty = document.getElementById('detailEmpty');
+      const isDraft = !editingTask || editingTask.status==='draft';
+      const thead = document.getElementById('detailTableHead');
+
+      // 动态表头
+      if(isDraft){
+        const specify = getSpecifyBarcode();
+        thead.innerHTML = `<tr>
+          <th style="width:40px;"><input type="checkbox" class="checkbox" id="detailSelectAll" onclick="toggleDetailSelectAll()"></th>
+          <th style="width:50px;">序号</th>
+          <th style="width:70px;">操作</th>
+          <th style="width:130px;">物料编码（顶）</th>
+          <th style="width:90px;">批次</th>
+          <th style="width:130px;">条码/箱号</th>
+          <th style="width:120px;">栈板号</th>
+          <th style="width:80px;"><span class="cell-required">数量</span></th>
+        </tr>`;
+      } else {
+        thead.innerHTML = `<tr>
+          <th style="width:50px;">序号</th>
+          <th style="width:70px;">操作</th>
+          <th style="width:130px;">物料编码</th>
+          <th style="width:90px;">批次</th>
+          <th style="width:130px;">条码/箱号</th>
+          <th style="width:120px;">栈板号</th>
+          <th style="width:100px;">数量（执行/需求）</th>
+          <th style="width:130px;">执行时间</th>
+          <th style="width:70px;">扫码状态</th>
+        </tr>`;
+      }
+
+      tbody.innerHTML='';
+      if(editingDetails.length===0){
+        empty.style.display='';
+        empty.textContent = isDraft ? '暂无明细，点击「添加明细」或「导入明细」' : '暂无明细';
+        return;
+      }
+      empty.style.display='none';
+      editingDetails.forEach((d,idx)=>{
+        const tr = document.createElement('tr');
+        tr.className = isDraft ? 'editing' : 'detail-row';
+        if(isDraft){
+          const isEditing = (editingDetailRowId === d.id);
+          const specify = getSpecifyBarcode();
+          const hasBc = d.barcode && d.barcode.trim()!=='';
+          const hasPallet = d.palletNo && d.palletNo.trim()!=='';
+          const qtyReadonly = specify;  // 指定条码模式数量只读
+          if(isEditing){
+            tr.innerHTML = `
+              <td><input type="checkbox" class="checkbox detail-checkbox" data-id="${d.id}"></td>
+              <td style="color:var(--text-secondary);">${String(idx+1).padStart(2,'0')}</td>
+              <td>
+                <button class="wms-btn wms-btn-primary wms-btn-sm" onclick="saveDetailRow(${d.id})">保存</button>
+                <button class="wms-btn wms-btn-text" style="margin-left:4px;" onclick="cancelEditDetailRow(${d.id})">取消</button>
+              </td>
+              <td>
+                ${specify
+                  ? '<span style="color:var(--text-placeholder);">不可用</span>'
+                  : `<div class="cell-wrap">
+                    <div class="sel-trigger sel-trigger-single" onclick="openDetailDropdown(${d.id},'material',event)">
+                      ${d.material ? `<span class="sel-value">${esc(d.material)}</span>` : `<span class="placeholder">请选择物料</span>`}
+                      <span class="arrow">&#9660;</span>
+                    </div>
+                  </div>`
+                }
+              </td>
+              <td>${specify ? '<span style="color:var(--text-placeholder);">--</span>' : `<input type="text" class="wms-input" style="width:80px;" value="${esc(d.batch||'')}" placeholder="非必填" onchange="updateDetailBatch(${d.id},this.value)">`}</td>
+              <td>
+                ${!specify
+                  ? '<span style="color:var(--text-placeholder);">不可用</span>'
+                  : `<div class="cell-wrap">
+                    <div class="sel-trigger sel-trigger-single" onclick="openDetailDropdown(${d.id},'barcode',event)">
+                      ${d.barcode ? `<span class="sel-value">${esc(d.barcode)}</span>` : `<span class="placeholder">请选择条码</span>`}
+                      <span class="arrow">&#9660;</span>
+                    </div>
+                  </div>`
+                }
+              </td>
+              <td>${!specify ? '<span style="color:var(--text-placeholder);">不可用</span>' : `<input type="text" class="wms-input" style="width:100px;" value="${esc(d.palletNo||'')}" placeholder="栈板号" onchange="updateDetailPallet(${d.id},this.value)">`}</td>
+              <td><input type="text" class="wms-input" style="text-align:center;width:60px;${qtyReadonly?'background:#F5F5F5;':''}" value="${esc(d.qty)}" ${qtyReadonly?'readonly':''} oninput="this.value=this.value.replace(/[^0-9]/g,'')" onchange="updateDetailQty(${d.id},this.value)"></td>
+            `;
+          } else {
+            tr.innerHTML = `
+              <td><input type="checkbox" class="checkbox detail-checkbox" data-id="${d.id}"></td>
+              <td style="color:var(--text-secondary);">${String(idx+1).padStart(2,'0')}</td>
+              <td>
+                <button class="wms-btn wms-btn-text" onclick="editDetailRow(${d.id})">编辑</button>
+              </td>
+              <td>${d.material ? esc(d.material) : '<span style="color:var(--text-placeholder);">--</span>'}</td>
+              <td>${esc(d.batch||'--')}</td>
+              <td>${d.barcode ? esc(d.barcode) : '<span style="color:var(--text-placeholder);">--</span>'}</td>
+              <td>${esc(d.palletNo||'--')}</td>
+              <td style="text-align:center;">${d.qty ? esc(d.qty) : '<span style="color:var(--text-placeholder);">--</span>'}</td>
+            `;
+          }
+        } else {
+          // 非草稿：只读模式，可点击展开
+          const scannedTag = d.scanned
+            ? '<span class="status-tag status-completed" style="font-size:11px;">已扫</span>'
+            : '<span class="status-tag status-draft" style="font-size:11px;">未扫</span>';
+          const execQty = d.execQty !== undefined ? d.execQty : (d.scanned ? d.qty : 0);
+          const expanded = detailExpanded.has(d.id);
+          tr.onclick = function(e){ toggleDetailExpand(d.id); };
+          tr.innerHTML = `
+            <td style="color:var(--text-secondary);"><span class="detail-expand-icon ${expanded?'open':''}">&#9654;</span> ${String(idx+1).padStart(2,'0')}</td>
+            <td style="color:var(--text-placeholder);">--</td>
+            <td>${esc(d.material)||'--'}</td>
+            <td>${esc(d.batch)||'--'}</td>
+            <td>${esc(d.barcode)||'--'}</td>
+            <td>${esc(d.palletNo)||'--'}</td>
+            <td style="text-align:center;font-weight:500;">${execQty}/${esc(d.qty)}</td>
+            <td>${esc(d.execTime)||'--'}</td>
+            <td style="text-align:center;">${scannedTag}</td>
+          `;
+        }
+        tbody.appendChild(tr);
+
+        // 非草稿：展开行
+        if(!isDraft && detailExpanded.has(d.id)){
+          const subTr = document.createElement('tr');
+          subTr.className = 'detail-expanded-row';
+          const colCount = 9;
+          subTr.innerHTML = `<td colspan="${colCount}"><div class="subtable-wrapper">${renderBarcodeSubtable(d)}</div></td>`;
+          tbody.appendChild(subTr);
+        }
+      });
+    }
+
+    function toggleDetailExpand(detailId){
+      if(detailExpanded.has(detailId)) detailExpanded.delete(detailId);
+      else detailExpanded.add(detailId);
+      renderDetailTable();
+    }
+
+    function renderBarcodeSubtable(d){
+      const task = editingTask || {};
+      const executor = task.executor || '--';
+      const matCode = d.material || '--';
+      const matName = d.material ? (materialMap[d.material] || '--') : '--';
+      const bc = d.barcode || '--';
+      const srcLoc = d.sourceLoc ? locDisplay(d.sourceLoc) : '--';
+      const tgtLoc = d.targetLoc ? locDisplay(d.targetLoc) : '--';
+      const execTime = d.execTime || '--';
+
+      // 生成条码执行明细记录（模拟）
+      let records = [];
+      if(d.barcode){
+        // 指定条码：单条记录
+        records.push({ bc:d.barcode, matCode, matName, srcLoc, tgtLoc, executor, execTime });
+      } else if(d.material && d.execQty > 0){
+        // 按物料编码批量扫码：拆成多条条码记录
+        const perBatch = Math.ceil(d.execQty / 10);
+        let remaining = d.execQty;
+        let batchIdx = 1;
+        while(remaining > 0){
+          const batchQty = Math.min(perBatch, remaining);
+          const seq = String(batchIdx).padStart(3,'0');
+          records.push({
+            bc: 'BP' + (d.execTime ? d.execTime.replace(/[/ :]/g,'').slice(0,8) : '20260809') + seq,
+            matCode, matName, srcLoc, tgtLoc, executor, execTime
+          });
+          remaining -= batchQty;
+          batchIdx++;
+        }
+      }
+
+      if(records.length === 0){
+        return '<div style="text-align:center;padding:16px;color:var(--text-placeholder);font-size:13px;">暂无条码执行明细</div>';
+      }
+
+      let html = '<table class="barcode-subtable"><thead><tr>';
+      ['条码','物料编码','物料名称','移出库位','移入库位','执行人','执行时间'].forEach(h=>{
+        html += `<th>${h}</th>`;
+      });
+      html += '</tr></thead><tbody>';
+      records.forEach(r=>{
+        html += '<tr>';
+        html += `<td>${esc(r.bc)}</td>`;
+        html += `<td>${esc(r.matCode)}</td>`;
+        html += `<td>${esc(r.matName)}</td>`;
+        html += `<td>${esc(r.srcLoc)}</td>`;
+        html += `<td>${esc(r.tgtLoc)}</td>`;
+        html += `<td>${esc(r.executor)}</td>`;
+        html += `<td>${esc(r.execTime)}</td>`;
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      return html;
+    }
+
+    function addDetailRow(){
+      const newId = nextDetailId++;
+      editingDetails.push({ id:newId, material:'', barcode:'', palletNo:'', qty:'', targetLoc:'', scanned:false });
+      editingDetailRowId = newId;  // 新增行默认可编辑
+      renderDetailTable();
+    }
+
+    function deleteDetailRow(id){
+      editingDetails = editingDetails.filter(d=>d.id!==id);
+      if(editingDetailRowId===id) editingDetailRowId = null;
+      renderDetailTable();
+    }
+
+    function editDetailRow(id){
+      editingDetailRowId = id;
+      renderDetailTable();
+    }
+
+    function saveDetailRow(id){
+      const d = editingDetails.find(x=>x.id===id);
+      if(!d) return;
+      const specify = getSpecifyBarcode();
+      const hasMaterial = d.material && d.material.trim()!=='';
+      const hasBarcode = d.barcode && d.barcode.trim()!=='';
+      const hasPallet = d.palletNo && d.palletNo.trim()!=='';
+      if(specify){
+        if(hasMaterial){ showToast('指定条码模式下不可填写物料编码','error'); return; }
+        if(!hasBarcode && !hasPallet){ showToast('指定条码模式下条码/箱号或栈板号必填','error'); return; }
+        if(hasBarcode && hasPallet){ showToast('条码/箱号和栈板号互斥，只能填写一个','error'); return; }
+      } else {
+        if(hasBarcode || hasPallet){ showToast('非指定条码模式下不可填写条码/箱号或栈板号','error'); return; }
+        if(!hasMaterial){ showToast('非指定条码模式下物料编码必填','error'); return; }
+      }
+      if(!d.qty || parseInt(d.qty)<=0){ showToast('数量必须大于0','error'); return; }
+      editingDetailRowId = null;
+      renderDetailTable();
+      showToast('明细已保存','success');
+    }
+
+    function cancelEditDetailRow(id){
+      const d = editingDetails.find(x=>x.id===id);
+      if(!d) return;
+      // 检查是否为新增行（不在原任务明细中）
+      const isNewRow = !editingTask || !editingTask.details.find(o=>o.id===id);
+      if(isNewRow){
+        // 新增行未保存，直接删除
+        editingDetails = editingDetails.filter(x=>x.id!==id);
+      } else {
+        // 已有行，还原到编辑前的数据
+        const orig = editingTask.details.find(o=>o.id===id);
+        if(orig && d){
+          d.material = orig.material;
+          d.barcode = orig.barcode || '';
+          d.palletNo = orig.palletNo || '';
+          d.batch = orig.batch || '';
+          d.qty = orig.qty;
+        }
+      }
+      editingDetailRowId = null;
+      renderDetailTable();
+    }
+
+    function toggleDetailSelectAll(){
+      const checked = document.getElementById('detailSelectAll').checked;
+      document.querySelectorAll('.detail-checkbox').forEach(cb=>{ cb.checked=checked; });
+    }
+
+    function batchDeleteDetails(){
+      const ids = Array.from(document.querySelectorAll('.detail-checkbox:checked')).map(cb=>Number(cb.getAttribute('data-id')));
+      if(ids.length===0){ showToast('请先勾选要删除的明细','error'); return; }
+      if(!confirm(`确定删除选中的 ${ids.length} 条明细？\n此操作不可撤销。`)) return;
+      editingDetails = editingDetails.filter(d=>!ids.includes(d.id));
+      renderDetailTable();
+      showToast(`已删除 ${ids.length} 条明细`,'success');
+    }
+
+    function updateDetailQty(id, val){
+      const d = editingDetails.find(x=>x.id===id);
+      if(d) d.qty = val;
+    }
+
+    function updateDetailBatch(id, val){
+      const d = editingDetails.find(x=>x.id===id);
+      if(d) d.batch = val;
+    }
+
+    function updateDetailPallet(id, val){
+      const d = editingDetails.find(x=>x.id===id);
+      if(!d) return;
+      const specify = getSpecifyBarcode();
+      if(!specify){ showToast('非指定条码模式下不可填写栈板号','error'); renderDetailTable(); return; }
+      d.palletNo = val;
+      if(val && val.trim()){
+        d.material = '';
+        d.barcode = '';
+        const palletQty = palletQtyMap[val.trim().toLowerCase()] || 20;
+        d.qty = palletQty;
+        renderDetailTable();
+      } else {
+        d.qty = '';
+        renderDetailTable();
+      }
+    }
+
+    // 栈板号数量映射（模拟数据）
+    const palletQtyMap = {
+      'tp001': 24, 'tp002': 30, 'tp003': 18, 'tp004': 36, 'tp005': 20
+    };
+
+    // 明细物料/条码下拉
+    let detailDropdownMeta = null;
+    function openDetailDropdown(detailId, optType, event){
+      event.stopPropagation();
+      const d = editingDetails.find(x=>x.id===detailId);
+      if(!d) return;
+      const trigger = event.currentTarget;
+      if(detailDropdownMeta && detailDropdownMeta.detailId===detailId && detailDropdownMeta.optType===optType){ closeDetailDropdown(); return; }
+      closeFormDropdown();
+      closeDetailDropdown();
+      detailDropdownMeta = { detailId, optType, searchText:'' };
+
+      const rect = trigger.getBoundingClientRect();
+      const dropdown = document.getElementById('globalDropdown');
+      const options = optType==='material'?materialOptions:barcodeOptions;
+      const currentValue = optType==='material'?d.material:d.barcode;
+      let html = `<input class="dd-search" id="detailDdSearch" placeholder="搜索..." oninput="filterDetailDropdown(${detailId})" onkeydown="event.stopPropagation()">`;
+      if(options.length===0){
+        html += `<div class="dd-empty">无匹配选项</div>`;
+      } else {
+        options.forEach(opt=>{
+          const isSel = opt===currentValue;
+          html += `<div class="dd-item${isSel?' selected':''}" onclick="event.stopPropagation();selectDetailOption(${detailId},'${optType}','${esc(opt)}')">
+            <span class="dd-radio"></span>${esc(opt)}
+          </div>`;
+        });
+      }
+      dropdown.innerHTML = html;
+      dropdown.style.top = (rect.bottom+4)+'px';
+      dropdown.style.left = rect.left+'px';
+      dropdown.style.minWidth = Math.max(rect.width,160)+'px';
+      dropdown.classList.add('show');
+      trigger.classList.add('open');
+      setTimeout(()=>{ const s=document.getElementById('detailDdSearch'); if(s) s.focus(); },50);
+    }
+
+    function filterDetailDropdown(detailId){
+      if(!detailDropdownMeta || detailDropdownMeta.detailId!==detailId) return;
+      const search = document.getElementById('detailDdSearch');
+      if(!search) return;
+      const kw = search.value.toLowerCase();
+      const dropdown = document.getElementById('globalDropdown');
+      const items = dropdown.querySelectorAll('.dd-item');
+      items.forEach(item=>{
+        const text = item.textContent.trim();
+        if(text.toLowerCase().includes(kw)){ item.classList.remove('hidden'); }
+        else{ item.classList.add('hidden'); }
+      });
+    }
+
+    function selectDetailOption(detailId, optType, value){
+      const d = editingDetails.find(x=>x.id===detailId);
+      if(!d) return;
+      const specify = getSpecifyBarcode();
+      if(optType==='material'){
+        if(specify){ showToast('指定条码模式下不可选择物料编码','error'); closeDetailDropdown(); return; }
+        d.material = value;
+        d.barcode = '';
+        d.palletNo = '';
+        d.qty = '';
+      } else {
+        if(!specify){ showToast('非指定条码模式下不可选择条码/箱号','error'); closeDetailDropdown(); return; }
+        d.barcode = value;
+        d.material = '';
+        d.palletNo = '';
+        d.qty = 1;
+      }
+      closeDetailDropdown();
+      renderDetailTable();
+    }
+
+    function closeDetailDropdown(){
+      const dropdown = document.getElementById('globalDropdown');
+      dropdown.classList.remove('show');
+      dropdown.innerHTML='';
+      detailDropdownMeta = null;
+    }
+
+    // 库位下拉
+    let locDropdownMeta = null;
+    function openLocDropdown(detailId, event){
+      event.stopPropagation();
+      const d = editingDetails.find(x=>x.id===detailId);
+      if(!d) return;
+      const trigger = event.currentTarget;
+      if(locDropdownMeta && locDropdownMeta.detailId===detailId){ closeLocDropdown(); return; }
+      closeFormDropdown();
+      closeDetailDropdown();
+      closeLocDropdown();
+      locDropdownMeta = { detailId, searchText:'' };
+
+      const rect = trigger.getBoundingClientRect();
+      const dropdown = document.getElementById('globalDropdown');
+      let html = `<input class="dd-search" id="locDdSearch" placeholder="搜索库位编码/类型..." oninput="filterLocDropdown(${detailId})" onkeydown="event.stopPropagation()">`;
+      const locTypes = ['存储库位','待处理库位','车间库位','质控库位'];
+      locTypes.forEach(typeName=>{
+        const items = locationOptions.filter(o=>o.type===typeName);
+        if(items.length===0) return;
+        html += `<div style="font-size:11px;color:var(--text-placeholder);padding:4px 12px;">${typeName}</div>`;
+        items.forEach(opt=>{
+          const isSel = opt.code===d.targetLoc;
+          html += `<div class="dd-item${isSel?' selected':''}" onclick="event.stopPropagation();selectLocOption(${detailId},'${esc(opt.code)}')">
+            <span class="dd-radio"></span><span style="font-weight:500;">${esc(opt.code)}</span><span style="margin-left:8px;font-size:12px;color:var(--text-secondary);">${esc(opt.type)}</span>
+          </div>`;
+        });
+      });
+      dropdown.innerHTML = html;
+      dropdown.style.top = (rect.bottom+4)+'px';
+      dropdown.style.left = rect.left+'px';
+      dropdown.style.minWidth = Math.max(rect.width,220)+'px';
+      dropdown.classList.add('show');
+      trigger.classList.add('open');
+      setTimeout(()=>{ const s=document.getElementById('locDdSearch'); if(s) s.focus(); },50);
+    }
+
+    function filterLocDropdown(detailId){
+      if(!locDropdownMeta || locDropdownMeta.detailId!==detailId) return;
+      const search = document.getElementById('locDdSearch');
+      if(!search) return;
+      const kw = search.value.toLowerCase();
+      const ddList = document.getElementById('globalDropdown');
+      const allItems = ddList.querySelectorAll('.dd-item');
+      allItems.forEach(item=>{
+        const text = item.textContent.trim();
+        if(text.toLowerCase().includes(kw)){ item.classList.remove('hidden'); }
+        else{ item.classList.add('hidden'); }
+      });
+    }
+
+    function selectLocOption(detailId, value){
+      const d = editingDetails.find(x=>x.id===detailId);
+      if(d) d.targetLoc = value;
+      closeLocDropdown();
+      renderDetailTable();
+    }
+
+    function closeLocDropdown(){
+      const dropdown = document.getElementById('globalDropdown');
+      dropdown.classList.remove('show');
+      dropdown.innerHTML='';
+      locDropdownMeta = null;
+    }
+
+    // 关闭所有下拉
+    document.addEventListener('click', function(e){
+      if(formDropdownMeta && !e.target.closest('.sel-dropdown') && !e.target.closest('.sel-trigger')){
+        closeFormDropdown();
+      }
+      if(assigneeDropdownOpen && !e.target.closest('.sel-dropdown') && !e.target.closest('.sel-trigger')){
+        closeAssigneeDropdown();
+      }
+      if(detailDropdownMeta && !e.target.closest('.sel-dropdown') && !e.target.closest('.sel-trigger')){
+        closeDetailDropdown();
+      }
+      if(locDropdownMeta && !e.target.closest('.sel-dropdown') && !e.target.closest('.sel-trigger')){
+        closeLocDropdown();
+      }
+    });
+
+    // ===== 校验 =====
+    function validateTask(){
+      let errors = [];
+      if(!editForm.targetWh) errors.push('目标库位不能为空');
+      if(editForm.sourceWh && editForm.targetWh && editForm.sourceWh===editForm.targetWh){
+        errors.push('源库位和目标库位不能相同');
+      }
+      // 库位流转规则校验
+      if(editForm.sourceWh && editForm.targetWh){
+        const srcType = locType(editForm.sourceWh);
+        const tgtType = locType(editForm.targetWh);
+        const allowed = locMoveRules[srcType];
+        if(allowed && !allowed.includes(tgtType)){
+          errors.push(`[${srcType}]不能移库到[${tgtType}]，仅允许：${allowed.join('、')}`);
+        }
+      }
+      // 源库位+目标库位不重复校验（排除自己）
+      if(editForm.sourceWh && editForm.targetWh){
+        const dup = tasks.find(t=> t.id!==(editingTask?editingTask.id:-1) && t.sourceWh===editForm.sourceWh && t.targetWh===editForm.targetWh && t.status!=='completed');
+        if(dup) errors.push(`源库位[${locDisplay(editForm.sourceWh)}]+目标库位[${locDisplay(editForm.targetWh)}]组合已存在（任务${dup.taskNo}），不可重复创建`);
+      }
+      if(editingDetails.length===0) errors.push('至少添加一条任务明细');
+
+      // 明细校验
+      let detailErrors = [];
+      editingDetails.forEach((d,i)=>{
+        const specify = getSpecifyBarcode();
+        const hasMaterial = d.material && d.material.trim()!=='';
+        const hasBarcode = d.barcode && d.barcode.trim()!=='';
+        const hasPallet = d.palletNo && d.palletNo.trim()!=='';
+        if(specify){
+          if(hasMaterial) detailErrors.push(`第${i+1}行：指定条码模式下不可填写物料编码`);
+          if(!hasBarcode && !hasPallet) detailErrors.push(`第${i+1}行：指定条码模式下条码/箱号或栈板号必填`);
+          if(hasBarcode && hasPallet) detailErrors.push(`第${i+1}行：条码/箱号和栈板号互斥，只能填写一个`);
+        } else {
+          if(hasBarcode || hasPallet) detailErrors.push(`第${i+1}行：非指定条码模式下不可填写条码/箱号或栈板号`);
+          if(!hasMaterial) detailErrors.push(`第${i+1}行：非指定条码模式下物料编码必填`);
+        }
+        if(!d.qty || parseInt(d.qty)<=0) detailErrors.push(`第${i+1}行：数量必须大于0`);
+      });
+
+      return { errors, detailErrors };
+    }
+
+    function showErrors(result){
+      let html = '';
+      if(result.errors.length>0){
+        html += `<div style="color:var(--danger);font-size:13px;margin-bottom:4px;">${result.errors.map(e=>'&#9888; '+e).join('<br>')}</div>`;
+      }
+      if(result.detailErrors.length>0){
+        html += `<div style="color:var(--danger);font-size:13px;">${result.detailErrors.map(e=>'&#9888; '+e).join('<br>')}</div>`;
+      }
+      document.getElementById('headerErrors').innerHTML = html;
+    }
+
+    // ===== 生成任务号：Y-基地码-年-月-日-4位流水 =====
+    const BASE_CODE = 'N55';
+    function generateTaskNo(){
+      const now = new Date();
+      const yy = String(now.getFullYear()).slice(-2);
+      const mm = String(now.getMonth()+1).padStart(2,'0');
+      const dd = String(now.getDate()).padStart(2,'0');
+      const datePrefix = `Y${BASE_CODE}${yy}${mm}${dd}`;
+      let maxSeq = 0;
+      tasks.forEach(t=>{
+        if(t.taskNo && t.taskNo.startsWith(datePrefix)){
+          const seqPart = t.taskNo.slice(datePrefix.length);
+          const seq = parseInt(seqPart) || 0;
+          if(seq > maxSeq) maxSeq = seq;
+        }
+      });
+      const seq = String(maxSeq + 1).padStart(4,'0');
+      return `${datePrefix}${seq}`;
+    }
+
+    // ===== 保存草稿 =====
+    function saveDraft(){
+      const result = validateTask();
+      if(result.errors.length>0 || result.detailErrors.length>0){
+        showErrors(result);
+        showToast('请完善必填项后再保存','error');
+        return;
+      }
+      const now = new Date();
+      const timeStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      const deadlineVal = document.getElementById('editDeadline').value;
+      const deadlineStr = deadlineVal ? deadlineVal.replace(/-/g,'/') : '';
+
+      if(editingTask){
+        // 更新
+        editingTask.sourceWh = editForm.sourceWh;
+        editingTask.targetWh = editForm.targetWh;
+        editingTask.remark = document.getElementById('editRemark').value;
+        editingTask.deadline = deadlineStr;
+        editingTask.assignees = [...editForm.assignees];
+        editingTask.details = JSON.parse(JSON.stringify(editingDetails));
+        showToast('保存成功','success');
+      } else {
+        // 新建
+        const newTask = {
+          id: nextTaskId++,
+          taskNo: generateTaskNo(),
+          sourceWh: editForm.sourceWh,
+          targetWh: editForm.targetWh,
+          status: 'draft',
+          remark: document.getElementById('editRemark').value,
+          deadline: deadlineStr,
+          assignees: [...editForm.assignees],
+          creator: 'admin',
+          createTime: timeStr,
+          executor: '',
+          completeTime: '',
+          details: JSON.parse(JSON.stringify(editingDetails))
+        };
+        tasks.unshift(newTask);
+        editingTask = newTask;
+        document.getElementById('editTaskNo').value = newTask.taskNo;
+        showToast('草稿保存成功','success');
+      }
+      renderStatusFlow('draft');
+      // 确保停留在当前编辑页面
+      document.getElementById('listView').style.display='none';
+      document.getElementById('editView').style.display='block';
+    }
+
+    // ===== 提交（待执行）=====
+    function submitTask(){
+      const result = validateTask();
+      if(result.errors.length>0 || result.detailErrors.length>0){
+        showErrors(result);
+        showToast('请完善必填项后再提交','error');
+        return;
+      }
+      saveDraft();
+      if(editingTask){
+        editingTask.status = 'pending';
+        renderStatusFlow('pending');
+        toggleButtons(false);
+        showToast('任务已提交，状态：待执行','success');
+        // 确保停留在当前编辑页面
+        document.getElementById('listView').style.display='none';
+        document.getElementById('editView').style.display='block';
+      }
+    }
+
+    function submitTaskById(id){
+      const t = tasks.find(x=>x.id===id);
+      if(!t) return;
+      // 校验
+      if(!t.targetWh){ showToast('任务信息不完整，无法提交','error'); return; }
+      if(t.details.length===0){ showToast('任务无明细，无法提交','error'); return; }
+      // 库位流转规则
+      if(t.sourceWh){
+        const srcType = locType(t.sourceWh);
+        const tgtType = locType(t.targetWh);
+        const allowed = locMoveRules[srcType];
+        if(allowed && !allowed.includes(tgtType)){
+          showToast(`[${srcType}]不能移库到[${tgtType}]，仅允许：${allowed.join('、')}`,'error'); return;
+        }
+      }
+      t.status = 'pending';
+      renderTaskList();
+      showToast('任务已提交，状态：待执行','success');
+    }
+
+    // ===== PDA 执行 =====
+    function openPDAModal(id){
+      const t = tasks.find(x=>x.id===id);
+      if(!t) return;
+      pdaTask = t;
+      // 从明细的 scanned 字段恢复已扫描状态
+      pdaScanned = new Set(t.details.filter(d=>d.scanned).map(d=>d.id));
+      if(t.status==='pending') t.status='executing';
+
+      document.getElementById('pdaTaskNo').textContent = t.taskNo;
+      document.getElementById('pdaSourceWh').textContent = t.sourceWh ? locDisplay(t.sourceWh) : '--';
+      document.getElementById('pdaTargetWh').textContent = t.targetWh ? locDisplay(t.targetWh) : '--';
+
+      renderPDAItems();
+      document.getElementById('pdaScanInput').value='';
+      document.getElementById('pdaCompleteBtn').style.display='none';
+      document.getElementById('pdaModal').classList.add('show');
+      setTimeout(()=>{ document.getElementById('pdaScanInput').focus(); },100);
+    }
+
+    function closePDAModal(){
+      document.getElementById('pdaModal').classList.remove('show');
+      pdaTask = null;
+      pdaScanned = new Set();
+      renderTaskList();
+    }
+
+    function renderPDAItems(){
+      if(!pdaTask) return;
+      const list = document.getElementById('pdaItemList');
+      list.innerHTML = '';
+      pdaTask.details.forEach(d=>{
+        const done = pdaScanned.has(d.id);
+        const tr = document.createElement('div');
+        tr.className = 'pda-item' + (done?' done':'');
+        const displayCode = d.material || d.barcode || '--';
+        const typeLabel = d.material ? '物料' : (d.barcode ? '条码' : '--');
+        tr.innerHTML = `
+          <div class="check"></div>
+          <div class="info">
+            <div class="code">${esc(displayCode)}</div>
+            <div class="qty">数量: ${d.qty} | 库位: ${esc(locDisplay(d.targetLoc))}</div>
+          </div>
+          <div class="qty-badge">${typeLabel}</div>
+        `;
+        list.appendChild(tr);
+      });
+
+      const total = pdaTask.details.length;
+      const scanned = pdaScanned.size;
+      document.getElementById('pdaProgressText').textContent = `${scanned} / ${total}`;
+      document.getElementById('pdaProgressFill').style.width = total>0?`${(scanned/total*100)}%`:'0%';
+
+      if(scanned===total && total>0){
+        document.getElementById('pdaCompleteBtn').style.display='';
+      } else {
+        document.getElementById('pdaCompleteBtn').style.display='none';
+      }
+    }
+
+    function pdaScan(){
+      if(!pdaTask) return;
+      const input = document.getElementById('pdaScanInput');
+      const code = input.value.trim();
+      if(!code){ showToast('请扫码或输入条码/物料编码','error'); return; }
+
+      // 匹配明细 - 匹配物料编码或条码
+      const d = pdaTask.details.find(x=> !pdaScanned.has(x.id) && (x.material===code || x.barcode===code));
+      if(d){
+        pdaScanned.add(d.id);
+        d.scanned = true;
+        input.value='';
+        showToast(`扫码成功: ${code}`,'success');
+        renderPDAItems();
+      } else {
+        const already = pdaTask.details.find(x=> pdaScanned.has(x.id) && (x.material===code || x.barcode===code));
+        if(already){
+          showToast(`已扫码: ${code}`,'error');
+        } else {
+          showToast(`未匹配: ${code}`,'error');
+        }
+        input.value='';
+      }
+    }
+
+    function pdaComplete(){
+      if(!pdaTask) return;
+      if(pdaScanned.size < pdaTask.details.length){
+        showToast('还有未扫码的明细','error'); return;
+      }
+      const now = new Date();
+      const timeStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      pdaTask.details.forEach(d=>{ d.scanned = true; });
+      pdaTask.status = 'completed';
+      pdaTask.completeTime = timeStr;
+      pdaTask.executor = pdaTask.executor || 'admin';
+      showToast('移库任务已完成','success');
+      closePDAModal();
+    }
+
+    // ===== 草稿删除 =====
+    function deleteDraftTask(id){
+      const t = tasks.find(x=>x.id===id);
+      if(!t) return;
+      if(t.status!=='draft'){ showToast('仅草稿状态可删除','error'); return; }
+      if(!confirm(`确定要删除草稿任务【${t.taskNo}】吗？此操作不可撤销。`)) return;
+      tasks = tasks.filter(x=>x.id!==id);
+      renderTaskList();
+      showToast(`已删除草稿任务 ${t.taskNo}`,'success');
+    }
+
+    // ===== 待执行 → 取消移库 =====
+    function cancelPendingTask(id){
+      const t = tasks.find(x=>x.id===id);
+      if(!t) return;
+      if(t.status!=='pending'){ showToast('仅待执行状态可取消','error'); return; }
+      const reason = prompt(`确定要取消移库任务【${t.taskNo}】吗？\n请输入取消原因：`,'');
+      if(reason===null) return;
+      if(!reason.trim()){ showToast('请填写取消原因','error'); return; }
+      t.status = 'cancelled';
+      t.cancelReason = reason.trim();
+      t.cancelTime = formatNow();
+      renderTaskList();
+      showToast(`任务已取消：${t.taskNo}`,'success');
+    }
+
+    // ===== 执行中 → 异常关闭 =====
+    function closeExecutingTask(id){
+      const t = tasks.find(x=>x.id===id);
+      if(!t) return;
+      if(t.status!=='executing'){ showToast('仅执行中状态可异常关闭','error'); return; }
+      const reason = prompt(`异常关闭任务【${t.taskNo}】？\n请输入异常原因：`,'');
+      if(reason===null) return;
+      if(!reason.trim()){ showToast('请填写异常原因','error'); return; }
+      t.status = 'closed';
+      t.closeReason = reason.trim();
+      t.closeTime = formatNow();
+      renderTaskList();
+      showToast(`任务已异常关闭：${t.taskNo}`,'success');
+    }
+
+    function formatNow(){
+      const now = new Date();
+      return `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    }
+
+    // ===== 导入 =====
+    function openImportModal(){
+      importFile = null;
+      document.getElementById('importFileInput').value='';
+      document.getElementById('importFileName').textContent='';
+      document.getElementById('importModal').classList.add('show');
+    }
+    function closeImportModal(){ document.getElementById('importModal').classList.remove('show'); }
+
+    function openDetailImportModal(){
+      // 如果在编辑视图，打开明细导入
+      openImportModal();
+    }
+
+    function handleFileSelect(event){
+      importFile = event.target.files[0];
+      if(importFile){
+        document.getElementById('importFileName').textContent = importFile.name;
+      }
+    }
+
+    function confirmImport(){
+      if(!importFile){ showToast('请先选择文件','error'); return; }
+      // 模拟导入：往明细表填充数据
+      const mockImport = [
+        { material:'kw000111', barcode:'', qty:100, targetLoc:'100481' },
+        { material:'kw000112', barcode:'', qty:50,  targetLoc:'100482' },
+        { material:'', barcode:'BP20260810001', qty:1, targetLoc:'400481' },
+        { material:'kw000113', barcode:'', qty:200, targetLoc:'300482' }
+      ];
+      mockImport.forEach(d=>{
+        editingDetails.push({ id:nextDetailId++, ...d, scanned:false });
+      });
+      renderDetailTable();
+      closeImportModal();
+      showToast(`导入成功，新增 ${mockImport.length} 条明细，可修改调整`,'success');
+    }
+
+    function downloadDetailTemplate(){
+      const headers = ['物料编码', '条码', '数量', '目标库位(填写库位编码,如100481)'];
+      const example = ['kw000111', '', '100', '100481'];
+      const example2 = ['', 'BP20260810001', '1', '400481'];
+      const csvContent = '\uFEFF' + headers.join(',') + '\n' + example.join(',') + '\n' + example2.join(',');
+      const blob = new Blob([csvContent], { type:'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '移库任务明细导入模版.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('模版下载成功','success');
+    }
+
+    // ===== 导出 =====
+    function exportTasks(){ showToast('导出功能（演示）','success'); }
+
+    // ===== 删除 =====
+    function openDeleteModal(){
+      const checked = document.querySelectorAll('.row-checkbox:checked');
+      if(checked.length===0){ showToast('请先选择要删除的任务','error'); return; }
+      const ids = Array.from(checked).map(cb=>parseInt(cb.dataset.id));
+      const nonDraft = ids.filter(id=>{ const t=tasks.find(x=>x.id===id); return t && t.status!=='draft'; });
+      if(nonDraft.length>0){
+        showToast('仅草稿状态的任务可删除','error');
+        return;
+      }
+      document.getElementById('deleteModal').classList.add('show');
+    }
+    function closeDeleteModal(){ document.getElementById('deleteModal').classList.remove('show'); }
+    function confirmDelete(){
+      const ids = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb=>parseInt(cb.dataset.id));
+      tasks = tasks.filter(t=>!ids.includes(t.id));
+      closeDeleteModal();
+      renderTaskList();
+      showToast(`已删除 ${ids.length} 条任务`,'success');
+    }
+
+    // ===== Toast =====
+    let toastTimer;
+    function showToast(msg, type){
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.className = `toast ${type} show`;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(()=>{ toast.classList.remove('show'); }, 2500);
+    }
+
+    function esc(str){
+      if(!str) return '';
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ===== 初始化 =====
+    initSelects();
+    updateSortIcons();
+    renderTaskList();
+  </script>
+</body>
+</html>
