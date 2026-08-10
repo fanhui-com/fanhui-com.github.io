@@ -1,0 +1,1708 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PDA移库扫码执行 - 格力WMS</title>
+  <style>
+    :root {
+      --primary: #3F99A3;
+      --primary-light: #DBEEEC;
+      --primary-dark: #358A94;
+      --link: #409EFF;
+      --text-title: #333333;
+      --text-body: #606266;
+      --text-secondary: #909399;
+      --text-placeholder: #C0C4CC;
+      --bg-white: #FFFFFF;
+      --bg-page: #F5F7FA;
+      --bg-header: #FAFAFA;
+      --border: #DCDFE6;
+      --border-light: #EBEEF5;
+      --border-lighter: #F0F0F0;
+      --success: #67C23A;
+      --success-light: #F0F9EB;
+      --warning: #E6A23C;
+      --warning-light: #FDF6EC;
+      --danger: #F56C6C;
+      --danger-light: #FEF0F0;
+      --info: #909399;
+      --info-light: #F4F4F5;
+      --font: -apple-system, "PingFang SC", "Microsoft Yahei", sans-serif;
+      --radius: 4px;
+      --radius-sm: 3px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    html,body { height:100%; }
+    body { font-family:var(--font); font-size:14px; color:var(--text-body); background:var(--bg-page); overflow:hidden; }
+
+    /* ===== PDA Frame ===== */
+    .pda-device {
+      width:100%; max-width:420px; height:100vh; min-height:812px; max-height:812px;
+      margin:0 auto;
+      background:var(--bg-page); display:flex; flex-direction:column; position:relative; overflow:hidden;
+    }
+
+    /* ===== Header ===== */
+    .pda-header {
+      background:var(--primary); color:#fff; padding:0 16px;
+      display:flex; align-items:center; justify-content:space-between;
+      height:48px; flex-shrink:0; z-index:10;
+    }
+    .pda-header .h-left { display:flex; align-items:center; gap:8px; }
+    .pda-header .h-back { width:28px; height:28px; display:flex; align-items:center; justify-content:center; cursor:pointer; border-radius:var(--radius-sm); }
+    .pda-header .h-back:active { background:rgba(255,255,255,0.2); }
+    .pda-header .h-title { font-size:16px; font-weight:500; }
+    .pda-header .h-right { font-size:12px; color:rgba(255,255,255,0.85); display:flex; align-items:center; gap:6px; }
+    .pda-header .h-avatar { width:24px; height:24px; border-radius:50%; background:rgba(255,255,255,0.3); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; }
+
+    /* ===== Pages ===== */
+    .pda-page { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; display:none; flex-direction:column; }
+    .pda-page.active { display:flex; }
+
+    /* ===== Page 1: Task List ===== */
+    .search-bar {
+      padding:10px 12px; background:var(--bg-white); border-bottom:1px solid var(--border-light);
+      display:flex; gap:8px; flex-shrink:0;
+    }
+    .search-input {
+      flex:1; height:36px; border:1px solid var(--border); border-radius:var(--radius);
+      padding:0 12px 0 36px; font-size:14px; outline:none; background:var(--bg-page) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23909399' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") 10px center no-repeat;
+    }
+    .search-input:focus { border-color:var(--primary); background-color:#fff; }
+    .filter-btn {
+      width:36px; height:36px; border:1px solid var(--border); border-radius:var(--radius);
+      background:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
+    }
+    .filter-btn:active { background:var(--bg-page); }
+    .filter-btn svg { width:18px; height:18px; }
+
+    .filter-panel {
+      background:var(--bg-white); border-bottom:1px solid var(--border-light);
+      padding:0 12px 10px; display:none; flex-shrink:0; max-height:0; overflow:hidden; transition:all 0.25s;
+    }
+    .filter-panel.show { display:block; max-height:320px; padding:10px 12px; }
+    .adv-filter-row { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+    .adv-filter-row:last-child { margin-bottom:0; }
+    .adv-label { font-size:13px; color:var(--text-secondary); white-space:nowrap; flex-shrink:0; min-width:40px; }
+    .adv-input, .adv-select {
+      flex:1; height:32px; border:1px solid var(--border); border-radius:var(--radius);
+      padding:0 8px; font-size:13px; outline:none; background:#fff; min-width:0;
+    }
+    .adv-input:focus, .adv-select:focus { border-color:var(--primary); }
+    .adv-date { flex:1; height:32px; border:1px solid var(--border); border-radius:var(--radius);
+      padding:0 8px; font-size:13px; outline:none; background:#fff; min-width:0; color-scheme:light;
+    }
+    .adv-date:focus { border-color:var(--primary); }
+    .adv-btn-row { display:flex; gap:8px; justify-content:flex-end; margin-top:2px; }
+    .adv-btn-row button {
+      height:30px; padding:0 14px; border-radius:var(--radius-sm); font-size:12px;
+      border:1px solid var(--border); cursor:pointer; background:#fff; color:var(--text-body);
+    }
+    .adv-btn-row button.adv-reset { color:var(--danger); border-color:var(--danger-light); }
+    .adv-btn-row button.adv-apply { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .filter-btn.has-filter { background:var(--primary-light); border-color:var(--primary); color:var(--primary); }
+
+    /* Segment Control */
+    .seg-control {
+      display:flex; background:var(--bg-page); border-radius:var(--radius); padding:3px; margin:8px 12px 0; gap:3px; flex-shrink:0;
+    }
+    .seg-item {
+      flex:1; height:32px; line-height:32px; text-align:center; font-size:13px; color:var(--text-secondary);
+      border-radius:var(--radius-sm); cursor:pointer; transition:all 0.2s; font-weight:500;
+    }
+    .seg-item.active { background:#fff; color:var(--primary); box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+    .seg-item .seg-badge { display:inline-block; min-width:16px; height:16px; line-height:16px; padding:0 4px; border-radius:8px; font-size:10px; margin-left:2px; }
+    .seg-item.active .seg-badge { background:var(--primary); color:#fff; }
+    .seg-item:not(.active) .seg-badge { background:var(--border); color:#fff; }
+
+    /* Section Header */
+    .sec-header {
+      padding:12px 12px 6px; background:var(--bg-page); flex-shrink:0;
+      display:flex; align-items:center; justify-content:space-between; gap:8px;
+    }
+    .sec-title {
+      font-size:15px; font-weight:600; color:var(--text-title); white-space:nowrap;
+      display:flex; align-items:center; gap:6px;
+    }
+    .sec-title .dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+    .sec-title .dot.incomplete { background:var(--warning); }
+    .sec-title .dot.done { background:var(--success); }
+    .sec-count { font-size:12px; color:var(--text-secondary); font-weight:400; margin-left:4px; }
+    .sec-filter-row { display:flex; gap:6px; flex-wrap:nowrap; }
+    .sec-chip {
+      height:26px; padding:0 12px; border-radius:13px; border:1px solid var(--border);
+      background:#fff; font-size:12px; color:var(--text-body); cursor:pointer;
+      white-space:nowrap; transition:all 0.15s;
+    }
+    .sec-chip.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .sort-btn {
+      font-size:12px; color:var(--primary); cursor:pointer; white-space:nowrap;
+      padding:3px 8px; border:1px solid var(--primary-light); border-radius:var(--radius-sm);
+      background:var(--primary-light); transition:all 0.15s;
+    }
+    .sort-btn:active { background:var(--primary); color:#fff; }
+    .sort-btn .sort-arrow { font-size:10px; margin-left:2px; }
+
+    .stat-bar {
+      padding:8px 12px; background:var(--bg-white); border-bottom:1px solid var(--border-light);
+      display:flex; gap:16px; flex-shrink:0;
+    }
+    .stat-item { display:flex; flex-direction:column; gap:2px; }
+    .stat-item .num { font-size:18px; font-weight:600; color:var(--text-title); }
+    .stat-item .label { font-size:11px; color:var(--text-secondary); }
+    .stat-item.pending .num { color:var(--link); }
+    .stat-item.executing .num { color:var(--warning); }
+    .stat-item.done .num { color:var(--success); }
+
+    .task-list { padding:10px 12px; flex:1; overflow-y:auto; }
+    .task-card {
+      background:#fff; border-radius:8px; padding:12px 14px; margin-bottom:10px;
+      box-shadow:0 1px 3px rgba(0,0,0,0.06); cursor:pointer; position:relative;
+      transition:transform 0.1s;
+    }
+    .task-card:active { transform:scale(0.98); }
+    .task-card .tc-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+    .task-card .tc-no { font-size:14px; font-weight:600; color:var(--text-title); letter-spacing:0.5px; }
+    .task-card .tc-status { font-size:11px; padding:2px 8px; border-radius:3px; font-weight:500; }
+    .s-draft { background:var(--info-light); color:var(--info); }
+    .s-pending { background:#ecf5ff; color:var(--link); }
+    .s-executing { background:var(--warning-light); color:var(--warning); }
+    .s-completed { background:var(--success-light); color:var(--success); }
+    .s-cancelled { background:#E4E4E4; color:#8C8C8C; }
+    .s-closed { background:var(--danger-light); color:var(--danger); }
+
+    .task-card .tc-route { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+    .task-card .tc-wh { font-size:13px; color:var(--text-body); font-weight:500; }
+    .task-card .tc-arrow { color:var(--text-placeholder); font-size:14px; }
+    .task-card .tc-info { display:flex; flex-wrap:wrap; gap:4px 12px; font-size:12px; color:var(--text-secondary); }
+    .task-card .tc-info span { display:inline-flex; align-items:center; gap:2px; }
+    .task-card .tc-progress { margin-top:8px; display:flex; align-items:center; gap:8px; }
+    .task-card .tc-progress-bar { flex:1; height:5px; background:var(--border-light); border-radius:3px; overflow:hidden; }
+    .task-card .tc-progress-fill { height:100%; border-radius:3px; transition:width 0.3s; }
+    .task-card .tc-progress-text { font-size:12px; color:var(--text-secondary); white-space:nowrap; }
+    .task-card .tc-assignees { margin-top:6px; display:flex; gap:4px; flex-wrap:wrap; }
+    .assignee-tag { font-size:10px; padding:1px 6px; border-radius:3px; background:var(--primary-light); color:var(--primary); }
+
+    .task-card .tc-go {
+      position:absolute; right:12px; bottom:12px;
+      width:28px; height:28px; border-radius:50%; background:var(--primary-light);
+      display:flex; align-items:center; justify-content:center; color:var(--primary);
+    }
+
+    .empty-list { text-align:center; padding:60px 20px; color:var(--text-placeholder); }
+    .empty-list svg { width:48px; height:48px; margin-bottom:12px; opacity:0.4; }
+    .empty-list p { font-size:14px; }
+
+    /* ===== Page 2: Detail + Scan ===== */
+    .detail-info-card {
+      background:#fff; margin:10px 12px; border-radius:8px; padding:14px;
+      box-shadow:0 1px 3px rgba(0,0,0,0.06); flex-shrink:0;
+    }
+    .detail-info-card .dc-no { font-size:16px; font-weight:600; color:var(--text-title); margin-bottom:8px; letter-spacing:0.5px; }
+    .detail-info-card .dc-route {
+      display:flex; align-items:center; gap:8px; margin-bottom:10px; padding:8px 10px;
+      background:var(--bg-page); border-radius:var(--radius);
+    }
+    .detail-info-card .dc-wh { font-size:15px; font-weight:600; color:var(--primary); }
+    .detail-info-card .dc-arrow { font-size:18px; color:var(--text-placeholder); }
+    .detail-info-card .dc-meta { display:flex; flex-wrap:wrap; gap:6px 16px; font-size:12px; color:var(--text-secondary); }
+    .detail-info-card .dc-meta span { display:inline-flex; align-items:center; gap:3px; }
+
+    .progress-card {
+      background:#fff; margin:0 12px 10px; border-radius:8px; padding:12px 14px;
+      box-shadow:0 1px 3px rgba(0,0,0,0.06); flex-shrink:0;
+    }
+    .progress-card .pc-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .progress-card .pc-label { font-size:13px; color:var(--text-body); font-weight:500; }
+    .progress-card .pc-count { font-size:15px; font-weight:600; }
+    .progress-card .pc-count .done { color:var(--success); }
+    .progress-card .pc-count .total { color:var(--text-secondary); }
+    .progress-card .pc-bar { height:8px; background:var(--border-light); border-radius:4px; overflow:hidden; }
+    .progress-card .pc-fill { height:100%; background:linear-gradient(90deg, var(--primary), #5cb8c1); border-radius:4px; transition:width 0.3s; }
+
+    .scan-card {
+      background:#fff; margin:0 12px 10px; border-radius:8px; padding:12px 14px;
+      box-shadow:0 1px 3px rgba(0,0,0,0.06); flex-shrink:0;
+    }
+    .scan-card .sc-title { font-size:13px; color:var(--text-body); font-weight:500; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+    .scan-card .sc-title svg { width:16px; height:16px; color:var(--primary); }
+    .scan-card .sc-input-wrap { display:flex; gap:8px; }
+    .scan-card .sc-input {
+      flex:1; height:40px; border:2px solid var(--border); border-radius:var(--radius);
+      padding:0 12px; font-size:15px; outline:none; background:var(--bg-page);
+    }
+    .scan-card .sc-input:focus { border-color:var(--primary); background:#fff; }
+    .scan-card .sc-btn {
+      width:80px; height:40px; background:var(--primary); color:#fff; border:none;
+      border-radius:var(--radius); font-size:14px; font-weight:500; cursor:pointer;
+    }
+    .scan-card .sc-btn:active { background:var(--primary-dark); }
+    .scan-card .sc-btn:disabled { background:var(--text-placeholder); cursor:not-allowed; }
+
+    .detail-list { flex:1; overflow-y:auto; padding:0 12px 80px; }
+    .detail-list .dl-title { font-size:13px; color:var(--text-secondary); font-weight:500; margin:4px 2px 8px; display:flex; justify-content:space-between; align-items:center; }
+    .detail-list .dl-count { font-size:12px; color:var(--text-placeholder); }
+
+    .detail-item {
+      background:#fff; border-radius:8px; padding:12px 14px; margin-bottom:8px;
+      box-shadow:0 1px 2px rgba(0,0,0,0.04); position:relative;
+    }
+    .detail-item .di-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }
+    .detail-item .di-code { font-size:14px; font-weight:600; color:var(--text-title); }
+    .detail-item .di-type { font-size:10px; padding:1px 6px; border-radius:3px; flex-shrink:0; margin-left:8px; }
+    .di-type-material { background:var(--primary-light); color:var(--primary); }
+    .di-type-barcode { background:var(--warning-light); color:var(--warning); }
+    .detail-item .di-check {
+      width:22px; height:22px; border-radius:50%; border:2px solid var(--border);
+      display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    }
+    .detail-item.scanned .di-check { border-color:var(--success); background:var(--success); }
+    .detail-item.scanned .di-check::after { content:''; width:5px; height:9px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); }
+    .detail-item.scanning .di-check { border-color:var(--warning); background:var(--warning-light); }
+    .detail-item .di-info { display:flex; flex-wrap:wrap; gap:4px 12px; font-size:12px; color:var(--text-secondary); margin-bottom:4px; }
+    .detail-item .di-info span { display:inline-flex; align-items:center; gap:3px; }
+    .detail-item .di-qty { display:flex; align-items:center; gap:6px; margin-top:6px; }
+    .detail-item .di-qty .qty-num { font-size:15px; font-weight:600; color:var(--text-title); }
+    .detail-item .di-qty .qty-done { color:var(--success); }
+    .detail-item .di-qty .qty-need { color:var(--text-secondary); font-size:13px; }
+    .detail-item .di-loc { display:inline-flex; align-items:center; gap:4px; font-size:12px; color:var(--primary); background:var(--primary-light); padding:2px 8px; border-radius:3px; margin-top:6px; }
+
+    /* ===== Bottom Bar ===== */
+    .pda-bottom {
+      padding:10px 12px; background:#fff; border-top:1px solid var(--border-light);
+      display:flex; gap:8px; flex-shrink:0;
+    }
+    .pda-bottom .bb-btn {
+      flex:1; height:42px; border-radius:var(--radius); font-size:15px; font-weight:500;
+      border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;
+    }
+    .bb-btn-primary { background:var(--primary); color:#fff; }
+    .bb-btn-primary:active { background:var(--primary-dark); }
+    .bb-btn-primary:disabled { background:var(--text-placeholder); }
+    .bb-btn-success { background:var(--success); color:#fff; }
+    .bb-btn-success:active { background:#5daf34; }
+    .bb-btn-success:disabled { background:var(--text-placeholder); }
+    .bb-btn-default { background:#fff; color:var(--text-body); border:1px solid var(--border); }
+    .bb-btn-default:active { background:var(--bg-page); }
+
+    /* ===== Toast ===== */
+    .toast {
+      position:fixed; top:60px; left:50%; transform:translateX(-50%) translateY(-20px);
+      background:rgba(0,0,0,0.8); color:#fff; padding:8px 20px; border-radius:20px;
+      font-size:13px; z-index:9999; opacity:0; transition:all 0.3s; pointer-events:none;
+      max-width:90%; text-align:center; white-space:nowrap;
+    }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    .toast.success { background:rgba(103,194,58,0.9); }
+    .toast.error { background:rgba(245,108,108,0.9); }
+    .toast.warn { background:rgba(230,162,60,0.92); }
+
+    /* ===== Scan Animation ===== */
+    @keyframes scanline {
+      0% { transform:translateY(-40px); }
+      50% { transform:translateY(40px); }
+      100% { transform:translateY(-40px); }
+    }
+    .scan-anim { width:100%; height:3px; background:var(--primary); border-radius:2px; animation:scanline 1.5s ease-in-out infinite; }
+
+    /* ===== Modal ===== */
+    .modal-mask {
+      position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5);
+      z-index:9000; display:none; align-items:center; justify-content:center;
+    }
+    .modal-mask.show { display:flex; }
+    .modal-box {
+      width:88%; max-width:340px; background:#fff; border-radius:12px; overflow:hidden;
+    }
+    .modal-box .mb-head { padding:16px 20px 8px; text-align:center; font-size:16px; font-weight:600; color:var(--text-title); }
+    .modal-box .mb-body { padding:8px 20px 20px; text-align:center; font-size:14px; color:var(--text-secondary); line-height:1.6; }
+    .modal-box .mb-foot { display:flex; border-top:1px solid var(--border-lighter); }
+    .modal-box .mb-foot button { flex:1; height:44px; border:none; font-size:15px; background:#fff; cursor:pointer; }
+    .modal-box .mb-foot .mb-cancel { color:var(--text-secondary); }
+    .modal-box .mb-foot .mb-confirm { color:var(--primary); font-weight:500; border-left:1px solid var(--border-lighter); }
+    .modal-box .mb-foot .mb-confirm.danger { color:var(--danger); }
+
+    /* Slide Panel - Bottom */
+    .slide-panel {
+      position:fixed; bottom:-70%; left:0; right:0; max-height:70%;
+      background:#fff; z-index:9100; transition:bottom 0.3s ease;
+      display:flex; flex-direction:column; border-radius:16px 16px 0 0;
+      box-shadow:0 -4px 20px rgba(0,0,0,0.15);
+    }
+    .slide-panel.show { bottom:0; }
+    .slide-mask {
+      position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.4);
+      z-index:9099; display:none;
+    }
+    .slide-mask.show { display:block; }
+    .sp-head { padding:14px 16px; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:space-between; }
+    .sp-head .sp-close { width:28px; height:28px; display:flex; align-items:center; justify-content:center; cursor:pointer; border-radius:50%; font-size:18px; }
+    .sp-head .sp-close:active { background:rgba(255,255,255,0.2); }
+    .sp-body { flex:1; overflow-y:auto; padding:10px 12px; }
+    .sp-item { padding:10px 12px; background:var(--bg-page); border-radius:var(--radius); margin-bottom:8px; }
+    .sp-item .sp-row { display:flex; justify-content:space-between; font-size:13px; color:var(--text-body); margin-bottom:3px; }
+    .sp-item .sp-row .sp-label { color:var(--text-secondary); }
+    .sp-item .sp-row .sp-val { font-weight:500; }
+  </style>
+</head>
+<body>
+
+<div class="pda-device">
+
+  <!-- ===== Page 1: Task List ===== -->
+  <div class="pda-page active" id="page1">
+    <div class="pda-header">
+      <div class="h-left">
+        <div class="h-title">移库任务</div>
+      </div>
+      <div class="h-right">
+        <span id="hTabLabel" style="font-size:12px;color:rgba(255,255,255,0.7);">未完成</span>
+        <a style="font-size:11px;color:rgba(255,255,255,0.45);cursor:pointer;text-decoration:none;" id="hCompletedLink" onclick="switchTab('completed')">历史</a>
+        <div class="h-avatar">张</div>
+        <span>范会</span>
+      </div>
+    </div>
+
+    <!-- Quick Scan Bar -->
+    <div style="padding:8px 12px;background:var(--bg-white);border-bottom:1px solid var(--border-light);">
+      <div style="display:flex;gap:8px;">
+        <input type="text" class="sc-input" id="quickScanInput" placeholder="扫码快速定位任务" style="flex:1;height:34px;font-size:13px;"
+          onkeydown="if(event.key==='Enter'){quickScanTask();}" oninput="this.value=this.value.toUpperCase()">
+        <button class="sc-btn" onclick="quickScanTask()" style="width:auto;padding:0 14px;font-size:12px;">扫码</button>
+      </div>
+    </div>
+
+    <div class="seg-control" id="segControl">
+      <div class="seg-item" data-scope="mine" onclick="setScope('mine')">我的任务<span class="seg-badge" id="segMine">0</span></div>
+      <div class="seg-item active" data-scope="all" onclick="setScope('all')">全部任务<span class="seg-badge" id="segAll">0</span></div>
+    </div>
+
+    <div class="search-bar">
+      <input type="text" class="search-input" id="searchInput" placeholder="搜索任务号/条码" oninput="renderTaskList()" onkeydown="if(event.key==='Enter')renderTaskList()">
+      <div class="filter-btn" id="filterBtn" onclick="toggleFilter()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+      </div>
+    </div>
+
+    <!-- Advanced Filter Panel -->
+    <div class="filter-panel" id="filterPanel">
+      <div class="adv-filter-row">
+        <span class="adv-label">日期</span>
+        <input type="date" class="adv-date" id="advDate">
+      </div>
+      <div class="adv-filter-row">
+        <span class="adv-label">执行人</span>
+        <select class="adv-select" id="advExecutor">
+          <option value="">全部</option>
+        </select>
+      </div>
+      <div class="adv-filter-row">
+        <span class="adv-label">条码</span>
+        <input type="text" class="adv-input" id="advBarcode" placeholder="输入条码号">
+      </div>
+      <div class="adv-filter-row">
+        <span class="adv-label">仓库</span>
+        <select class="adv-select" id="advWarehouse">
+          <option value="">全部</option>
+        </select>
+      </div>
+      <div class="adv-filter-row">
+        <span class="adv-label">库位</span>
+        <select class="adv-select" id="advLocation">
+          <option value="">全部</option>
+        </select>
+      </div>
+      <div class="adv-btn-row">
+        <button class="adv-reset" onclick="resetAdvFilter()">重置</button>
+        <button class="adv-apply" onclick="applyAdvFilter()">应用筛选</button>
+      </div>
+    </div>
+
+    <div class="stat-bar" id="statBar" style="display:none;">
+      <div class="stat-item pending"><div class="num" id="statIncomplete">0</div><div class="label">未完成</div></div>
+      <div class="stat-item done"><div class="num" id="statCompleted">0</div><div class="label">已完成</div></div>
+    </div>
+
+    <!-- Section: 未完成 -->
+    <div class="sec-header" id="secIncompleteHead">
+      <div class="sec-title"><span class="dot incomplete"></span>未完成<span class="sec-count" id="secIncompleteCount"></span></div>
+      <div class="sec-filter-row">
+        <div class="sec-chip active" data-incomp-filter="" onclick="setIncompFilter('')">全部</div>
+        <div class="sec-chip" data-incomp-filter="executing" onclick="setIncompFilter('executing')">执行中</div>
+        <div class="sec-chip" data-incomp-filter="pending" onclick="setIncompFilter('pending')">待执行</div>
+      </div>
+      <div class="sort-btn" id="sortBtn" onclick="toggleSort()">排序<span class="sort-arrow">↑</span></div>
+    </div>
+    <div class="task-list" id="incompleteList"></div>
+
+    <!-- Section: 已完成 -->
+    <div class="sec-header" id="secCompletedHead" style="display:none;">
+      <div class="sec-title"><span class="dot done"></span>已完成<span class="sec-count" id="secCompletedCount"></span></div>
+      <div class="sec-filter-row">
+        <input type="date" class="adv-date" id="completedDate" onchange="onCompletedDateChange()" style="width:120px;font-size:12px;">
+      </div>
+      <div class="sort-btn" onclick="switchTab('incomplete')" style="font-size:11px;">← 未完成</div>
+    </div>
+    <div class="task-list" id="completedList"></div>
+  </div>
+
+  <!-- ===== Page 2: Detail + Scan ===== -->
+  <div class="pda-page" id="page2">
+    <div class="pda-header">
+      <div class="h-left">
+        <div class="h-back" onclick="backToList()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </div>
+        <div class="h-title">物料明细</div>
+      </div>
+      <div class="h-right">
+        <div class="h-avatar" id="pdaAvatar">张</div>
+      </div>
+    </div>
+
+    <!-- Page 2 Tabs -->
+    <div class="seg-control" id="detailTabs">
+      <div class="seg-item active" data-dtab="info" onclick="switchDetailTab('info')">物料信息</div>
+      <div class="seg-item" data-dtab="scan" onclick="switchDetailTab('scan')">条码扫描</div>
+    </div>
+
+    <!-- 物料信息 Tab -->
+    <div id="detailTabInfo">
+      <div style="padding:8px 12px;display:flex;gap:8px;">
+        <input type="text" class="sc-input" id="detailScanInput" placeholder="扫码定位物料明细" style="flex:1;height:34px;font-size:13px;"
+          onkeydown="if(event.key==='Enter'){locateDetail();}" oninput="this.value=this.value.toUpperCase()">
+        <button class="sc-btn" onclick="locateDetail()" style="width:auto;padding:0 12px;font-size:12px;">定位</button>
+      </div>
+      <div class="detail-info-card" id="detailInfoCard"></div>
+      <div class="progress-card" id="progressCard"></div>
+      <div class="detail-list" id="detailList"></div>
+    </div>
+
+    <!-- 条码扫描 Tab -->
+    <div id="detailTabScan" style="display:none;">
+      <div class="scan-card" id="scanCard"></div>
+      <div class="detail-list" id="scanList"></div>
+      <div class="pda-bottom" id="scanBottomBar"></div>
+    </div>
+
+    <div class="pda-bottom" id="bottomBar"></div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Modal -->
+<div class="modal-mask" id="modalMask">
+  <div class="modal-box">
+    <div class="mb-head" id="modalHead">提示</div>
+    <div class="mb-body" id="modalBody"></div>
+    <div class="mb-foot">
+      <button class="mb-cancel" onclick="closeModal()">取消</button>
+      <button class="mb-confirm" id="modalConfirm" onclick="">确定</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ===== Data =====
+  const warehouseNames = {
+    '801':'成品仓(801)','802':'备用仓(802)','803':'原料仓(803)','804':'包材仓(804)',
+    '805':'半成品仓(805)','806':'返修仓(806)','808':'废品仓(808)','810':'暂存仓(810)',
+    '812':'外协仓(812)','815':'备品仓(815)','820':'工具仓(820)'
+  };
+  function whDisplay(code){ return warehouseNames[code] || code; }
+
+  const locationOptions = [
+    { code:'100481', type:'存储库位' }, { code:'100482', type:'存储库位' }, { code:'100483', type:'存储库位' },
+    { code:'200481', type:'待处理库位' }, { code:'200482', type:'待处理库位' }, { code:'200483', type:'待处理库位' },
+    { code:'300481', type:'车间库位' }, { code:'300482', type:'车间库位' },
+    { code:'400481', type:'质控库位' }, { code:'400482', type:'质控库位' },
+    { code:'4089911', type:'存储库位' }
+  ];
+  function locDisplay(code){ if(!code) return '--'; const o=locationOptions.find(x=>x.code===code); return o?`${o.code}(${o.type})`:code; }
+  function locType(code){ const o=locationOptions.find(x=>x.code===code); return o?o.type:''; }
+
+  // 库位类型流转规则
+  const locTransferRules = {
+    '存储库位': ['存储库位', '待处理库位'],
+    '待处理库位': ['存储库位'],
+    '车间库位': ['车间库位'],
+    '质控库位': ['质控库位']
+  };
+
+  const materialMap = {
+    'kw000111':'压缩机壳体A型','kw000112':'压缩机壳体B型','kw000113':'曲轴组件A型',
+    'kw000114':'连杆组件','kw000115':'活塞组件A','kw000116':'活塞组件B',
+    'kw000117':'气缸体A型','kw000118':'气缸体B型',
+    'kb9999111':'空调外机白色透性凉',
+    'kb00001':'空调外机透性凉'
+  };
+  function matName(code){ return materialMap[code] || '--'; }
+
+  // 条码库存映射（扫码自动带出）
+  const barcodeStockMap = {
+    't99999999': { material:'kb9999111', materialName:'空调外机白色透性凉', loc:'4089911', wh:'801' },
+    'bp20260810001': { material:'', materialName:'条码物料', loc:'400481', wh:'801' },
+    'bp20260810002': { material:'', materialName:'条码物料', loc:'300481', wh:'801' },
+    'bp20260810003': { material:'', materialName:'条码物料', loc:'400481', wh:'805' },
+    'bp20260810004': { material:'', materialName:'条码物料', loc:'300481', wh:'806' },
+    'bp20260810005': { material:'', materialName:'条码物料', loc:'400481', wh:'803' },
+  };
+
+  const statusMap = {
+    draft:     { label:'草稿',     cls:'s-draft' },
+    pending:   { label:'待执行',   cls:'s-pending' },
+    executing: { label:'执行中',   cls:'s-executing' },
+    completed: { label:'已完成',   cls:'s-completed' },
+    cancelled: { label:'已取消',   cls:'s-cancelled' },
+    closed:    { label:'异常关闭', cls:'s-closed' }
+  };
+
+  let tasks = [
+    {
+      id:1, taskNo:'YN552608100001', sourceWh:'801', targetWh:'802', status:'pending',
+      sourceLoc:'100481', targetLoc:'200481',
+      remark:'存储仓→待处理仓', creator:'admin', createTime:'2026/08/10 09:00',
+      deadline:'2026/08/12', executor:'', assignees:['TEAM-A','P001','P002'],
+      details:[
+        { id:1, material:'kb00001', barcode:'', qty:30, targetLoc:'200481', scanned:false, barcodeHead:'tr', batch:'001' },
+        { id:2, material:'kb00001', barcode:'', qty:20, targetLoc:'200482', scanned:false, barcodeHead:'tr', batch:'001' },
+        { id:3, material:'kw000111', barcode:'', qty:100, targetLoc:'100481', scanned:false, barcodeHead:'88TR', batch:'B202401' },
+        { id:4, material:'kw000112', barcode:'', qty:50,  targetLoc:'100482', scanned:false, barcodeHead:'88TR', batch:'B202402' },
+        { id:5, material:'kb9999111', barcode:'t99999999', qty:10, targetLoc:'4089911', scanned:false, barcodeHead:'T999', batch:'001' }
+      ]
+    },
+    {
+      id:2, taskNo:'YN552608100002', sourceWh:'803', targetWh:'805', status:'pending',
+      sourceLoc:'', targetLoc:'200481',
+      remark:'→待处理仓', creator:'admin', createTime:'2026/08/10 09:30',
+      deadline:'2026/08/13', executor:'', assignees:['TEAM-B','P003'],
+      details:[
+        { id:1, material:'kw000113', barcode:'', qty:200, targetLoc:'300482', scanned:false, barcodeHead:'QT', batch:'B202403' },
+        { id:2, material:'kw000114', barcode:'', qty:80,  targetLoc:'300481', scanned:false, barcodeHead:'LG', batch:'B202404' },
+        { id:3, material:'kw000115', barcode:'', qty:60,  targetLoc:'100481', scanned:false, barcodeHead:'HS', batch:'B202405' }
+      ]
+    },
+    {
+      id:3, taskNo:'YN55260809001', sourceWh:'801', targetWh:'803', status:'completed',
+      sourceLoc:'300481', targetLoc:'300482',
+      remark:'车间仓→质控仓', creator:'admin', createTime:'2026/08/09 14:00', completeTime:'2026/08/09 16:30',
+      deadline:'2026/08/10', executor:'zhangsan', assignees:['TEAM-B','P003'],
+      details:[
+        { id:1, material:'kw000111', barcode:'', qty:80,  targetLoc:'200481', scanned:true, execQty:80, sourceLoc:'100481', execTime:'2026/08/09 15:10' },
+        { id:2, material:'kw000114', barcode:'', qty:60,  targetLoc:'100483', scanned:true, execQty:60, sourceLoc:'100482', execTime:'2026/08/09 15:30' },
+        { id:3, material:'', barcode:'BP20260810002', qty:1, targetLoc:'300481', scanned:true, execQty:1, sourceLoc:'400481', execTime:'2026/08/09 15:45' },
+        { id:4, material:'kw000115', barcode:'', qty:120, targetLoc:'300482', scanned:true, execQty:120, sourceLoc:'100483', execTime:'2026/08/09 16:00' },
+        { id:5, material:'kw000116', barcode:'', qty:40,  targetLoc:'200483', scanned:true, execQty:40, sourceLoc:'100481', execTime:'2026/08/09 16:20' }
+      ]
+    },
+    {
+      id:4, taskNo:'YN55260809002', sourceWh:'805', targetWh:'806', status:'executing',
+      sourceLoc:'100481', targetLoc:'100483',
+      remark:'存储仓→车间仓', creator:'admin', createTime:'2026/08/09 15:00',
+      deadline:'2026/08/11', executor:'lisi', assignees:['TEAM-C','P004','P005'],
+      details:[
+        { id:1, material:'kw000117', barcode:'', qty:90,  targetLoc:'100481', scanned:true,  execQty:90, sourceLoc:'100483', execTime:'2026/08/09 15:20' },
+        { id:2, material:'kw000118', barcode:'', qty:70,  targetLoc:'100482', scanned:false, execQty:0,  sourceLoc:'',       execTime:'' },
+        { id:3, material:'', barcode:'BP20260810003', qty:1, targetLoc:'400481', scanned:false, execQty:0, sourceLoc:'', execTime:'' },
+        { id:4, material:'kw000114', barcode:'', qty:30,  targetLoc:'400482', scanned:false, execQty:0,  sourceLoc:'',       execTime:'' }
+      ]
+    },
+    {
+      id:5, taskNo:'YN55260808001', sourceWh:'802', targetWh:'804', status:'cancelled',
+      remark:'客户取消', creator:'admin', createTime:'2026/08/08 10:00',
+      deadline:'2026/08/09', executor:'', assignees:['TEAM-A'],
+      details:[
+        { id:1, material:'kw000115', barcode:'', qty:80, targetLoc:'100481', scanned:false },
+        { id:2, material:'kw000116', barcode:'', qty:60, targetLoc:'100482', scanned:false }
+      ]
+    },
+    {
+      id:6, taskNo:'YN55260807001', sourceWh:'806', targetWh:'810', status:'closed',
+      remark:'系统异常中断', creator:'admin', createTime:'2026/08/07 14:00',
+      deadline:'2026/08/08', executor:'wangwu', assignees:['P006','P007'],
+      details:[
+        { id:1, material:'kw000113', barcode:'', qty:50, targetLoc:'100483', scanned:true,  execQty:50, sourceLoc:'300482', execTime:'2026/08/07 14:30' },
+        { id:2, material:'', barcode:'BP20260810004', qty:1, targetLoc:'300481', scanned:false, execQty:0, sourceLoc:'', execTime:'' }
+      ]
+    },
+    {
+      id:7, taskNo:'YN55260806001', sourceWh:'801', targetWh:'805', status:'completed',
+      remark:'周计划移库', creator:'admin', createTime:'2026/08/06 08:30', completeTime:'2026/08/06 11:00',
+      deadline:'2026/08/07', executor:'zhangsan', assignees:['TEAM-A','P001'],
+      details:[
+        { id:1, material:'kw000111', barcode:'', qty:150, targetLoc:'100481', scanned:true, execQty:150, sourceLoc:'200481', execTime:'2026/08/06 09:15' },
+        { id:2, material:'kw000112', barcode:'', qty:80,  targetLoc:'100482', scanned:true, execQty:80,  sourceLoc:'200482', execTime:'2026/08/06 09:40' },
+        { id:3, material:'kw000115', barcode:'', qty:60,  targetLoc:'300481', scanned:true, execQty:60,  sourceLoc:'200483', execTime:'2026/08/06 10:20' }
+      ]
+    },
+    {
+      id:8, taskNo:'YN55260805002', sourceWh:'803', targetWh:'810', status:'completed',
+      remark:'原料调拨完工', creator:'admin', createTime:'2026/08/05 13:00', completeTime:'2026/08/05 17:00',
+      deadline:'2026/08/06', executor:'zhangsan', assignees:['TEAM-A','P001','P002'],
+      details:[
+        { id:1, material:'kw000113', barcode:'', qty:100, targetLoc:'300482', scanned:true, execQty:100, sourceLoc:'100483', execTime:'2026/08/05 14:00' },
+        { id:2, material:'', barcode:'BP20260810005', qty:1, targetLoc:'400481', scanned:true, execQty:1, sourceLoc:'100481', execTime:'2026/08/05 15:30' },
+        { id:3, material:'kw000116', barcode:'', qty:45, targetLoc:'200483', scanned:true, execQty:45, sourceLoc:'100482', execTime:'2026/08/05 16:10' }
+      ]
+    },
+    {
+      id:9, taskNo:'YN55260803001', sourceWh:'802', targetWh:'804', status:'completed',
+      remark:'包材仓整理', creator:'admin', createTime:'2026/08/03 09:00', completeTime:'2026/08/03 12:30',
+      deadline:'2026/08/04', executor:'lisi', assignees:['TEAM-C','P004'],
+      details:[
+        { id:1, material:'kw000117', barcode:'', qty:200, targetLoc:'100481', scanned:true, execQty:200, sourceLoc:'300481', execTime:'2026/08/03 10:00' },
+        { id:2, material:'kw000118', barcode:'', qty:100, targetLoc:'100482', scanned:true, execQty:100, sourceLoc:'300482', execTime:'2026/08/03 11:00' }
+      ]
+    },
+    {
+      id:10, taskNo:'YN55260730001', sourceWh:'805', targetWh:'801', status:'cancelled',
+      remark:'计划变更取消', creator:'admin', createTime:'2026/07/30 14:00',
+      deadline:'2026/08/01', executor:'', assignees:['TEAM-B','P003'],
+      cancelReason:'生产计划调整，不需要移库',
+      cancelTime:'2026/07/30 15:30',
+      details:[
+        { id:1, material:'kw000114', barcode:'', qty:90, targetLoc:'100481', scanned:false },
+        { id:2, material:'kw000115', barcode:'', qty:70, targetLoc:'100482', scanned:false }
+      ]
+    },
+    {
+      id:11, taskNo:'YN552608100003', sourceWh:'801', targetWh:'810', status:'draft',
+      sourceLoc:'', targetLoc:'200482',
+      remark:'→待处理仓', creator:'admin', createTime:'2026/08/10 08:00',
+      deadline:'', executor:'', assignees:['P001'],
+      details:[
+        { id:1, material:'kw000111', barcode:'', qty:200, targetLoc:'100483', scanned:false },
+        { id:2, material:'kw000117', barcode:'', qty:120, targetLoc:'300481', scanned:false }
+      ]
+    },
+    {
+      id:12, taskNo:'YN552608100004', sourceWh:'803', targetWh:'812', status:'pending',
+      sourceLoc:'400481', targetLoc:'400482',
+      remark:'质控仓→质控仓', creator:'admin', createTime:'2026/08/10 10:00',
+      deadline:'2026/08/15', executor:'', assignees:['TEAM-A','P001','P002','P005'],
+      details:[
+        { id:1, material:'kw000113', barcode:'', qty:300, targetLoc:'100481', scanned:false },
+        { id:2, material:'kw000114', barcode:'', qty:150, targetLoc:'100482', scanned:false },
+        { id:3, material:'kw000115', barcode:'', qty:100, targetLoc:'300482', scanned:false },
+        { id:4, material:'kw000118', barcode:'', qty:80,  targetLoc:'400481', scanned:false }
+      ]
+    },
+    {
+      id:13, taskNo:'YN552608100005', sourceWh:'805', targetWh:'815', status:'pending',
+      sourceLoc:'300482', targetLoc:'300481',
+      remark:'车间仓→车间仓', creator:'admin', createTime:'2026/08/10 10:30',
+      deadline:'2026/08/14', executor:'', assignees:['P001','P003'],
+      details:[
+        { id:1, material:'kw000116', barcode:'', qty:60, targetLoc:'100481', scanned:false },
+        { id:2, material:'kw000117', barcode:'', qty:40, targetLoc:'200483', scanned:false }
+      ]
+    },
+    {
+      id:14, taskNo:'YN552608100006', sourceWh:'802', targetWh:'806', status:'executing',
+      sourceLoc:'100482', targetLoc:'200483',
+      remark:'存储仓→待处理仓', creator:'admin', createTime:'2026/08/10 08:30',
+      deadline:'2026/08/11', executor:'zhangsan', assignees:['TEAM-A','P001','P002'],
+      details:[
+        { id:1, material:'kw000111', barcode:'', qty:80, targetLoc:'400482', scanned:true, execQty:80, sourceLoc:'100481', execTime:'2026/08/10 09:00' },
+        { id:2, material:'kw000112', barcode:'', qty:60, targetLoc:'400481', scanned:true, execQty:60, sourceLoc:'100482', execTime:'2026/08/10 09:20' },
+        { id:3, material:'kw000113', barcode:'', qty:40, targetLoc:'100483', scanned:false, execQty:0, sourceLoc:'', execTime:'' },
+        { id:4, material:'kw000114', barcode:'', qty:30, targetLoc:'300481', scanned:false, execQty:0, sourceLoc:'', execTime:'' }
+      ]
+    },
+    {
+      id:15, taskNo:'YN552608100007', sourceWh:'808', targetWh:'810', status:'executing',
+      remark:'废品清仓移库', creator:'admin', createTime:'2026/08/10 09:00',
+      deadline:'2026/08/11', executor:'lisi', assignees:['TEAM-C','P004'],
+      details:[
+        { id:1, material:'kw000115', barcode:'', qty:500, targetLoc:'200482', scanned:true, execQty:300, sourceLoc:'200481', execTime:'2026/08/10 09:40' },
+        { id:2, material:'kw000116', barcode:'', qty:200, targetLoc:'200483', scanned:false, execQty:0, sourceLoc:'', execTime:'' }
+      ]
+    },
+    {
+      id:16, taskNo:'YN552608100008', sourceWh:'810', targetWh:'820', status:'pending',
+      remark:'工具仓周转', creator:'admin', createTime:'2026/08/10 08:00',
+      deadline:'2026/08/13', executor:'', assignees:['TEAM-B','P003','P006'],
+      details:[
+        { id:1, material:'kw000118', barcode:'', qty:30, targetLoc:'100481', scanned:false },
+        { id:2, material:'kw000117', barcode:'', qty:25, targetLoc:'100482', scanned:false }
+      ]
+    },
+    {
+      id:17, taskNo:'YN55260809003', sourceWh:'801', targetWh:'804', status:'completed',
+      remark:'包材移库完成', creator:'admin', createTime:'2026/08/09 10:00', completeTime:'2026/08/09 14:00',
+      deadline:'2026/08/10', executor:'wangwu', assignees:['P006','P007'],
+      details:[
+        { id:1, material:'kw000111', barcode:'', qty:100, targetLoc:'100481', scanned:true, execQty:100, sourceLoc:'200481', execTime:'2026/08/09 10:30' },
+        { id:2, material:'kw000112', barcode:'', qty:80,  targetLoc:'100482', scanned:true, execQty:80,  sourceLoc:'200482', execTime:'2026/08/09 11:00' },
+        { id:3, material:'kw000113', barcode:'', qty:60,  targetLoc:'300481', scanned:true, execQty:60,  sourceLoc:'200483', execTime:'2026/08/09 13:00' }
+      ]
+    },
+    {
+      id:18, taskNo:'YN55260809004', sourceWh:'812', targetWh:'815', status:'completed',
+      remark:'备品入库', creator:'admin', createTime:'2026/08/09 16:00', completeTime:'2026/08/09 18:00',
+      deadline:'2026/08/10', executor:'zhangsan', assignees:['TEAM-A','P001'],
+      details:[
+        { id:1, material:'kw000114', barcode:'', qty:90, targetLoc:'100483', scanned:true, execQty:90, sourceLoc:'100481', execTime:'2026/08/09 16:30' },
+        { id:2, material:'kw000115', barcode:'', qty:70, targetLoc:'200481', scanned:true, execQty:70, sourceLoc:'100482', execTime:'2026/08/09 17:20' }
+      ]
+    },
+    {
+      id:19, taskNo:'YN55260808002', sourceWh:'803', targetWh:'806', status:'cancelled',
+      remark:'质量不合格取消', creator:'admin', createTime:'2026/08/08 14:00',
+      deadline:'2026/08/09', executor:'', assignees:['TEAM-B','P003'],
+      cancelReason:'质检不合格，退回供应商',
+      cancelTime:'2026/08/08 16:00',
+      details:[
+        { id:1, material:'kw000116', barcode:'', qty:40, targetLoc:'400481', scanned:false },
+        { id:2, material:'kw000117', barcode:'', qty:35, targetLoc:'400482', scanned:false }
+      ]
+    },
+    {
+      id:20, taskNo:'YN55260808003', sourceWh:'805', targetWh:'808', status:'closed',
+      remark:'设备故障中断', creator:'admin', createTime:'2026/08/08 10:00',
+      deadline:'2026/08/09', executor:'lisi', assignees:['TEAM-C','P004','P005'],
+      details:[
+        { id:1, material:'kw000118', barcode:'', qty:55, targetLoc:'200481', scanned:true, execQty:30, sourceLoc:'100483', execTime:'2026/08/08 10:30' },
+        { id:2, material:'kw000114', barcode:'', qty:45, targetLoc:'200482', scanned:false, execQty:0, sourceLoc:'', execTime:'' }
+      ]
+    }
+  ];
+
+  let currentFilter = '';
+  let currentScope = 'all';
+  let currentTab = 'incomplete'; // 'incomplete' | 'completed'
+  let incompFilter = '';
+  let sortMode = 'time'; // 'time' | 'status'
+  let currentTask = null;
+  let scanHistory = [];
+  let currentDetailTab = 'info';
+  const currentUser = 'P001';
+  const executorToUser = { 'zhangsan':'P001', 'lisi':'P004', 'wangwu':'P006' };
+  const userToName = { 'P001':'范会1000111', 'P002':'李四', 'P003':'王五', 'P004':'赵六', 'P005':'钱七', 'P006':'孙八', 'P007':'周九' };
+  // Advanced filter: default to today
+  let advFilter = { date: '', executor: '', barcode: '', warehouse: '', location: '' };
+  const todayStr = new Date().toISOString().slice(0,10); // YYYY-MM-DD
+
+  function isMyTask(t){
+    if(t.assignees && t.assignees.includes(currentUser)) return true;
+    if(t.executor && executorToUser[t.executor]===currentUser) return true;
+    return false;
+  }
+  function assigneeName(id){
+    if(id.startsWith('TEAM')) return id==='TEAM-A'?'甲班':id==='TEAM-B'?'乙班':'丙班';
+    return userToName[id] || id;
+  }
+
+  function esc(s){ return String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  // ===== Toast =====
+  let toastTimer = null;
+  function showToast(msg, type){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (type?' '+type:'');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>{ t.classList.remove('show'); }, 2000);
+  }
+
+  // ===== Modal =====
+  function showModal(head, body, confirmText, confirmFn, isDanger){
+    document.getElementById('modalHead').textContent = head;
+    document.getElementById('modalBody').innerHTML = body;
+    const btn = document.getElementById('modalConfirm');
+    btn.textContent = confirmText || '确定';
+    btn.className = 'mb-confirm' + (isDanger?' danger':'');
+    btn.onclick = function(){ closeModal(); if(confirmFn) confirmFn(); };
+    document.getElementById('modalMask').classList.add('show');
+  }
+  function closeModal(){ document.getElementById('modalMask').classList.remove('show'); }
+
+  // ===== Filter =====
+  function toggleFilter(){
+    const panel = document.getElementById('filterPanel');
+    panel.classList.toggle('show');
+  }
+  function initAdvFilter(){
+    // executor dropdown
+    const execSel = document.getElementById('advExecutor');
+    execSel.innerHTML = '<option value="">全部</option>';
+    const execSet = new Set();
+    tasks.forEach(t=>{ if(t.executor) execSet.add(t.executor); });
+    execSet.forEach(e=>{
+      const opt = document.createElement('option');
+      opt.value = e;
+      opt.textContent = userToName[executorToUser[e]] || e;
+      execSel.appendChild(opt);
+    });
+    // warehouse dropdown
+    const whSel = document.getElementById('advWarehouse');
+    whSel.innerHTML = '<option value="">全部</option>';
+    Object.keys(warehouseNames).forEach(code=>{
+      const opt = document.createElement('option');
+      opt.value = code;
+      opt.textContent = warehouseNames[code];
+      whSel.appendChild(opt);
+    });
+    // location dropdown
+    const locSel = document.getElementById('advLocation');
+    locSel.innerHTML = '<option value="">全部</option>';
+    locationOptions.forEach(l=>{
+      const opt = document.createElement('option');
+      opt.value = l.code;
+      opt.textContent = `${l.code}(${l.type})`;
+      locSel.appendChild(opt);
+    });
+    updateFilterBadge();
+  }
+  function applyAdvFilter(){
+    advFilter.date = document.getElementById('advDate').value || todayStr;
+    advFilter.executor = document.getElementById('advExecutor').value;
+    advFilter.barcode = document.getElementById('advBarcode').value.trim();
+    advFilter.warehouse = document.getElementById('advWarehouse').value;
+    advFilter.location = document.getElementById('advLocation').value;
+    updateFilterBadge();
+    document.getElementById('filterPanel').classList.remove('show');
+    renderTaskList();
+  }
+  function resetAdvFilter(){
+    document.getElementById('advDate').value = todayStr;
+    document.getElementById('advExecutor').value = '';
+    document.getElementById('advBarcode').value = '';
+    document.getElementById('advWarehouse').value = '';
+    document.getElementById('advLocation').value = '';
+    advFilter = { date: todayStr, executor: '', barcode: '', warehouse: '', location: '' };
+    updateFilterBadge();
+    document.getElementById('filterPanel').classList.remove('show');
+    renderTaskList();
+  }
+  function updateFilterBadge(){
+    const btn = document.getElementById('filterBtn');
+    const hasAdv = advFilter.executor || advFilter.barcode || advFilter.warehouse || advFilter.location;
+    btn.classList.toggle('has-filter', hasAdv);
+  }
+  function hasActiveAdvFilter(){
+    return advFilter.executor || advFilter.barcode || advFilter.warehouse || advFilter.location;
+  }
+  function taskMatchDate(t, dateStr){
+    // dateStr is YYYY-MM-DD, createTime is '2026/08/10 09:00'
+    const parts = t.createTime.split(' ')[0].split('/');
+    if(parts.length!==3) return true;
+    const taskDate = `${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`;
+    return taskDate === dateStr;
+  }
+  function taskMatchBarcode(t, barcode){
+    if(!barcode) return true;
+    return t.details.some(d=>d.barcode && d.barcode.toLowerCase().includes(barcode.toLowerCase()));
+  }
+  function taskMatchWarehouse(t, wh){
+    if(!wh) return true;
+    return t.sourceWh===wh || t.targetWh===wh;
+  }
+  function taskMatchLocation(t, loc){
+    if(!loc) return true;
+    return t.details.some(d=>d.targetLoc===loc);
+  }
+  function taskMatchExecutor(t, executor){
+    if(!executor) return true;
+    return t.executor===executor;
+  }
+  function setIncompFilter(status){
+    incompFilter = status;
+    document.querySelectorAll('.sec-chip').forEach(c=>{
+      c.classList.toggle('active', c.getAttribute('data-incomp-filter')===status);
+    });
+    renderTaskList();
+  }
+  function setScope(scope){
+    currentScope = scope;
+    document.querySelectorAll('.seg-item').forEach(s=>{
+      s.classList.toggle('active', s.getAttribute('data-scope')===scope);
+    });
+    incompFilter = '';
+    document.querySelectorAll('.sec-chip').forEach(c=>{ c.classList.toggle('active', c.getAttribute('data-incomp-filter')==='' ); });
+    renderTaskList();
+  }
+
+  function switchTab(tab){
+    currentTab = tab;
+    const label = document.getElementById('hTabLabel');
+    const link = document.getElementById('hCompletedLink');
+    if(tab==='incomplete'){
+      label.textContent = '未完成';
+      label.style.color = 'rgba(255,255,255,0.7)';
+      link.textContent = '历史';
+      link.style.color = 'rgba(255,255,255,0.45)';
+      advFilter.date = '';
+    } else {
+      label.textContent = '历史';
+      label.style.color = 'rgba(255,255,255,0.45)';
+      link.textContent = '← 返回';
+      link.style.color = 'rgba(255,255,255,0.7)';
+      // 默认不筛选日期，展示全部已完成
+      document.getElementById('completedDate').value = '';
+      advFilter.date = '';
+    }
+    document.getElementById('filterBtn').style.display = tab==='completed' ? 'none' : '';
+    document.getElementById('segControl').style.display = tab==='completed' ? 'none' : '';
+    document.getElementById('statBar').style.display = tab==='completed' ? 'none' : '';
+    renderTaskList();
+    document.querySelector('.pda-page.active').scrollTop = 0;
+  }
+  function toggleSort(){
+    if(sortMode==='time'){ sortMode='status'; }
+    else if(sortMode==='status'){ sortMode='time'; }
+    const btn = document.getElementById('sortBtn');
+    btn.innerHTML = sortMode==='time' ? '排序<span class="sort-arrow">↑</span>' : '状态<span class="sort-arrow">↓</span>';
+    renderTaskList();
+  }
+
+  // ===== Page Navigation =====
+  function quickScanTask(){
+    const input = document.getElementById('quickScanInput');
+    if(!input) return;
+    const code = input.value.trim().toUpperCase();
+    if(!code){ showToast('请扫码或输入条码','error'); return; }
+    // 查找匹配的任务（任务号或明细条码/物料编码）
+    const matched = tasks.filter(t=>{
+      if(t.taskNo.toUpperCase().includes(code)) return true;
+      return t.details.some(d=>d.barcode?.toUpperCase()===code || d.material?.toUpperCase()===code);
+    });
+    if(matched.length===0){
+      showToast(`未找到匹配任务: ${code}`, 'error');
+      return;
+    }
+    if(matched.length===1){
+      input.value = '';
+      openTask(matched[0].id);
+    } else {
+      // 多个匹配，筛选列表
+      document.getElementById('searchInput').value = code;
+      showToast(`找到 ${matched.length} 个任务，已筛选`, 'success');
+      renderTaskList();
+      input.value = '';
+    }
+  }
+
+  function locateDetail(){
+    const t = currentTask;
+    if(!t) return;
+    const input = document.getElementById('detailScanInput');
+    if(!input) return;
+    const code = input.value.trim().toUpperCase();
+    if(!code){ showToast('请输入条码或物料编码','error'); return; }
+    const d = t.details.find(x=>x.material?.toUpperCase()===code || x.barcode?.toUpperCase()===code);
+    if(d){
+      // 滚动到对应明细
+      const items = document.querySelectorAll('#detailList .detail-item');
+      const idx = t.details.indexOf(d);
+      if(idx>=0 && items[idx]){
+        items[idx].scrollIntoView({behavior:'smooth', block:'center'});
+        items[idx].style.background = 'var(--primary-light)';
+        setTimeout(()=>{ items[idx].style.background = ''; }, 1500);
+      }
+      showToast(`已定位: ${code}`, 'success');
+      input.value = '';
+    } else {
+      showToast(`未找到: ${code}`, 'error');
+    }
+  }
+
+  function switchDetailTab(tab){
+    const t = currentTask;
+    // 从条码扫描切走时，自动清空未提交数据
+    if(tab==='info' && currentDetailTab==='scan' && t){
+      scanHistory = scanHistory.filter(h=>h.taskId!==t.id);
+    }
+    doSwitchTab(tab);
+  }
+
+  function doSwitchTab(tab){
+    currentDetailTab = tab;
+    document.querySelectorAll('#detailTabs .seg-item').forEach(s=>{
+      s.classList.toggle('active', s.getAttribute('data-dtab')===tab);
+    });
+    document.getElementById('detailTabInfo').style.display = tab==='info' ? '' : 'none';
+    document.getElementById('detailTabScan').style.display = tab==='scan' ? '' : 'none';
+    if(tab==='scan'){
+      renderScanCard();
+      renderScanBottomBar();
+      setTimeout(()=>{ const si=document.getElementById('scanInput'); if(si)si.focus(); },200);
+    }
+  }
+
+  function renderScanBottomBar(){
+    const t = currentTask;
+    const count = scanHistory.filter(h=>h.taskId===t?.id).length;
+    const bar = document.getElementById('scanBottomBar');
+    bar.innerHTML = `
+      <button class="bb-btn bb-btn-success" onclick="submitScan()">提交（${count}）</button>
+    `;
+  }
+
+  function submitScan(){
+    const t = currentTask;
+    if(!t) return;
+    // 清空当前任务的扫码记录
+    scanHistory = scanHistory.filter(h=>h.taskId!==t.id);
+    showToast('提交成功，可继续扫码', 'success');
+    renderScanCard();
+    renderDetailList();
+    renderProgress();
+  }
+
+  function showPage(pageId){
+    document.querySelectorAll('.pda-page').forEach(p=>p.classList.remove('active'));
+    document.getElementById(pageId).classList.add('active');
+    if(pageId==='page1') { window.scrollTo(0,0); }
+  }
+
+  function backToList(){
+    const t = currentTask;
+    if(t){
+      const pending = scanHistory.filter(h=>h.taskId===t.id);
+      if(pending.length>0){
+        showModal('扫描明细未提交', `有 ${pending.length} 条扫码记录未提交，离开将清空。<br>确认离开吗？`, '离开', ()=>{
+          goBackToList();
+        }, false);
+        return;
+      }
+    }
+    goBackToList();
+  }
+
+  function goBackToList(){
+    showPage('page1');
+    currentTask = null;
+    renderTaskList();
+  }
+
+  // ===== Page 1: Task List =====
+  function getFilteredTasks(){
+    const kw = document.getElementById('searchInput').value.trim().toLowerCase();
+    // 未完成任务（全部）
+    const allIncomplete = tasks.filter(t=>t.status==='pending' || t.status==='executing');
+    // scope：我的/全部 只影响未完成
+    const scopeTasks = currentScope==='mine' ? allIncomplete.filter(t=>isMyTask(t)) : allIncomplete;
+
+    let incomplete = [...scopeTasks];
+    let completed = tasks.filter(t=>t.status==='completed');
+
+    // search by taskNo or barcode
+    if(kw){
+      incomplete = incomplete.filter(t=>t.taskNo.toLowerCase().includes(kw) || taskMatchBarcode(t, kw));
+      completed = completed.filter(t=>t.taskNo.toLowerCase().includes(kw) || taskMatchBarcode(t, kw));
+    }
+
+    // date filter (only apply to completed tab)
+    if(advFilter.date && currentTab==='completed'){
+      completed = completed.filter(t=>taskMatchDate(t, advFilter.date));
+    }
+
+    // advanced filters
+    if(advFilter.executor){
+      incomplete = incomplete.filter(t=>taskMatchExecutor(t, advFilter.executor));
+      completed = completed.filter(t=>taskMatchExecutor(t, advFilter.executor));
+    }
+    if(advFilter.barcode){
+      incomplete = incomplete.filter(t=>taskMatchBarcode(t, advFilter.barcode));
+      completed = completed.filter(t=>taskMatchBarcode(t, advFilter.barcode));
+    }
+    if(advFilter.warehouse){
+      incomplete = incomplete.filter(t=>taskMatchWarehouse(t, advFilter.warehouse));
+      completed = completed.filter(t=>taskMatchWarehouse(t, advFilter.warehouse));
+    }
+    if(advFilter.location){
+      incomplete = incomplete.filter(t=>taskMatchLocation(t, advFilter.location));
+      completed = completed.filter(t=>taskMatchLocation(t, advFilter.location));
+    }
+
+    // incomplete filter
+    if(incompFilter){
+      incomplete = incomplete.filter(t=>t.status===incompFilter);
+    }
+
+    // sort incomplete
+    if(sortMode==='status'){
+      incomplete.sort((a,b)=>{
+        const order = { executing:1, pending:2 };
+        return (order[a.status]||9) - (order[b.status]||9);
+      });
+    } else {
+      incomplete.sort((a,b)=>b.createTime.localeCompare(a.createTime));
+    }
+
+    // sort completed by completeTime desc
+    completed.sort((a,b)=>(b.completeTime||b.createTime).localeCompare(a.completeTime||a.createTime));
+
+    return { incomplete, completed };
+  }
+
+  function renderTaskCard(t, isComplete){
+    const st = statusMap[t.status];
+    const total = t.details.length;
+    const scanned = t.details.filter(d=>d.scanned).length;
+    const pct = total>0 ? Math.round(scanned/total*100) : 0;
+    const fillCls = t.status==='completed' ? 'var(--success)' : (t.status==='executing' ? 'var(--warning)' : 'var(--primary)');
+    const assigneeTags = (t.assignees||[]).slice(0,3).map(a=>{
+      return `<span class="assignee-tag">${esc(assigneeName(a))}</span>`;
+    }).join('');
+    const extraAssignee = (t.assignees||[]).length > 3 ? `<span class="assignee-tag">+${t.assignees.length-3}</span>` : '';
+    const executorName = t.executor ? (userToName[executorToUser[t.executor]] || t.executor) : '--';
+    const timeLabel = isComplete ? (t.completeTime || t.createTime) : t.createTime;
+    const timeTag = isComplete ? '完成' : '创建';
+    // 机型种类：去重物料编码
+    const matTypes = new Set(t.details.filter(d=>d.material).map(d=>d.material)).size;
+    // 最新执行时间
+    const latestExec = t.details.filter(d=>d.execTime).map(d=>d.execTime).sort().pop() || '';
+    // 自动备注：源/目标待处理判断
+    const srcIsPending = t.sourceLoc && locType(t.sourceLoc)==='待处理库位';
+    const tgtIsPending = t.targetLoc && locType(t.targetLoc)==='待处理库位';
+    let autoRemark = t.remark || '';
+    if(!autoRemark && srcIsPending && !tgtIsPending) autoRemark = '待处理移出';
+    if(!autoRemark && !srcIsPending && tgtIsPending) autoRemark = '待处理移入';
+
+    return `
+      <div class="task-card" onclick="openTask(${t.id})">
+        <div class="tc-top">
+          <span class="tc-no">${esc(t.taskNo)}</span>
+          <span class="tc-status ${st.cls}">${st.label}</span>
+        </div>
+        <div class="tc-route">
+          <span class="tc-wh">${t.sourceLoc ? esc(locDisplay(t.sourceLoc)) : '--'}</span>
+          <span class="tc-arrow">-&gt;</span>
+          <span class="tc-wh">${esc(locDisplay(t.targetLoc))}</span>
+        </div>
+        <div class="tc-info">
+          <span>机型: ${matTypes}种</span>
+          <span>创建: ${esc(t.createTime)}</span>
+          <span>创建人: ${esc(t.creator||'--')}</span>
+          ${t.deadline ? '<span>要求完成: '+esc(t.deadline)+'</span>' : ''}
+          ${latestExec ? '<span>执行: '+esc(latestExec)+'</span>' : ''}
+          <span>执行人: ${esc(executorName)}</span>
+          ${autoRemark ? '<span style="color:var(--warning);">'+esc(autoRemark)+'</span>' : ''}
+        </div>
+        ${total>0 ? `
+        <div class="tc-progress" onclick="event.stopPropagation();openSlide(${t.id})">
+          <div class="tc-progress-bar"><div class="tc-progress-fill" style="width:${pct}%;background:${fillCls};"></div></div>
+          <span class="tc-progress-text" style="cursor:pointer;color:var(--link);">${scanned}/${total}</span>
+        </div>` : ''}
+        ${assigneeTags || extraAssignee ? `<div class="tc-assignees">${assigneeTags}${extraAssignee}</div>` : ''}
+        <div class="tc-go">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </div>
+      </div>`;
+  }
+
+  function renderEmpty(msg){
+    return `<div class="empty-list">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+      <p>${msg}</p>
+    </div>`;
+  }
+
+  function renderTaskList(){
+    const { incomplete, completed } = getFilteredTasks();
+
+    // Tab visibility
+    const showIncomplete = currentTab==='incomplete';
+    document.getElementById('secIncompleteHead').style.display = showIncomplete ? '' : 'none';
+    document.getElementById('incompleteList').style.display = showIncomplete ? '' : 'none';
+    document.getElementById('secCompletedHead').style.display = showIncomplete ? 'none' : '';
+    document.getElementById('completedList').style.display = showIncomplete ? 'none' : '';
+
+    // segment badges (只统计未完成)
+    const allIncomp = tasks.filter(t=>t.status==='pending'||t.status==='executing');
+    const mineIncomp = allIncomp.filter(t=>isMyTask(t)).length;
+    const allIncompCount = allIncomp.length;
+    document.getElementById('segMine').textContent = mineIncomp;
+    document.getElementById('segAll').textContent = allIncompCount;
+
+    // stats
+    const allComp = tasks.filter(t=>t.status==='completed').length;
+    document.getElementById('statIncomplete').textContent = allIncompCount;
+    document.getElementById('statCompleted').textContent = allComp;
+
+    // incomplete list
+    const incList = document.getElementById('incompleteList');
+    document.getElementById('secIncompleteCount').textContent = `(${incomplete.length})`;
+    incList.innerHTML = incomplete.length===0
+      ? renderEmpty('暂无未完成任务')
+      : incomplete.map(t=>renderTaskCard(t, false)).join('');
+
+    // completed list
+    const compList = document.getElementById('completedList');
+    document.getElementById('secCompletedCount').textContent = `(${completed.length})`;
+    compList.innerHTML = completed.length===0
+      ? renderEmpty('暂无已完成任务')
+      : completed.map(t=>renderTaskCard(t, true)).join('');
+  }
+
+  // ===== Page 2: Open Task =====
+  function openTask(id){
+    const t = tasks.find(x=>x.id===id);
+    if(!t) return;
+    currentTask = t;
+
+    const isFinished = t.status==='completed' || t.status==='cancelled' || t.status==='closed';
+    // auto-start: pending -> executing (only for active tasks)
+    if(!isFinished && t.status==='pending'){
+      t.status='executing';
+      if(!t.executor) t.executor='范会1000111';
+    }
+
+    renderDetailInfo();
+    renderProgress();
+    renderDetailList();
+    renderBottomBar();
+    // 已完成/取消/关闭 → 只显示物料信息
+    document.getElementById('detailTabs').style.display = isFinished ? 'none' : '';
+    currentDetailTab = 'info';
+    document.getElementById('detailTabInfo').style.display = '';
+    document.getElementById('detailTabScan').style.display = 'none';
+
+    showPage('page2');
+  }
+
+  function renderDetailInfo(){
+    const t = currentTask;
+    if(!t) return;
+    const st = statusMap[t.status];
+    const matTypes = new Set(t.details.filter(d=>d.material).map(d=>d.material)).size;
+    const latestExec = t.details.filter(d=>d.execTime).map(d=>d.execTime).sort().pop() || '';
+    const srcIsPending = t.sourceLoc && locType(t.sourceLoc)==='待处理库位';
+    const tgtIsPending = t.targetLoc && locType(t.targetLoc)==='待处理库位';
+    let autoRemark = t.remark || '';
+    if(!autoRemark && srcIsPending && !tgtIsPending) autoRemark = '待处理移出';
+    if(!autoRemark && !srcIsPending && tgtIsPending) autoRemark = '待处理移入';
+    const executorName = t.executor || '--';
+    document.getElementById('detailInfoCard').innerHTML = `
+      <div class="dc-no">${esc(t.taskNo)}</div>
+      <div class="dc-route">
+        <span class="dc-wh">${t.sourceLoc ? esc(locDisplay(t.sourceLoc)) : '--'}</span>
+        <span class="dc-arrow">-&gt;</span>
+        <span class="dc-wh">${esc(locDisplay(t.targetLoc))}</span>
+        <span class="tc-status ${st.cls}" style="margin-left:auto;">${st.label}</span>
+      </div>
+      <div class="dc-meta">
+        <span>机型: ${matTypes}种</span>
+        <span>创建: ${esc(t.createTime)}</span>
+        <span>创建人: ${esc(t.creator||'--')}</span>
+        ${t.deadline ? '<span>要求完成: '+esc(t.deadline)+'</span>' : ''}
+        ${latestExec ? '<span>执行: '+esc(latestExec)+'</span>' : ''}
+        <span>执行人: ${esc(executorName)}</span>
+        ${autoRemark ? '<span style="color:var(--warning);">'+esc(autoRemark)+'</span>' : ''}
+      </div>
+    `;
+  }
+
+  function renderProgress(){
+    const t = currentTask;
+    if(!t) return;
+    const total = t.details.length;
+    const scanned = t.details.filter(d=>d.scanned).length;
+    const pct = total>0 ? Math.round(scanned/total*100) : 0;
+    document.getElementById('progressCard').innerHTML = `
+      <div class="pc-top">
+        <span class="pc-label">执行进度</span>
+        <span class="pc-count"><span class="done">${scanned}</span><span class="total"> / ${total}</span></span>
+      </div>
+      <div class="pc-bar"><div class="pc-fill" style="width:${pct}%;"></div></div>
+    `;
+  }
+
+  function renderScanCard(){
+    const t = currentTask;
+    if(!t) return;
+    const allDone = t.details.length>0 && t.details.every(d=>d.scanned);
+    document.getElementById('scanCard').innerHTML = `
+      <div class="sc-input-wrap">
+        <input type="text" class="sc-input" id="scanInput" placeholder="扫码条码/箱号/栈板号" ${allDone?'disabled':''}
+          onkeydown="if(event.key==='Enter'){doScan();}" oninput="updateScanCount();this.value=this.value.toUpperCase()">
+        <button class="sc-btn" ${allDone?'disabled':''}>提示模式</button>
+      </div>
+      <div style="font-size:11px;color:var(--text-placeholder);margin-top:4px;text-align:right;" id="scanCharCount">0位</div>
+      <div style="display:flex;gap:16px;margin-top:8px;">
+        <label style="display:flex;align-items:center;gap:4px;font-size:13px;color:var(--text-body);cursor:pointer;">
+          <input type="checkbox" id="scanAutoStack" style="width:16px;height:16px;accent-color:var(--primary);"> 自动堆板
+        </label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:13px;color:var(--text-body);cursor:pointer;">
+          <input type="checkbox" id="scanScannedAlert" checked style="width:16px;height:16px;accent-color:var(--primary);"> 已扫提示
+        </label>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:10px;">
+        <div style="flex:1;">
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:3px;">目标库位</div>
+          <div style="font-size:13px;font-weight:500;color:var(--primary);padding:6px 10px;background:var(--primary-light);border-radius:var(--radius);">${esc(locDisplay(t.targetLoc))}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:8px;">
+        <div style="flex:1;">
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:3px;">待处理原因${locType(t.targetLoc)==='待处理库位'?'<span style="color:var(--danger);">*</span>':''}</div>
+          <select class="query-select" id="scanReason" style="width:100%;height:32px;font-size:12px;">
+            <option value="">${locType(t.targetLoc)==='待处理库位'?'请选择':'选填'}</option>
+            <option value="接水盘泡沫烂">接水盘泡沫烂</option>
+            <option value="底盖、面板变形">底盖、面板变形</option>
+            <option value="临时条码采集">临时条码采集</option>
+            <option value="珠海无模，分厂退回">珠海无模，分厂退回</option>
+            <option value="参展机">参展机</option>
+            <option value="纸箱烂">纸箱烂</option>
+            <option value="侧板、顶盖变形">侧板、顶盖变形</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:3px;">异常类型${locType(t.targetLoc)==='待处理库位'?'<span style="color:var(--danger);">*</span>':''}</div>
+          <select class="query-select" id="scanAbnormalType" style="width:100%;height:32px;font-size:12px;">
+            <option value="">${locType(t.targetLoc)==='待处理库位'?'请选择':'选填'}</option>
+            <option value="临时管控">临时管控</option>
+            <option value="运输事故机">运输事故机</option>
+            <option value="销售退货">销售退货</option>
+            <option value="参展机">参展机</option>
+            <option value="漏冷媒">漏冷媒</option>
+            <option value="自然灾害">自然灾害</option>
+            <option value="厂内损坏">厂内损坏</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+      </div>
+    `;
+    renderScanList();
+  }
+
+  function updateScanCount(){
+    const input = document.getElementById('scanInput');
+    const cnt = document.getElementById('scanCharCount');
+    if(input && cnt){
+      cnt.textContent = input.value.length + '位';
+      cnt.style.color = input.value.length>=6 ? 'var(--success)' : 'var(--text-placeholder)';
+    }
+  }
+
+  function renderScanList(){
+    const t = currentTask;
+    if(!t) return;
+    const list = document.getElementById('scanList');
+    const records = scanHistory.filter(h=>h);
+    if(records.length===0){
+      list.innerHTML = '<div class="empty-list"><p>扫码后记录将显示在此处</p></div>';
+      return;
+    }
+    list.innerHTML = `
+      <div class="dl-title">
+        <span>扫码记录</span>
+        <span class="dl-count">共 ${records.length} 条</span>
+      </div>
+      <table class="wms-table" style="font-size:12px;">
+        <thead>
+          <tr>
+            <th style="width:22%;">条码/箱号</th>
+            <th style="width:16%;">物料编码</th>
+            <th style="width:13%;">所在仓</th>
+            <th style="width:13%;">所在库位</th>
+            <th style="width:7%;">数量</th>
+            <th style="width:8%;">年份</th>
+            <th style="width:8%;">月份</th>
+            <th style="width:13%;">栈板号</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${records.map((h,idx)=>{
+            const whName = h.wh ? whDisplay(h.wh) : '--';
+            const locName = h.loc ? h.loc : '--';
+            return `
+              <tr>
+                <td><span style="font-size:12px;font-weight:500;">${esc(h.code)}</span>${h.ok?' <span style="font-size:10px;padding:1px 4px;border-radius:3px;background:var(--success-light);color:var(--success);">✓</span>':''}</td>
+                <td>${esc(h.material||'--')} ${esc(h.materialName||'')}</td>
+                <td>${esc(whName)}</td>
+                <td>${esc(locName)}</td>
+                <td style="text-align:center;font-weight:500;">1</td>
+                <td style="text-align:center;">24年</td>
+                <td style="text-align:center;">11月</td>
+                <td style="text-align:center;">ZB${String(idx+1).padStart(3,'0')}</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function renderDetailList(){
+    const t = currentTask;
+    if(!t) return;
+    const total = t.details.length;
+    const scanned = t.details.filter(d=>d.scanned).length;
+    const list = document.getElementById('detailList');
+    list.innerHTML = `
+      <div class="dl-title">
+        <span>物料明细</span>
+        <span class="dl-count">共 ${total} 条, 已扫 ${scanned} 条</span>
+      </div>
+      ${t.details.map((d,idx)=>{
+        const itemCls = d.scanned ? 'scanned' : '';
+        const execQty = d.scanned ? (d.execQty!==undefined ? d.execQty : d.qty) : 0;
+        const executorName = t.executor || '--';
+        const barcodeHead = d.barcodeHead || (d.barcode ? d.barcode.slice(0,4) : '--');
+        const matNameDisplay = d.material ? matName(d.material) : (d.barcode ? '条码物料' : '--');
+
+        return `
+          <div class="detail-item ${itemCls}">
+            <div class="di-top">
+              <span class="di-code">${esc(d.material || d.barcode || '--')}</span>
+              <span style="font-size:12px;color:var(--text-secondary);">${esc(matNameDisplay)}</span>
+              ${d.scanned ? '<span style="font-size:10px;padding:1px 6px;border-radius:3px;background:var(--success-light);color:var(--success);">已扫</span>' : '<span style="font-size:10px;padding:1px 6px;border-radius:3px;background:var(--warning-light);color:var(--warning);">待扫</span>'}
+            </div>
+            <div class="di-info">
+              <span>条码头: ${esc(barcodeHead)}</span>
+              <span>批次: ${esc(d.batch||'--')}</span>
+              <span>数量: <b style="color:var(--link);cursor:pointer;" onclick="event.stopPropagation();openSlide(${t.id},${d.id})">${execQty}</b>/${d.qty}</span>
+              <span>执行人: ${esc(executorName)}</span>
+            </div>
+            <div class="di-info">
+              <span>执行时间: ${d.scanned&&d.execTime ? esc(d.execTime) : '--'}</span>
+              <span>目标库位: ${esc(locDisplay(d.targetLoc))}</span>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    `;
+  }
+
+  function renderBottomBar(){
+    // 底部按钮已去掉，通过页签切换
+    document.getElementById('bottomBar').innerHTML = '';
+  }
+
+  // ===== Scan Logic =====
+  function doScan(){
+    const t = currentTask;
+    if(!t) return;
+    const input = document.getElementById('scanInput');
+    if(!input) return;
+    const code = input.value.trim().toUpperCase();
+    if(!code){ showToast('请扫码或输入编码','error'); return; }
+
+    // 条码去重检查
+    const dupScan = scanHistory.find(h=>h.code===code);
+    if(dupScan){
+      showToast(`条码 ${code} 已扫，勿重复`, 'error');
+      input.value = '';
+      setTimeout(()=>{ const si=document.getElementById('scanInput'); if(si) si.focus(); }, 100);
+      return;
+    }
+
+    // 超出需求数量检查
+    const totalQty = t.details.reduce((s,d)=>s+(Number(d.qty)||0),0);
+    const scannedCount = scanHistory.filter(h=>h.taskId===t.id).length;
+    if(scannedCount >= totalQty){
+      showToast(`超出需求数量 ${scannedCount}/${totalQty}`, 'error');
+      input.value = '';
+      setTimeout(()=>{ const si=document.getElementById('scanInput'); if(si) si.focus(); }, 100);
+      return;
+    }
+
+    // 待处理目标库位必须选待处理原因和异常类型
+    if(locType(t.targetLoc)==='待处理库位'){
+      const reason = document.getElementById('scanReason')?.value;
+      const abnorm = document.getElementById('scanAbnormalType')?.value;
+      if(!reason || !abnorm){
+        showToast('目标库位为待处理，请选择待处理原因和异常类型', 'warn');
+        return;
+      }
+    }
+
+    const now = new Date();
+    const timeStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+    // 纯数字6位 → 默认扫入成功
+    const isNumeric6 = /^\d{6}$/.test(code);
+
+    // find matching detail (case-insensitive)
+    const d = t.details.find(x=> x.material.toLowerCase()===code.toLowerCase() || x.barcode.toLowerCase()===code.toLowerCase());
+    if(d && !d.scanned){
+      d.scanned = true;
+      d.execQty = d.qty;
+      d.sourceLoc = d.targetLoc;
+      d.execTime = timeStr;
+      input.value = '';
+      showToast(`扫码成功: ${code}`, 'success');
+      scanHistory.push({ code, time: timeStr, ok:true, taskId:t.id, material:d.material, materialName:matName(d.material), loc:d.targetLoc, wh:t.sourceWh });
+
+      renderProgress();
+      renderScanCard();
+      renderScanBottomBar();
+      renderDetailList();
+    } else if(d && d.scanned){
+      // 检查"已扫提示"复选框
+      const scannedAlert = document.getElementById('scanScannedAlert');
+      if(scannedAlert && scannedAlert.checked){
+        showToast(`已扫码, 勿重复: ${code}`, 'error');
+      } else {
+        showModal('条码已存在', `条码 <b>${code}</b> 已扫描，是否删除该条记录？`, '确认删除', function(){
+          // 删除扫码记录
+          scanHistory = scanHistory.filter(h => !(h.code === code && h.taskId === t.id));
+          // 撤销该明细的已扫状态
+          d.scanned = false;
+          d.execQty = 0;
+          d.sourceLoc = '';
+          d.execTime = '';
+          showToast(`已撤销: ${code}`, 'warn');
+          renderProgress();
+          renderScanCard();
+          renderScanBottomBar();
+          renderDetailList();
+          renderScanList();
+        }, true);
+      }
+      input.value = '';
+    } else {
+      // 查条码库存映射
+      const stock = barcodeStockMap[code.toLowerCase()];
+      if(stock || isNumeric6){
+        const info = stock || { material:'kb9999111', materialName:'空调外机白色透性凉', loc:'4089911', wh:'801' };
+        scanHistory.push({ code, time: timeStr, ok:true, taskId:t.id, material:info.material, materialName:info.materialName, loc:info.loc, wh:info.wh });
+        showToast(`扫入成功: ${code}`, 'success');
+      } else if(/[a-zA-Z]/.test(code)){
+        showToast(`物料不在单据范围内: ${code}`, 'error');
+      } else {
+        showToast(`条码 ${code} 无库存记录`, 'error');
+      }
+      input.value = '';
+      renderScanCard();
+    }
+    setTimeout(()=>{ const si=document.getElementById('scanInput'); if(si) si.focus(); }, 100);
+  }
+
+  function manualComplete(){
+    const t = currentTask;
+    if(!t) return;
+    const unscanned = t.details.filter(d=>!d.scanned);
+    if(unscanned.length>0){
+      showModal('提示', `还有 <b style="color:var(--danger);">${unscanned.length}</b> 条明细未扫码, 确认手动完成?`, '确认完成', function(){
+        doComplete();
+      }, true);
+    } else {
+      doComplete();
+    }
+  }
+
+  function completeTask(){
+    doComplete();
+  }
+
+  function doComplete(){
+    const t = currentTask;
+    if(!t) return;
+    const now = new Date();
+    const timeStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    t.details.forEach(d=>{
+      d.scanned = true;
+      if(!d.execQty) d.execQty = d.qty;
+      if(!d.execTime) d.execTime = timeStr;
+      if(!d.sourceLoc) d.sourceLoc = d.targetLoc;
+    });
+    t.status = 'completed';
+    t.completeTime = timeStr;
+    if(!t.executor) t.executor = 'zhangsan';
+    showToast('移库任务已完成', 'success');
+    renderDetailInfo();
+    renderProgress();
+    renderScanCard();
+    renderDetailList();
+    renderBottomBar();
+  }
+
+  function confirmExit(){
+    showModal('退出执行', '退出后本次扫码进度已保存, 下次可继续执行, 确认退出?', '退出', function(){
+      backToList();
+    });
+  }
+
+  // ===== Init =====
+  initAdvFilter();
+  document.getElementById('completedDate').value = todayStr;
+  renderTaskList();
+
+  function onCompletedDateChange(){
+    advFilter.date = document.getElementById('completedDate').value;
+    renderTaskList();
+  }
+
+  // ===== Slide Panel =====
+  function openSlide(taskId, detailId){
+    const t = tasks.find(x=>x.id===taskId);
+    if(!t) return;
+    document.getElementById('slideMask').classList.add('show');
+    document.getElementById('slidePanel').classList.add('show');
+
+    let bodyHTML = '';
+    if(detailId){
+      // 单条明细的条码记录
+      const d = t.details.find(x=>x.id===detailId);
+      if(d){
+        document.getElementById('slideTitle').textContent = '条码明细';
+        const scanRecords = scanHistory.filter(h=>h.taskId===t.id).filter(h=>h.code);
+        const matRecords = t.details.filter(x=>x.scanned && (!detailId || x.id===detailId));
+        const list = detailId ? matRecords : t.details.filter(x=>x.scanned);
+        bodyHTML = list.map(d=>{
+          const h = scanRecords.find(s=>s.material===d.material || s.code===d.barcode);
+          return `
+            <div class="sp-item">
+              <div class="sp-row"><span class="sp-label">条码</span><span class="sp-val">${esc(d.barcode||d.material||'--')}</span></div>
+              <div class="sp-row"><span class="sp-label">物料编码</span><span class="sp-val">${esc(d.material||'--')}</span></div>
+              <div class="sp-row"><span class="sp-label">物料名称</span><span class="sp-val">${esc(matName(d.material))}</span></div>
+              <div class="sp-row"><span class="sp-label">数量</span><span class="sp-val">${d.execQty||d.qty}/${d.qty}</span></div>
+              <div class="sp-row"><span class="sp-label">扫描时间</span><span class="sp-val">${esc(d.execTime||'--')}</span></div>
+              <div class="sp-row"><span class="sp-label">扫描人</span><span class="sp-val">${esc(t.executor||'--')}</span></div>
+              <div class="sp-row"><span class="sp-label">所在库位</span><span class="sp-val">${esc(locDisplay(d.targetLoc))}</span></div>
+            </div>
+          `;
+        }).join('');
+      }
+    } else {
+      // 全部已扫条码
+      document.getElementById('slideTitle').textContent = `条码明细 (${scanHistory.filter(h=>h.taskId===t.id).length}条)`;
+      const records = scanHistory.filter(h=>h.taskId===t.id);
+      if(records.length===0){
+        bodyHTML = '<div style="text-align:center;padding:40px;color:var(--text-placeholder);">暂无扫码记录</div>';
+      } else {
+        bodyHTML = records.map(h=>`
+          <div class="sp-item">
+            <div class="sp-row"><span class="sp-label">条码</span><span class="sp-val">${esc(h.code)}</span></div>
+            <div class="sp-row"><span class="sp-label">物料编码</span><span class="sp-val">${esc(h.material||'--')}</span></div>
+            <div class="sp-row"><span class="sp-label">数量</span><span class="sp-val">1</span></div>
+            <div class="sp-row"><span class="sp-label">物料名称</span><span class="sp-val">${esc(h.materialName||'--')}</span></div>
+            <div class="sp-row"><span class="sp-label">扫描时间</span><span class="sp-val">${esc(h.time)}</span></div>
+            <div class="sp-row"><span class="sp-label">扫描人</span><span class="sp-val">${esc(t.executor||'范会1000111')}</span></div>
+            <div class="sp-row"><span class="sp-label">所在库位</span><span class="sp-val">${h.loc?esc(locDisplay(h.loc)):'--'}</span></div>
+            <div class="sp-row"><span class="sp-label">库龄年份</span><span class="sp-val">24年</span></div>
+            <div class="sp-row"><span class="sp-label">库龄月</span><span class="sp-val">11月</span></div>
+          </div>
+        `).join('');
+      }
+    }
+    document.getElementById('slideBody').innerHTML = bodyHTML || '<div style="text-align:center;padding:40px;color:var(--text-placeholder);">暂无数据</div>';
+  }
+
+  function closeSlide(){
+    document.getElementById('slideMask').classList.remove('show');
+    document.getElementById('slidePanel').classList.remove('show');
+  }
+</script>
+
+<!-- Slide Panel -->
+<div class="slide-mask" id="slideMask" onclick="closeSlide()"></div>
+<div class="slide-panel" id="slidePanel">
+  <div class="sp-head">
+    <span id="slideTitle">条码明细</span>
+    <div class="sp-close" onclick="closeSlide()">✕</div>
+  </div>
+  <div class="sp-body" id="slideBody"></div>
+</div>
+
+</body>
+</html>
