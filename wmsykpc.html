@@ -322,26 +322,14 @@
       <div id="listView">
         <div class="wms-card">
           <!-- Query Bar -->
-          <div class="query-bar">
+          <div class="query-bar" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px 16px;">
             <div class="query-item">
               <span class="query-label">任务号：</span>
-              <input type="text" class="query-input" id="qTaskNo" placeholder="请输入任务号">
-            </div>
-            <div class="query-item">
-              <span class="query-label">源库位：</span>
-              <select class="query-select" id="qSourceWh">
-                <option value="">全部</option>
-              </select>
-            </div>
-            <div class="query-item">
-              <span class="query-label">目标库位：</span>
-              <select class="query-select" id="qTargetWh">
-                <option value="">全部</option>
-              </select>
+              <input type="text" class="query-input" id="qTaskNo" placeholder="请输入任务号" style="flex:1;">
             </div>
             <div class="query-item">
               <span class="query-label">状态：</span>
-              <select class="query-select" id="qStatus">
+              <select class="query-select" id="qStatus" style="flex:1;">
                 <option value="">全部</option>
                 <option value="draft">草稿</option>
                 <option value="pending">待执行</option>
@@ -352,32 +340,52 @@
               </select>
             </div>
             <div class="query-item">
+              <span class="query-label">源库位：</span>
+              <select class="query-select" id="qSourceWh" style="flex:1;">
+                <option value="">全部</option>
+              </select>
+            </div>
+            <div class="query-item">
+              <span class="query-label">目标库位：</span>
+              <select class="query-select" id="qTargetWh" style="flex:1;">
+                <option value="">全部</option>
+              </select>
+            </div>
+            <div class="query-item">
+              <span class="query-label">物料编码：</span>
+              <input type="text" class="query-input" id="qMaterial" placeholder="请输入物料编码" style="flex:1;">
+            </div>
+            <div class="query-item">
               <span class="query-label">指派给：</span>
-              <select class="query-select" id="qAssignee">
+              <select class="query-select" id="qAssignee" style="flex:1;">
                 <option value="">全部</option>
               </select>
             </div>
             <div class="query-item">
               <span class="query-label">创建人：</span>
-              <input type="text" class="query-input" id="qCreator" placeholder="请输入创建人" style="width:130px;">
-            </div>
-            <div class="query-item">
-              <span class="query-label">创建时间：</span>
-              <input type="date" class="query-input" id="qCreateStart" style="width:140px;">
-              <span style="color:var(--text-secondary);">至</span>
-              <input type="date" class="query-input" id="qCreateEnd" style="width:140px;">
+              <input type="text" class="query-input" id="qCreator" placeholder="请输入创建人" style="flex:1;">
             </div>
             <div class="query-item">
               <span class="query-label">执行人：</span>
-              <input type="text" class="query-input" id="qExecutor" placeholder="请输入执行人" style="width:130px;">
+              <input type="text" class="query-input" id="qExecutor" placeholder="请输入执行人" style="flex:1;">
+            </div>
+            <div class="query-item">
+              <span class="query-label">创建时间：</span>
+              <input type="date" class="query-input" id="qCreateStart" style="flex:1;">
+            </div>
+            <div class="query-item">
+              <span style="color:var(--text-secondary);">至</span>
+              <input type="date" class="query-input" id="qCreateEnd" style="flex:1;">
             </div>
             <div class="query-item">
               <span class="query-label">完成时间：</span>
-              <input type="date" class="query-input" id="qFinishStart" style="width:140px;">
-              <span style="color:var(--text-secondary);">至</span>
-              <input type="date" class="query-input" id="qFinishEnd" style="width:140px;">
+              <input type="date" class="query-input" id="qFinishStart" style="flex:1;">
             </div>
-            <div class="query-item" style="align-self:center;">
+            <div class="query-item">
+              <span style="color:var(--text-secondary);">至</span>
+              <input type="date" class="query-input" id="qFinishEnd" style="flex:1;">
+            </div>
+            <div class="query-item" style="grid-column:1/-1;justify-content:flex-end;">
               <button class="wms-btn wms-btn-primary" onclick="doQuery()">查询</button>
               <button class="wms-btn wms-btn-default" style="margin-left:6px;" onclick="resetQuery()">重置</button>
             </div>
@@ -416,7 +424,7 @@
                   <th style="width:120px;">创建时间</th>
                   <th style="width:80px;">执行人</th>
                   <th style="width:120px;">完成时间</th>
-                  <th style="width:120px;">原因</th>
+                  <th style="width:120px;">备注</th>
                 </tr>
               </thead>
               <tbody id="tableBody"></tbody>
@@ -526,6 +534,11 @@
             <button class="wms-btn wms-btn-danger wms-btn-sm" onclick="batchDeleteDetails()">批量删除明细</button>
             <span style="margin-left:auto;font-size:13px;color:var(--warning);" id="detailTip">⚠ 指定条码：条码/箱号或栈板号 | 不指定：物料编码（顶）</span>
           </div>
+          <!-- 非草稿：物料详情 / 条码明细 页签 -->
+          <div id="detailViewTabs" style="display:none;margin-bottom:12px;">
+            <button class="wms-tab active" id="tabMaterial" onclick="switchDetailTab('material')">物料详情</button>
+            <button class="wms-tab" id="tabBarcode" onclick="switchDetailTab('barcode')">条码明细</button>
+          </div>
           <div class="table-wrapper">
             <table class="wms-table" id="detailTable">
               <thead id="detailTableHead"></thead>
@@ -541,7 +554,6 @@
           <button type="button" class="wms-btn wms-btn-default" id="btnCancelEdit" onclick="cancelEdit()">取消</button>
           <button type="button" class="wms-btn wms-btn-primary" id="btnSaveDraft" onclick="saveDraft()">保存草稿</button>
           <button type="button" class="wms-btn wms-btn-primary" id="btnSubmit" onclick="submitTask()" style="background:var(--link);">提交（待执行）</button>
-          <button type="button" class="wms-btn wms-btn-primary" id="btnExecute" onclick="execFromEdit()" style="background:var(--success);display:none;">执行（PDA扫码）</button>
           <button type="button" class="wms-btn wms-btn-primary" id="btnContinue" onclick="execFromEdit()" style="background:var(--warning);display:none;">继续执行</button>
         </div>
       </div>
@@ -802,6 +814,7 @@
     let importFile = null;
     let detailExpanded = new Set();
     let editingDetailRowId = null;  // 当前正在行编辑的明细ID
+    let detailViewTab = 'material';  // 查看模式页签: 'material' | 'barcode'
 
     // ===== 初始化下拉选项 =====
     function initSelects(){
@@ -919,7 +932,7 @@
           const deadline = t.deadline || '--';
           const executor = t.executor || '--';
           const completeTime = t.completeTime || '--';
-          const reasonText = t.cancelReason || t.closeReason || '--';
+          const remarkText = t.remark || '--';
           const assigneeText = (t.assignees && t.assignees.length>0)
             ? t.assignees.map(a=>{ const o=assigneeOptions.find(x=>x.id===a); return o?o.name:a; }).join('、')
             : '--';
@@ -940,7 +953,7 @@
             <td class="cell-muted">${esc(t.createTime)}</td>
             <td class="cell-muted">${esc(executor)}</td>
             <td class="cell-muted">${esc(completeTime)}</td>
-            <td class="cell-muted" style="font-size:12px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(reasonText)}">${esc(reasonText)}</td>
+            <td class="cell-muted" style="font-size:12px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(remarkText)}">${esc(remarkText)}</td>
           `;
           tr.innerHTML = tr_inner;
           tbody.appendChild(tr);
@@ -1137,6 +1150,7 @@
       editingTask = null;
       editingDetails = [];
       editingDetailRowId = null;
+      detailViewTab = 'material';
       nextDetailId = 1;
       editForm = { sourceWh:'', targetWh:'', remark:'', assignees:[] };
       detailExpanded.clear();
@@ -1160,6 +1174,7 @@
       editingTask = t;
       editingDetails = JSON.parse(JSON.stringify(t.details));
       editingDetailRowId = null;
+      detailViewTab = 'material';
       editingDetails.forEach(d=>{ if(d.id>=nextDetailId) nextDetailId=d.id+1; });
       detailExpanded.clear();
       editForm = { sourceWh:t.sourceWh, targetWh:t.targetWh, remark:t.remark||'', assignees:[...(t.assignees||[])] };
@@ -1193,9 +1208,9 @@
       document.getElementById('btnSaveDraft').style.display = isDraft?'':'none';
       document.getElementById('btnSubmit').style.display = isDraft?'':'none';
       document.getElementById('btnCancelEdit').style.display = isDraft?'':'none';
-      document.getElementById('btnExecute').style.display = (status==='pending')?'':'none';
       document.getElementById('btnContinue').style.display = (status==='executing')?'':'none';
       document.getElementById('detailActionBar').style.display = isDraft?'':'none';
+      document.getElementById('detailViewTabs').style.display = isDraft?'none':'';
       const tip = document.getElementById('detailTip');
       if(tip) tip.textContent = isDraft ? '⚠ 指定条码：条码/箱号或栈板号 | 不指定：物料编码（顶）' : '当前任务非草稿状态，明细只读';
       // 非草稿时表单字段只读
@@ -1423,6 +1438,14 @@
       renderDetailTable();
     }
 
+    // ===== 查看模式页签切换 =====
+    function switchDetailTab(tab){
+      detailViewTab = tab;
+      document.getElementById('tabMaterial').classList.toggle('active', tab==='material');
+      document.getElementById('tabBarcode').classList.toggle('active', tab==='barcode');
+      renderDetailTable();
+    }
+
     // ===== 明细表 =====
     function renderDetailTable(){
       const tbody = document.getElementById('detailTableBody');
@@ -1438,23 +1461,41 @@
           <th style="width:50px;">序号</th>
           <th style="width:70px;">操作</th>
           <th style="width:130px;">物料编码（顶）</th>
+          <th style="width:120px;">物料名称</th>
           <th style="width:90px;">批次</th>
           <th style="width:130px;">条码/箱号</th>
           <th style="width:120px;">栈板号</th>
           <th style="width:80px;"><span class="cell-required">数量</span></th>
         </tr>`;
       } else {
-        thead.innerHTML = `<tr>
-          <th style="width:50px;">序号</th>
-          <th style="width:70px;">操作</th>
-          <th style="width:130px;">物料编码</th>
-          <th style="width:90px;">批次</th>
-          <th style="width:130px;">条码/箱号</th>
-          <th style="width:120px;">栈板号</th>
-          <th style="width:100px;">数量（执行/需求）</th>
-          <th style="width:130px;">执行时间</th>
-          <th style="width:70px;">扫码状态</th>
-        </tr>`;
+        // 非草稿：根据页签显示不同表头
+        if(detailViewTab==='material'){
+          thead.innerHTML = `<tr>
+            <th style="width:50px;">序号</th>
+            <th style="width:70px;">操作</th>
+            <th style="width:130px;">物料编码</th>
+            <th style="width:120px;">物料名称</th>
+            <th style="width:90px;">批次</th>
+            <th style="width:100px;">数量（执行/需求）</th>
+            <th style="width:130px;">执行时间</th>
+            <th style="width:70px;">是否完成</th>
+          </tr>`;
+        } else {
+          thead.innerHTML = `<tr>
+            <th style="width:50px;">序号</th>
+            <th style="width:130px;">条码</th>
+            <th style="width:90px;">箱号</th>
+            <th style="width:60px;">数量</th>
+            <th style="width:130px;">物料编码</th>
+            <th style="width:120px;">物料名称</th>
+            <th style="width:80px;">批次</th>
+            <th style="width:100px;">栈板号</th>
+            <th style="width:120px;">源库位</th>
+            <th style="width:120px;">目标库位</th>
+            <th style="width:80px;">扫码人</th>
+            <th style="width:130px;">扫码时间</th>
+          </tr>`;
+        }
       }
 
       tbody.innerHTML='';
@@ -1492,6 +1533,12 @@
                   </div>`
                 }
               </td>
+              <td>
+                ${specify
+                  ? '<span style="color:var(--text-placeholder);">--</span>'
+                  : `<span style="color:var(--text-body);">${d.material ? esc(materialMap[d.material]||'') : '<span style="color:var(--text-placeholder);">--</span>'}</span>`
+                }
+              </td>
               <td>${specify ? '<span style="color:var(--text-placeholder);">--</span>' : `<input type="text" class="wms-input" style="width:80px;" value="${esc(d.batch||'')}" placeholder="非必填" onchange="updateDetailBatch(${d.id},this.value)">`}</td>
               <td>
                 ${!specify
@@ -1505,7 +1552,7 @@
                 }
               </td>
               <td>${!specify ? '<span style="color:var(--text-placeholder);">不可用</span>' : `<input type="text" class="wms-input" style="width:100px;" value="${esc(d.palletNo||'')}" placeholder="栈板号" onchange="updateDetailPallet(${d.id},this.value)">`}</td>
-              <td><input type="text" class="wms-input" style="text-align:center;width:60px;${qtyReadonly?'background:#F5F5F5;':''}" value="${esc(d.qty)}" ${qtyReadonly?'readonly':''} oninput="this.value=this.value.replace(/[^0-9]/g,'')" onchange="updateDetailQty(${d.id},this.value)"></td>
+              <td><input type="text" class="wms-input" style="text-align:center;width:60px;${qtyReadonly?'background:#F5F5F5;':''}" value="${esc(d.qty)}" ${qtyReadonly?'readonly':''} oninput="this.value=this.value.replace(/[^0-9]/g,'');updateDetailQty(${d.id},this.value)"></td>
             `;
           } else {
             tr.innerHTML = `
@@ -1515,6 +1562,7 @@
                 <button class="wms-btn wms-btn-text" onclick="editDetailRow(${d.id})">编辑</button>
               </td>
               <td>${d.material ? esc(d.material) : '<span style="color:var(--text-placeholder);">--</span>'}</td>
+              <td>${d.material ? esc(materialMap[d.material]||'') : '<span style="color:var(--text-placeholder);">--</span>'}</td>
               <td>${esc(d.batch||'--')}</td>
               <td>${d.barcode ? esc(d.barcode) : '<span style="color:var(--text-placeholder);">--</span>'}</td>
               <td>${esc(d.palletNo||'--')}</td>
@@ -1522,36 +1570,34 @@
             `;
           }
         } else {
-          // 非草稿：只读模式，可点击展开
-          const scannedTag = d.scanned
-            ? '<span class="status-tag status-completed" style="font-size:11px;">已扫</span>'
-            : '<span class="status-tag status-draft" style="font-size:11px;">未扫</span>';
-          const execQty = d.execQty !== undefined ? d.execQty : (d.scanned ? d.qty : 0);
-          const expanded = detailExpanded.has(d.id);
-          tr.onclick = function(e){ toggleDetailExpand(d.id); };
-          tr.innerHTML = `
-            <td style="color:var(--text-secondary);"><span class="detail-expand-icon ${expanded?'open':''}">&#9654;</span> ${String(idx+1).padStart(2,'0')}</td>
-            <td style="color:var(--text-placeholder);">--</td>
-            <td>${esc(d.material)||'--'}</td>
-            <td>${esc(d.batch)||'--'}</td>
-            <td>${esc(d.barcode)||'--'}</td>
-            <td>${esc(d.palletNo)||'--'}</td>
-            <td style="text-align:center;font-weight:500;">${execQty}/${esc(d.qty)}</td>
-            <td>${esc(d.execTime)||'--'}</td>
-            <td style="text-align:center;">${scannedTag}</td>
-          `;
+          // 非草稿：只读模式，分页签展示
+          if(detailViewTab==='material'){
+            // 物料详情页签
+            const execQty = d.execQty !== undefined ? d.execQty : (d.scanned ? d.qty : 0);
+            const totalQty = Number(d.qty)||0;
+            const isComplete = totalQty > 0 && execQty >= totalQty;
+            const completeTag = isComplete
+              ? '<span style="color:var(--success);font-weight:500;">是</span>'
+              : '<span style="color:var(--text-secondary);">否</span>';
+            tr.innerHTML = `
+              <td style="color:var(--text-secondary);">${String(idx+1).padStart(2,'0')}</td>
+              <td style="color:var(--text-placeholder);">--</td>
+              <td>${esc(d.material)||'--'}</td>
+              <td>${d.material ? esc(materialMap[d.material]||'') : '--'}</td>
+              <td>${esc(d.batch)||'--'}</td>
+              <td style="text-align:center;font-weight:500;"><a class="qty-link" onclick="switchDetailTab('barcode')">${execQty}/${esc(d.qty)}</a></td>
+              <td>${esc(d.execTime)||'--'}</td>
+              <td style="text-align:center;">${completeTag}</td>
+            `;
+          }
         }
         tbody.appendChild(tr);
-
-        // 非草稿：展开行
-        if(!isDraft && detailExpanded.has(d.id)){
-          const subTr = document.createElement('tr');
-          subTr.className = 'detail-expanded-row';
-          const colCount = 9;
-          subTr.innerHTML = `<td colspan="${colCount}"><div class="subtable-wrapper">${renderBarcodeSubtable(d)}</div></td>`;
-          tbody.appendChild(subTr);
-        }
       });
+
+      // 非草稿-条码明细页签：渲染条码扫描记录
+      if(!isDraft && detailViewTab==='barcode'){
+        renderBarcodeDetailAll(tbody);
+      }
     }
 
     function toggleDetailExpand(detailId){
@@ -1616,6 +1662,65 @@
       return html;
     }
 
+    // 条码明细页签：合并所有明细的条码扫描记录
+    function renderBarcodeDetailAll(tbody){
+      const task = editingTask;
+      if(!task) return;
+      const executor = task.executor || '--';
+      let records = [];
+      task.details.forEach(d=>{
+        const matCode = d.material || '--';
+        const matName = d.material ? (materialMap[d.material] || '') : '--';
+        const batch = d.batch || '--';
+        const srcLoc = d.sourceLoc ? locDisplay(d.sourceLoc) : '--';
+        const tgtLoc = d.targetLoc ? locDisplay(d.targetLoc) : '--';
+        const execTime = d.execTime || '';
+        const execQty = d.execQty !== undefined ? d.execQty : (d.scanned ? Number(d.qty) : 0);
+
+        const palletNo = d.palletNo || '--';
+        const boxNo = d.boxNo || '--';
+        if(d.barcode && d.scanned){
+          records.push({ bc:d.barcode, boxNo, qty:1, matCode, matName, batch, palletNo, srcLoc, tgtLoc, executor, execTime:d.execTime||'' });
+        } else if(d.material && execQty > 0){
+          const perBatch = Math.ceil(execQty / 10);
+          let remaining = execQty;
+          let batchIdx = 1;
+          while(remaining > 0){
+            const batchQty = Math.min(perBatch, remaining);
+            const seq = String(batchIdx).padStart(3,'0');
+            const genBc = 'BP' + (d.execTime ? d.execTime.replace(/[/ :]/g,'').slice(0,8) : '20260809') + seq;
+            records.push({ bc:genBc, boxNo, qty:batchQty, matCode, matName, batch, palletNo, srcLoc, tgtLoc, executor, execTime:d.execTime||'' });
+            remaining -= batchQty;
+            batchIdx++;
+          }
+        }
+      });
+
+      if(records.length===0){
+        tbody.innerHTML = '<tr><td colspan="12" class="empty-state">暂无条码扫描记录</td></tr>';
+        return;
+      }
+
+      records.forEach((r,idx)=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="color:var(--text-secondary);">${String(idx+1).padStart(2,'0')}</td>
+          <td style="font-weight:500;">${esc(r.bc)}</td>
+          <td>${esc(r.boxNo)}</td>
+          <td style="text-align:center;">${r.qty}</td>
+          <td>${esc(r.matCode)}</td>
+          <td>${esc(r.matName)}</td>
+          <td>${esc(r.batch)}</td>
+          <td>${esc(r.palletNo)}</td>
+          <td>${esc(r.srcLoc)}</td>
+          <td>${esc(r.tgtLoc)}</td>
+          <td>${esc(r.executor)}</td>
+          <td style="font-size:12px;">${esc(r.execTime)||'--'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
     function addDetailRow(){
       const newId = nextDetailId++;
       editingDetails.push({ id:newId, material:'', barcode:'', palletNo:'', qty:'', targetLoc:'', scanned:false });
@@ -1650,6 +1755,17 @@
         if(!hasMaterial){ showToast('非指定条码模式下物料编码必填','error'); return; }
       }
       if(!d.qty || parseInt(d.qty)<=0){ showToast('数量必须大于0','error'); return; }
+      // 重复校验
+      const others = editingDetails.filter(x=>x.id!==id);
+      if(hasMaterial && others.some(x=>x.material && x.material.trim().toLowerCase()===d.material.trim().toLowerCase())){
+        showToast(`物料编码 "${d.material}" 已存在，不可重复`,'error'); return;
+      }
+      if(hasBarcode && others.some(x=>x.barcode && x.barcode.trim().toLowerCase()===d.barcode.trim().toLowerCase())){
+        showToast(`条码/箱号 "${d.barcode}" 已存在，不可重复`,'error'); return;
+      }
+      if(hasPallet && others.some(x=>x.palletNo && x.palletNo.trim().toLowerCase()===d.palletNo.trim().toLowerCase())){
+        showToast(`栈板号 "${d.palletNo}" 已存在，不可重复`,'error'); return;
+      }
       editingDetailRowId = null;
       renderDetailTable();
       showToast('明细已保存','success');
@@ -1924,6 +2040,14 @@
         }
         if(!d.qty || parseInt(d.qty)<=0) detailErrors.push(`第${i+1}行：数量必须大于0`);
       });
+
+      // 重复校验：物料编码、条码/箱号、栈板号不可重复
+      const materials = editingDetails.filter(d=>d.material && d.material.trim()).map(d=>d.material.trim().toLowerCase());
+      const barcodes = editingDetails.filter(d=>d.barcode && d.barcode.trim()).map(d=>d.barcode.trim().toLowerCase());
+      const pallets = editingDetails.filter(d=>d.palletNo && d.palletNo.trim()).map(d=>d.palletNo.trim().toLowerCase());
+      materials.forEach((m,i)=>{ if(materials.indexOf(m)!==i) detailErrors.push(`物料编码 "${m}" 重复`); });
+      barcodes.forEach((b,i)=>{ if(barcodes.indexOf(b)!==i) detailErrors.push(`条码/箱号 "${b}" 重复`); });
+      pallets.forEach((p,i)=>{ if(pallets.indexOf(p)!==i) detailErrors.push(`栈板号 "${p}" 重复`); });
 
       return { errors, detailErrors };
     }
