@@ -780,6 +780,7 @@
   let currentTask = null;
   let scanHistory = [];
   let currentDetailTab = 'info';
+  let rememberedAbnormal = null; // 记住的异常类型字符串
   const currentUser = 'P001';
   const executorToUser = { 'zhangsan':'P001', 'lisi':'P004', 'wangwu':'P006' };
   const userToName = { 'P001':'范会1000111', 'P002':'李四', 'P003':'王五', 'P004':'赵六', 'P005':'钱七', 'P006':'孙八', 'P007':'周九' };
@@ -1339,36 +1340,12 @@
           <div style="font-size:13px;font-weight:500;color:var(--primary);padding:6px 10px;background:var(--primary-light);border-radius:var(--radius);">${esc(locDisplay(t.targetLoc))}</div>
         </div>
       </div>
-      <div style="display:flex;gap:10px;margin-top:8px;">
-        <div style="flex:1;">
-          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:3px;">待处理原因${locType(t.targetLoc)==='待处理库位'?'<span style="color:var(--danger);">*</span>':''}</div>
-          <select class="query-select" id="scanReason" style="width:100%;height:32px;font-size:12px;">
-            <option value="">${locType(t.targetLoc)==='待处理库位'?'请选择':'选填'}</option>
-            <option value="接水盘泡沫烂">接水盘泡沫烂</option>
-            <option value="底盖、面板变形">底盖、面板变形</option>
-            <option value="临时条码采集">临时条码采集</option>
-            <option value="珠海无模，分厂退回">珠海无模，分厂退回</option>
-            <option value="参展机">参展机</option>
-            <option value="纸箱烂">纸箱烂</option>
-            <option value="侧板、顶盖变形">侧板、顶盖变形</option>
-            <option value="其他">其他</option>
-          </select>
-        </div>
-        <div style="flex:1;">
-          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:3px;">异常类型${locType(t.targetLoc)==='待处理库位'?'<span style="color:var(--danger);">*</span>':''}</div>
-          <select class="query-select" id="scanAbnormalType" style="width:100%;height:32px;font-size:12px;">
-            <option value="">${locType(t.targetLoc)==='待处理库位'?'请选择':'选填'}</option>
-            <option value="临时管控">临时管控</option>
-            <option value="运输事故机">运输事故机</option>
-            <option value="销售退货">销售退货</option>
-            <option value="参展机">参展机</option>
-            <option value="漏冷媒">漏冷媒</option>
-            <option value="自然灾害">自然灾害</option>
-            <option value="厂内损坏">厂内损坏</option>
-            <option value="其他">其他</option>
-          </select>
-        </div>
-      </div>
+      ${locType(t.targetLoc)==='待处理库位' ? (rememberedAbnormal ? `
+      <div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--warning-light);border-radius:var(--radius);">
+        <span style="font-size:12px;color:var(--text-body);">⚠ 异常: <b style="color:var(--warning);">${esc(rememberedAbnormal)}</b></span>
+        <span style="font-size:11px;color:var(--link);cursor:pointer;" onclick="rememberedAbnormal=null;renderScanCard();">重置</span>
+      </div>` : `
+      <div style="margin-top:8px;font-size:11px;color:var(--warning);text-align:center;">⚠ 待处理库位：扫码后将弹窗填写异常类型</div>`) : ''}
     `;
     renderScanList();
   }
@@ -1399,14 +1376,15 @@
       <table class="wms-table" style="font-size:12px;">
         <thead>
           <tr>
-            <th style="width:22%;">条码/箱号</th>
-            <th style="width:16%;">物料编码</th>
-            <th style="width:13%;">所在仓</th>
-            <th style="width:13%;">所在库位</th>
-            <th style="width:7%;">数量</th>
+            <th style="width:20%;">条码/箱号</th>
+            <th style="width:14%;">物料编码</th>
+            <th style="width:12%;">所在仓</th>
+            <th style="width:12%;">所在库位</th>
+            <th style="width:6%;">数量</th>
+            <th style="width:14%;">异常类型</th>
             <th style="width:8%;">年份</th>
             <th style="width:8%;">月份</th>
-            <th style="width:13%;">栈板号</th>
+            <th style="width:10%;">栈板号</th>
           </tr>
         </thead>
         <tbody>
@@ -1420,6 +1398,7 @@
                 <td>${esc(whName)}</td>
                 <td>${esc(locName)}</td>
                 <td style="text-align:center;font-weight:500;">1</td>
+                <td style="font-size:11px;color:var(--warning);">${esc(h.abnormalType||'--')}</td>
                 <td style="text-align:center;">24年</td>
                 <td style="text-align:center;">11月</td>
                 <td style="text-align:center;">ZB${String(idx+1).padStart(3,'0')}</td>
@@ -1477,6 +1456,58 @@
   }
 
   // ===== Scan Logic =====
+  function showAbnormalModal(callback){
+    const mask = document.getElementById('modalMask');
+    const head = document.getElementById('modalHead');
+    const body = document.getElementById('modalBody');
+    const confirmBtn = document.getElementById('modalConfirm');
+    const cancelBtn = document.querySelector('.mb-cancel');
+
+    head.textContent = '异常类型（必填）';
+    body.innerHTML = `
+      <div style="text-align:left;">
+        <div style="margin-bottom:6px;font-size:13px;color:var(--text-secondary);">异常类型 <span style="color:var(--danger);">*</span></div>
+        <select id="abnormalTypeSelect" style="width:100%;height:36px;border:1px solid var(--border);border-radius:var(--radius);padding:0 8px;font-size:14px;">
+          <option value="">请选择异常类型</option>
+          <option value="临时管控">临时管控</option>
+          <option value="运输事故机">运输事故机</option>
+          <option value="销售退货">销售退货</option>
+          <option value="参展机">参展机</option>
+          <option value="漏冷媒">漏冷媒</option>
+          <option value="自然灾害">自然灾害</option>
+          <option value="厂内损坏">厂内损坏</option>
+          <option value="其他">其他</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:6px;margin-top:12px;font-size:13px;color:var(--text-secondary);cursor:pointer;">
+          <input type="checkbox" id="rememberAbnormalCheck" style="width:16px;height:16px;accent-color:var(--warning);"> 记住此次选择，后续扫码不再弹窗
+        </label>
+      </div>
+    `;
+    confirmBtn.textContent = '确定';
+    confirmBtn.className = 'mb-confirm';
+    confirmBtn.onclick = function(){
+      const abnorm = document.getElementById('abnormalTypeSelect')?.value;
+      if(!abnorm){
+        showToast('请选择异常类型', 'warn');
+        return;
+      }
+      const remember = document.getElementById('rememberAbnormalCheck')?.checked || false;
+      if(remember){
+        rememberedAbnormal = abnorm;
+      }
+      closeModal();
+      if(callback) callback(abnorm);
+    };
+    mask.classList.add('show');
+    // 取消时传空
+    const origCancel = cancelBtn.onclick;
+    cancelBtn.onclick = function(){
+      closeModal();
+      if(callback) callback('');
+      cancelBtn.onclick = origCancel;
+    };
+  }
+
   function doScan(){
     const t = currentTask;
     if(!t) return;
@@ -1504,15 +1535,8 @@
       return;
     }
 
-    // 待处理目标库位必须选待处理原因和异常类型
-    if(locType(t.targetLoc)==='待处理库位'){
-      const reason = document.getElementById('scanReason')?.value;
-      const abnorm = document.getElementById('scanAbnormalType')?.value;
-      if(!reason || !abnorm){
-        showToast('目标库位为待处理，请选择待处理原因和异常类型', 'warn');
-        return;
-      }
-    }
+    // 待处理目标库位 → 已记住则直接用，否则弹窗
+    const needAbnormal = locType(t.targetLoc)==='待处理库位';
 
     const now = new Date();
     const timeStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
@@ -1522,56 +1546,67 @@
 
     // find matching detail (case-insensitive)
     const d = t.details.find(x=> x.material.toLowerCase()===code.toLowerCase() || x.barcode.toLowerCase()===code.toLowerCase());
-    if(d && !d.scanned){
-      d.scanned = true;
-      d.execQty = d.qty;
-      d.sourceLoc = d.targetLoc;
-      d.execTime = timeStr;
-      input.value = '';
-      showToast(`扫码成功: ${code}`, 'success');
-      scanHistory.push({ code, time: timeStr, ok:true, taskId:t.id, material:d.material, materialName:matName(d.material), loc:d.targetLoc, wh:t.sourceWh });
 
-      renderProgress();
-      renderScanCard();
-      renderScanBottomBar();
-      renderDetailList();
-    } else if(d && d.scanned){
-      // 检查"已扫提示"复选框
-      const scannedAlert = document.getElementById('scanScannedAlert');
-      if(scannedAlert && scannedAlert.checked){
-        showToast(`已扫码, 勿重复: ${code}`, 'error');
+    // 抽取出扫码后的核心逻辑
+    function finalizeScan(abnormalType, reason){
+      if(d && !d.scanned){
+        d.scanned = true;
+        d.execQty = d.qty;
+        d.sourceLoc = d.targetLoc;
+        d.execTime = timeStr;
+        input.value = '';
+        showToast(`扫码成功: ${code}`, 'success');
+        scanHistory.push({ code, time: timeStr, ok:true, taskId:t.id, material:d.material, materialName:matName(d.material), loc:d.targetLoc, wh:t.sourceWh, abnormalType, reason });
+        renderProgress();
+        renderScanCard();
+        renderScanBottomBar();
+        renderDetailList();
+      } else if(d && d.scanned){
+        const scannedAlert = document.getElementById('scanScannedAlert');
+        if(scannedAlert && scannedAlert.checked){
+          showToast(`已扫码, 勿重复: ${code}`, 'error');
+        } else {
+          showModal('条码已存在', `条码 <b>${code}</b> 已扫描，是否删除该条记录？`, '确认删除', function(){
+            scanHistory = scanHistory.filter(h => !(h.code === code && h.taskId === t.id));
+            d.scanned = false;
+            d.execQty = 0;
+            d.sourceLoc = '';
+            d.execTime = '';
+            showToast(`已撤销: ${code}`, 'warn');
+            renderProgress();
+            renderScanCard();
+            renderScanBottomBar();
+            renderDetailList();
+            renderScanList();
+          }, true);
+        }
+        input.value = '';
       } else {
-        showModal('条码已存在', `条码 <b>${code}</b> 已扫描，是否删除该条记录？`, '确认删除', function(){
-          // 删除扫码记录
-          scanHistory = scanHistory.filter(h => !(h.code === code && h.taskId === t.id));
-          // 撤销该明细的已扫状态
-          d.scanned = false;
-          d.execQty = 0;
-          d.sourceLoc = '';
-          d.execTime = '';
-          showToast(`已撤销: ${code}`, 'warn');
-          renderProgress();
-          renderScanCard();
-          renderScanBottomBar();
-          renderDetailList();
-          renderScanList();
-        }, true);
+        const stock = barcodeStockMap[code.toLowerCase()];
+        if(stock || isNumeric6){
+          const info = stock || { material:'kb9999111', materialName:'空调外机白色透性凉', loc:'4089911', wh:'801' };
+          scanHistory.push({ code, time: timeStr, ok:true, taskId:t.id, material:info.material, materialName:info.materialName, loc:info.loc, wh:info.wh, abnormalType:abnormalType||'', reason:reason||'' });
+          showToast(`扫入成功: ${code}`, 'success');
+        } else if(/[a-zA-Z]/.test(code)){
+          showToast(`物料不在单据范围内: ${code}`, 'error');
+        } else {
+          showToast(`条码 ${code} 无库存记录`, 'error');
+        }
+        input.value = '';
+        renderScanCard();
       }
-      input.value = '';
+    }
+
+    if(needAbnormal && rememberedAbnormal){
+      // 已记住 → 直接用记住的值，不弹窗
+      finalizeScan(rememberedAbnormal);
+    } else if(needAbnormal){
+      // 未记住 → 弹窗选择
+      showAbnormalModal(function(abnormalType){
+        finalizeScan(abnormalType);
+      });
     } else {
-      // 查条码库存映射
-      const stock = barcodeStockMap[code.toLowerCase()];
-      if(stock || isNumeric6){
-        const info = stock || { material:'kb9999111', materialName:'空调外机白色透性凉', loc:'4089911', wh:'801' };
-        scanHistory.push({ code, time: timeStr, ok:true, taskId:t.id, material:info.material, materialName:info.materialName, loc:info.loc, wh:info.wh });
-        showToast(`扫入成功: ${code}`, 'success');
-      } else if(/[a-zA-Z]/.test(code)){
-        showToast(`物料不在单据范围内: ${code}`, 'error');
-      } else {
-        showToast(`条码 ${code} 无库存记录`, 'error');
-      }
-      input.value = '';
-      renderScanCard();
+      finalizeScan('', '');
     }
     setTimeout(()=>{ const si=document.getElementById('scanInput'); if(si) si.focus(); }, 100);
   }
@@ -1657,6 +1692,7 @@
               <div class="sp-row"><span class="sp-label">数量</span><span class="sp-val">${d.execQty||d.qty}/${d.qty}</span></div>
               <div class="sp-row"><span class="sp-label">扫描时间</span><span class="sp-val">${esc(d.execTime||'--')}</span></div>
               <div class="sp-row"><span class="sp-label">扫描人</span><span class="sp-val">${esc(t.executor||'--')}</span></div>
+              <div class="sp-row"><span class="sp-label">异常类型</span><span class="sp-val">${esc(h?.abnormalType||'--')}</span></div>
               <div class="sp-row"><span class="sp-label">所在库位</span><span class="sp-val">${esc(locDisplay(d.targetLoc))}</span></div>
             </div>
           `;
@@ -1678,6 +1714,7 @@
             <div class="sp-row"><span class="sp-label">扫描时间</span><span class="sp-val">${esc(h.time)}</span></div>
             <div class="sp-row"><span class="sp-label">扫描人</span><span class="sp-val">${esc(t.executor||'范会1000111')}</span></div>
             <div class="sp-row"><span class="sp-label">所在库位</span><span class="sp-val">${h.loc?esc(locDisplay(h.loc)):'--'}</span></div>
+            <div class="sp-row"><span class="sp-label">异常类型</span><span class="sp-val">${esc(h.abnormalType||'--')}</span></div>
             <div class="sp-row"><span class="sp-label">库龄年份</span><span class="sp-val">24年</span></div>
             <div class="sp-row"><span class="sp-label">库龄月</span><span class="sp-val">11月</span></div>
           </div>
