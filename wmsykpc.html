@@ -1220,6 +1220,19 @@
         assigneeTrigger.style.opacity = isDraft ? '' : '0.7';
         assigneeTrigger.style.background = isDraft ? '' : '#F5F5F5';
       }
+      // 源库位、目标库位、任务号、要求完成时间：查看模式下不可编辑
+      ['trigger-sourceWh','trigger-targetWh'].forEach(id=>{
+        const el = document.getElementById(id);
+        if(el){
+          el.style.pointerEvents = isDraft ? '' : 'none';
+          el.style.opacity = isDraft ? '' : '0.7';
+          el.style.background = isDraft ? '' : '#F5F5F5';
+        }
+      });
+      const editTaskNo = document.getElementById('editTaskNo');
+      if(editTaskNo){ editTaskNo.readOnly = !isDraft; editTaskNo.style.background = isDraft ? '' : '#F5F5F5'; }
+      const editDeadline = document.getElementById('editDeadline');
+      if(editDeadline){ editDeadline.disabled = !isDraft; editDeadline.style.background = isDraft ? '' : '#F5F5F5'; }
     }
 
     function execFromEdit(){
@@ -1490,6 +1503,7 @@
             <th style="width:120px;">物料名称</th>
             <th style="width:80px;">批次</th>
             <th style="width:100px;">栈板号</th>
+            <th style="width:100px;">异常类型</th>
             <th style="width:120px;">源库位</th>
             <th style="width:120px;">目标库位</th>
             <th style="width:80px;">扫码人</th>
@@ -1679,8 +1693,9 @@
 
         const palletNo = d.palletNo || '--';
         const boxNo = d.boxNo || '--';
+        const abnormalType = d.abnormalType || '';
         if(d.barcode && d.scanned){
-          records.push({ bc:d.barcode, boxNo, qty:1, matCode, matName, batch, palletNo, srcLoc, tgtLoc, executor, execTime:d.execTime||'' });
+          records.push({ bc:d.barcode, boxNo, qty:1, matCode, matName, batch, palletNo, abnormalType, srcLoc, tgtLoc, executor, execTime:d.execTime||'' });
         } else if(d.material && execQty > 0){
           const perBatch = Math.ceil(execQty / 10);
           let remaining = execQty;
@@ -1689,7 +1704,7 @@
             const batchQty = Math.min(perBatch, remaining);
             const seq = String(batchIdx).padStart(3,'0');
             const genBc = 'BP' + (d.execTime ? d.execTime.replace(/[/ :]/g,'').slice(0,8) : '20260809') + seq;
-            records.push({ bc:genBc, boxNo, qty:batchQty, matCode, matName, batch, palletNo, srcLoc, tgtLoc, executor, execTime:d.execTime||'' });
+            records.push({ bc:genBc, boxNo, qty:batchQty, matCode, matName, batch, palletNo, abnormalType, srcLoc, tgtLoc, executor, execTime:d.execTime||'' });
             remaining -= batchQty;
             batchIdx++;
           }
@@ -1697,7 +1712,7 @@
       });
 
       if(records.length===0){
-        tbody.innerHTML = '<tr><td colspan="12" class="empty-state">暂无条码扫描记录</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="13" class="empty-state">暂无条码扫描记录</td></tr>';
         return;
       }
 
@@ -1712,6 +1727,7 @@
           <td>${esc(r.matName)}</td>
           <td>${esc(r.batch)}</td>
           <td>${esc(r.palletNo)}</td>
+          <td>${esc(r.abnormalType||'--')}</td>
           <td>${esc(r.srcLoc)}</td>
           <td>${esc(r.tgtLoc)}</td>
           <td>${esc(r.executor)}</td>
