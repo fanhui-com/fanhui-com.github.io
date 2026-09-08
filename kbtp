@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>托盘汇总 - 格力WMS系统</title>
+<style>
+:root {
+  --primary: #3F99A3;
+  --primary-light: #5BAAB3;
+  --primary-lighter: #DBEEEC;
+  --primary-dark: #358A94;
+  --link: #409EFF;
+  --success: #67C23A;
+  --success-light: rgba(103,194,58,0.1);
+  --warning: #E6A23C;
+  --warning-light: rgba(230,162,60,0.1);
+  --danger: #F56C6C;
+  --danger-light: rgba(245,108,108,0.1);
+  --info: #909399;
+  --text-title: #333333;
+  --text-regular: #606266;
+  --text-secondary: #909399;
+  --text-placeholder: #C0C4CC;
+  --border: #DCDFE6;
+  --border-light: #E4E7ED;
+  --border-lighter: #EBEEF5;
+  --bg-white: #FFFFFF;
+  --bg-page: #F5F7FA;
+  --bg-table-header: #FAFAFA;
+  --bg-hover: #F5F7FA;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "system-ui", "Helvetica Neue", Helvetica, "Segoe UI", Arial, Roboto, "PingFang SC", miui, "Hiragino Sans GB", "Microsoft Yahei", sans-serif;
+  font-size: 14px; color: var(--text-regular); background: var(--bg-page); line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+/* ===== Header ===== */
+.wms-header {
+  height: 50px; background: var(--primary); color: #fff;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px; font-size: 18px; font-weight: 500;
+}
+/* ===== Layout ===== */
+.wms-layout { display: flex; min-height: calc(100vh - 50px); }
+.wms-sidebar {
+  width: 176px; background: #fff; border-right: 1px solid var(--border-lighter);
+  flex-shrink: 0; overflow-y: auto; padding-bottom: 20px;
+}
+.wms-menu-group-title {
+  height: 40px; line-height: 40px; padding: 0 20px;
+  font-size: 13px; color: var(--text-secondary); font-weight: 500;
+}
+.wms-menu-item {
+  height: 40px; line-height: 40px; padding: 0 20px; font-size: 14px;
+  color: var(--text-regular); cursor: pointer; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; transition: background .2s ease;
+}
+.wms-menu-item:hover { background: var(--bg-hover); }
+.wms-menu-item.active { background: var(--primary-lighter); color: var(--link); }
+.wms-menu-item.child { padding-left: 40px; }
+.wms-main { flex: 1; background: var(--bg-page); overflow-y: auto; padding: 0 16px 16px; }
+/* ===== Breadcrumb ===== */
+.wms-breadcrumb {
+  font-size: 14px; color: var(--text-secondary);
+  padding: 8px 0 16px;
+}
+.wms-breadcrumb .current { color: var(--text-title); }
+.wms-breadcrumb .sep { margin: 0 4px; color: var(--text-placeholder); }
+/* ===== Card ===== */
+.wms-content-card {
+  background: #fff; border-radius: 4px; padding: 16px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.12), 0 0 6px rgba(0,0,0,0.04);
+}
+/* ===== Search Form ===== */
+.wms-search-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 16px; margin-bottom: 4px;
+}
+.wms-form-group { position: relative; }
+.wms-form-label { display: block; font-size: 14px; color: var(--text-regular); margin-bottom: 8px; }
+.wms-input {
+  height: 32px; padding: 0 15px; background: #fff;
+  border: 1px solid var(--border); border-radius: 4px; font-size: 14px;
+  font-family: inherit; color: var(--text-regular); outline: none; width: 100%;
+  transition: border-color .2s ease;
+}
+.wms-input::placeholder { color: var(--text-placeholder); }
+.wms-input:focus { border-color: var(--link); box-shadow: 0 0 0 2px rgba(63,153,163,0.2); }
+.wms-select { position: relative; width: 100%; }
+.wms-select .wms-input { padding-right: 30px; cursor: pointer; }
+.wms-select::after {
+  content: '▾'; position: absolute; right: 10px; top: 50%;
+  transform: translateY(-50%); color: var(--text-secondary); font-size: 12px; pointer-events: none;
+}
+/* ===== Button ===== */
+.wms-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 32px; padding: 0 20px; font-size: 14px; font-family: inherit;
+  border-radius: 3px; cursor: pointer; transition: all .2s ease;
+  border: 1px solid transparent; outline: none; text-decoration: none; gap: 6px;
+}
+.wms-btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+.wms-btn-primary:hover { background: var(--primary-dark); }
+.wms-btn-default { background: #fff; color: var(--text-regular); border-color: var(--border); }
+.wms-btn-default:hover { color: var(--primary); border-color: var(--primary); }
+.wms-btn-text { background: transparent; color: var(--link); border: none; padding: 0; font-size: 14px; }
+.wms-btn-text:hover { color: var(--primary); }
+/* ===== Stats Bar ===== */
+.wms-stat-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 8px 16px; font-size: 13px; color: var(--text-regular);
+  background: var(--bg-page); border: 1px solid var(--border-lighter);
+  border-radius: 4px; cursor: pointer; transition: border-color .2s ease;
+}
+.wms-stat-tag:hover { border-color: var(--primary); }
+.wms-stat-tag.active { border-color: var(--primary); background: var(--primary-lighter); }
+.wms-stat-tag .count { font-weight: 500; color: var(--text-title); }
+.wms-stat-tag .count.danger { color: var(--danger); }
+/* ===== Table ===== */
+.wms-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.wms-table thead th {
+  background: var(--bg-table-header); color: var(--text-title); font-weight: 500;
+  font-size: 13px; height: 40px; padding: 0 12px; text-align: left;
+  border-bottom: 1px solid var(--border-lighter); white-space: nowrap;
+}
+.wms-table tbody td {
+  height: 48px; padding: 0 12px; color: var(--text-regular);
+  border-bottom: 1px solid var(--border-lighter); white-space: nowrap;
+}
+.wms-table.striped tbody tr:nth-child(even) { background: var(--bg-table-header); }
+.wms-table tbody tr:hover { background: var(--bg-hover); }
+.wms-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.wms-table thead th.num { text-align: right; }
+/* ===== Tag ===== */
+.wms-tag {
+  display: inline-flex; align-items: center; height: 24px; line-height: 1;
+  padding: 0 8px; font-size: 12px; border-radius: 4px;
+  background: var(--primary-lighter); color: var(--primary);
+}
+.wms-tag.success { background: var(--success-light); color: var(--success); }
+.wms-tag.warning { background: var(--warning-light); color: var(--warning); }
+.wms-tag.danger { background: var(--danger-light); color: var(--danger); }
+/* ===== Pagination ===== */
+.wms-pagination {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 4px; margin-top: 16px; font-size: 13px; color: var(--text-regular);
+}
+.wms-pagination button {
+  min-width: 32px; height: 32px; padding: 0 8px; border: 1px solid var(--border);
+  background: #fff; border-radius: 4px; cursor: pointer; font-size: 13px;
+  color: var(--text-regular); transition: all .2s ease; font-family: inherit;
+}
+.wms-pagination button:hover { color: var(--primary); border-color: var(--primary); }
+.wms-pagination button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.wms-pagination button:disabled { color: var(--text-placeholder); cursor: not-allowed; }
+.wms-pagination .page-size { margin-right: 12px; }
+.wms-pagination select {
+  height: 32px; border: 1px solid var(--border); border-radius: 4px;
+  padding: 0 6px; font-size: 13px; color: var(--text-regular); outline: none;
+}
+/* ===== Utility ===== */
+.wms-flex { display: flex; }
+.wms-flex-between { display: flex; justify-content: space-between; align-items: center; }
+.wms-gap-sm { gap: 8px; }
+.wms-mb-md { margin-bottom: 16px; }
+.text-link { color: var(--link); cursor: pointer; }
+.text-link:hover { color: var(--primary); text-decoration: underline; }
+.table-scroll { overflow-x: auto; }
+.empty-tip { text-align: center; color: var(--text-secondary); padding: 32px 0 !important; height: auto !important; }
+/* ===== Modal ===== */
+.modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal-box { width: 900px; max-width: 94vw; max-height: 80vh; background: #fff; border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; font-size: 16px; font-weight: 600; color: var(--text-regular); border-bottom: 1px solid var(--border-lighter); }
+.modal-close { cursor: pointer; font-size: 22px; line-height: 1; color: var(--text-secondary); }
+.modal-close:hover { color: var(--danger); }
+.modal-body { padding: 16px; overflow: auto; }
+</style>
+</head>
+<body class="wms-app">
+
+<!-- ===== Header ===== -->
+<header class="wms-header">
+  <span>格力WMS系统</span>
+  <span style="font-size:14px;font-weight:400;">范会 10235687</span>
+</header>
+
+<!-- ===== Layout ===== -->
+<div class="wms-layout">
+
+  <!-- ===== Sidebar ===== -->
+  <aside class="wms-sidebar">
+    <div class="wms-menu-group-title">导航菜单</div>
+    <div class="wms-menu-item">🏠 主页</div>
+    <div class="wms-menu-group-title">入库管理</div>
+    <div class="wms-menu-item child">入库任务</div>
+    <div class="wms-menu-item child">入库记录</div>
+    <div class="wms-menu-group-title">出库管理</div>
+    <div class="wms-menu-item child">出库任务</div>
+    <div class="wms-menu-item child">发货单管理</div>
+    <div class="wms-menu-group-title">库存管理</div>
+    <div class="wms-menu-item child active">托盘汇总</div>
+    <div class="wms-menu-item child">库存汇总</div>
+    <div class="wms-menu-item child">库位管理</div>
+    <div class="wms-menu-group-title">报表管理</div>
+    <div class="wms-menu-item child">库存报表</div>
+    <div class="wms-menu-item child">出入库报表</div>
+  </aside>
+
+  <!-- ===== Main Content ===== -->
+  <main class="wms-main">
+
+    <!-- Breadcrumb -->
+    <div class="wms-breadcrumb">
+      库存管理 <span class="sep">/</span> <span class="current">托盘汇总</span>
+    </div>
+
+    <!-- Content Card -->
+    <div class="wms-content-card">
+
+      <!-- Search Form -->
+      <div class="wms-search-grid">
+        <div class="wms-form-group">
+          <label class="wms-form-label">物料编码</label>
+          <input class="wms-input" id="q-material" placeholder="请输入物料编码">
+        </div>
+        <div class="wms-form-group">
+          <label class="wms-form-label">物料名称</label>
+          <input class="wms-input" id="q-material-name" placeholder="请输入物料名称">
+        </div>
+        <div class="wms-form-group">
+          <label class="wms-form-label">批次号</label>
+          <input class="wms-input" id="q-batch" placeholder="请输入批次号">
+        </div>
+        <div class="wms-form-group">
+          <label class="wms-form-label">客户物料编码</label>
+          <input class="wms-input" id="q-cust-material" placeholder="请输入客户物料编码">
+        </div>
+        <div class="wms-form-group">
+          <label class="wms-form-label">实物托盘号</label>
+          <input class="wms-input" id="q-pallet" placeholder="请输入实物托盘号">
+        </div>
+        <div class="wms-form-group">
+          <label class="wms-form-label">原始托盘号</label>
+          <input class="wms-input" id="q-box" placeholder="请输入原始托盘号">
+        </div>
+        <div class="wms-form-group">
+          <label class="wms-form-label">wms栈板号</label>
+          <input class="wms-input" id="q-plate" placeholder="请输入wms栈板号">
+        </div>
+        <div class="wms-form-group">
+          <label class="wms-form-label">包装状态</label>
+          <div class="wms-select">
+            <input class="wms-input" id="q-status" placeholder="请选择包装状态" readonly onclick="toggleDropdown('dd-status', event)">
+          </div>
+          <div class="dd-panel" id="dd-status" style="display:none;"></div>
+        </div>
+        <div class="wms-form-group">
+          <label class="wms-form-label">仓库</label>
+          <div class="wms-select">
+            <input class="wms-input" id="q-warehouse" placeholder="请选择仓库" readonly onclick="toggleDropdown('dd-warehouse', event)">
+          </div>
+          <div class="dd-panel" id="dd-warehouse" style="display:none;"></div>
+        </div>
+        <div class="wms-form-group">
+          <label class="wms-form-label">库位</label>
+          <input class="wms-input" id="q-location" placeholder="请输入库位">
+        </div>
+        <div class="wms-form-group">
+          <label class="wms-form-label">园区</label>
+          <div class="wms-select">
+            <input class="wms-input" id="q-park" placeholder="请选择园区" readonly onclick="toggleDropdown('dd-park', event)">
+          </div>
+          <div class="dd-panel" id="dd-park" style="display:none;"></div>
+        </div>
+        <div class="wms-form-group">
+          <label class="wms-form-label">仓库类型</label>
+          <div class="wms-select">
+            <input class="wms-input" id="q-warehouse-type" placeholder="请选择仓库类型" readonly onclick="toggleDropdown('dd-warehouse-type', event)">
+          </div>
+          <div class="dd-panel" id="dd-warehouse-type" style="display:none;"></div>
+        </div>
+        <div class="wms-form-group">
+          <label class="wms-form-label">库龄</label>
+          <div style="display:flex;gap:6px;">
+            <select class="wms-input" id="q-age-op" style="width:100px;padding:0 6px;">
+              <option value="=">等于</option>
+              <option value=">">大于</option>
+              <option value=">=">大于等于</option>
+              <option value="<">小于</option>
+              <option value="<=">小于等于</option>
+              <option value="!=">不等于</option>
+            </select>
+            <input class="wms-input" id="q-age-value" type="number" placeholder="请输入库龄">
+            <select class="wms-input" id="q-age-unit" style="width:70px;padding:0 6px;">
+              <option value="天">天</option>
+              <option value="月">月</option>
+            </select>
+          </div>
+        </div>
+        <div class="wms-form-group" style="display:flex;align-items:flex-end;gap:8px;">
+          <button class="wms-btn wms-btn-default" onclick="resetSearch()">重置</button>
+          <button class="wms-btn wms-btn-primary" onclick="doSearch()">查询</button>
+        </div>
+      </div>
+
+      <!-- Stats Bar -->
+      <div class="wms-flex wms-gap-sm" style="margin:8px 0 16px;flex-wrap:wrap;">
+        <span class="wms-stat-tag active" id="stat-all" onclick="filterStatus('all')">总库存 3500台</span>
+        <span class="wms-stat-tag" id="stat-full" onclick="filterStatus('整托盘')">整托盘（10板2000个）</span>
+        <span class="wms-stat-tag" id="stat-part" onclick="filterStatus('非整托盘')">非整托盘 4板800个</span>
+        <span class="wms-stat-tag" id="stat-abnormal" onclick="filterStatus('散件')">散件20个</span>
+      </div>
+
+      <!-- Action Bar -->
+      <div class="wms-flex-between wms-mb-md">
+        <div class="wms-flex wms-gap-sm">
+          <button class="wms-btn wms-btn-default">导出</button>
+        </div>
+        <div style="font-size:13px;color:var(--text-secondary);">
+          数据更新时间：2026-06-09 16:30:00
+        </div>
+      </div>
+
+      <!-- Data Table -->
+      <div class="table-scroll">
+        <table class="wms-table striped">
+          <thead>
+            <tr>
+              <th style="width:50px;">序号</th>
+              <th style="min-width:130px;">实物托盘号</th>
+              <th style="min-width:120px;">物料编码</th>
+              <th style="min-width:150px;">物料名称</th>
+              <th style="min-width:110px;">批次号</th>
+              <th style="min-width:120px;">客户物料编码</th>
+              <th style="min-width:150px;">客户物料名称</th>
+              <th style="width:90px;">产品类别</th>
+              <th style="width:70px;">仓库</th>
+              <th style="width:90px;">库位</th>
+              <th style="width:90px;" class="num">库存数量</th>
+              <th style="width:90px;" class="num">可用数量</th>
+              <th style="width:90px;" class="num">锁定数量</th>
+              <th style="width:90px;" class="num">封存数量</th>
+              <th style="width:70px;">库龄(月)</th>
+              <th style="width:100px;">生产日期</th>
+              <th style="width:80px;">包装状态</th>
+              <th style="width:80px;">入库方式</th>
+              <th style="min-width:120px;">入库单据</th>
+              <th style="min-width:140px;">入库时间</th>
+              <th style="min-width:170px;">wms栈板号</th>
+              <th style="min-width:130px;">原始托盘号</th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="wms-pagination">
+        <span class="page-size">共 <span id="total-count">0</span> 条</span>
+        <select onchange="changePageSize(this.value)">
+          <option value="10">10条/页</option>
+          <option value="20">20条/页</option>
+          <option value="50">50条/页</option>
+        </select>
+        <button disabled>上一页</button>
+        <button class="active">1</button>
+        <button>2</button>
+        <button>3</button>
+        <button>下一页</button>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+/* ===== 模拟数据 ===== */
+const rawData = [
+  { material: 'kb000011', materialName: '电机00000001', batch: 'PC2026051201', custMaterial: 'CUST-kb0011', warehouse: '801', warehouseType: '成品仓', location: 'A-01-02', produceDate: '2026-05-01', custMaterialName: '凌达电机', productCategory: '电机', plate: 'dee445000001', pallet: 'TP00001201', box: 'BX00001201', qty: 100, avail: 100, locked: 0, age: 28, status: '整托盘', inboundType: '生产入库', inboundDoc: 'RK2026051201', inTime: '2026-05-12 09:20:35', sealed: 0 },
+  { material: 'kb000011', materialName: '电机00000001', batch: 'PC2026051201', custMaterial: 'CUST-kb0011', warehouse: '801', warehouseType: '成品仓', location: 'A-01-03', produceDate: '2026-05-01', custMaterialName: '凌达电机', productCategory: '电机', plate: 'dee445000002', pallet: 'TP00001202', box: 'BX00001202', qty: 80, avail: 60, locked: 20, age: 28, status: '整托盘', inboundType: '生产入库', inboundDoc: 'RK2026051202', inTime: '2026-05-12 09:25:10', sealed: 5 },
+  { material: 'kb000012', materialName: '电机00000002', batch: 'PC2026051302', custMaterial: 'CUST-kb0012', warehouse: '802', warehouseType: '车间仓', location: 'B-03-01', produceDate: '2026-05-02', custMaterialName: '凌达电机', productCategory: '电机', plate: 'dee445000003', pallet: 'TP00001203', box: 'BX00001203', qty: 45, avail: 45, locked: 0, age: 27, status: '非整托盘', inboundType: '无任务入库', inboundDoc: 'RK2026051301', inTime: '2026-05-13 14:02:44', sealed: 0 },
+  { material: 'kb000013', materialName: '压缩机00000003', batch: 'PC2026051503', custMaterial: 'CUST-kb0013', warehouse: '805', warehouseType: '成品仓', location: 'C-02-05', produceDate: '2026-05-03', custMaterialName: '凌达压缩机', productCategory: '压缩机', plate: 'dee445000004', pallet: 'TP00001204', box: 'BX00001204', qty: 200, avail: 150, locked: 50, age: 25, status: '整托盘', inboundType: '生产入库', inboundDoc: 'RK2026051501', inTime: '2026-05-15 10:11:20', sealed: 10 },
+  { material: 'kb000014', materialName: '压缩机00000004', batch: 'PC2026051804', custMaterial: 'CUST-kb0014', warehouse: '802', warehouseType: '车间仓', location: 'B-05-02', produceDate: '2026-05-06', custMaterialName: '凌达压缩机', productCategory: '压缩机', plate: 'dee445000005', pallet: 'TP00001205', box: 'BX00001205', qty: 30, avail: 30, locked: 0, age: 22, status: '非整托盘', inboundType: '无任务入库', inboundDoc: 'RK2026051801', inTime: '2026-05-18 16:40:08', sealed: 0 },
+  { material: 'kb000015', materialName: '电容器00000005', batch: 'PC2026052005', custMaterial: 'CUST-kb0015', warehouse: '801', warehouseType: '成品仓', location: 'A-06-01', produceDate: '2026-05-08', custMaterialName: '凌达电容', productCategory: '电容', plate: 'dee445000006', pallet: 'TP00001206', box: 'BX00001206', qty: 12, avail: 0, locked: 12, age: 20, status: '散件', inboundType: '初始化导入', inboundDoc: 'RK2026052001', inTime: '2026-05-20 11:30:55', sealed: 3 },
+  { material: 'kb000016', materialName: '电容器00000006', batch: 'PC2026052106', custMaterial: 'CUST-kb0016', warehouse: '803', warehouseType: '寄存仓', location: 'D-01-04', produceDate: '2026-05-10', custMaterialName: '凌达电容', productCategory: '电容', plate: 'dee445000007', pallet: 'TP00001207', box: 'BX00001207', qty: 150, avail: 150, locked: 0, age: 19, status: '整托盘', inboundType: '生产入库', inboundDoc: 'RK2026052101', inTime: '2026-05-21 09:05:33', sealed: 0 },
+  { material: 'kb000017', materialName: '控制器00000007', batch: 'PC2026052507', custMaterial: 'CUST-kb0017', warehouse: '805', warehouseType: '成品仓', location: 'C-04-03', produceDate: '2026-05-12', custMaterialName: '凌达控制器', productCategory: '控制器', plate: 'dee445000008', pallet: 'TP00001208', box: 'BX00001208', qty: 66, avail: 66, locked: 0, age: 15, status: '非整托盘', inboundType: '无任务入库', inboundDoc: 'RK2026052501', inTime: '2026-05-25 13:22:47', sealed: 4 },
+  { material: 'kb000018', materialName: '控制器00000008', batch: 'PC2026060108', custMaterial: 'CUST-kb0018', warehouse: '801', warehouseType: '成品仓', location: 'A-02-06', produceDate: '2026-05-20', custMaterialName: '凌达控制器', productCategory: '控制器', plate: 'dee445000009', pallet: 'TP00001209', box: 'BX00001209', qty: 300, avail: 280, locked: 20, age: 8, status: '整托盘', inboundType: '生产入库', inboundDoc: 'RK2026060101', inTime: '2026-06-01 08:50:12', sealed: 0 },
+  { material: 'kb000019', materialName: '传感器00000009', batch: 'PC2026060309', custMaterial: 'CUST-kb0019', warehouse: '802', warehouseType: '车间仓', location: 'B-01-01', produceDate: '2026-05-25', custMaterialName: '凌达传感器', productCategory: '传感器', plate: 'dee445000010', pallet: 'TP00001210', box: 'BX00001210', qty: 18, avail: 18, locked: 0, age: 6, status: '非整托盘', inboundType: '初始化导入', inboundDoc: 'RK2026060301', inTime: '2026-06-03 15:18:26', sealed: 2 }
+];
+
+const warehouses = ['801', '802', '803', '805'];
+const parks = ['中山园区', '合肥园区', '武汉园区', '石家庄园区'];
+const statusList = ['整托盘', '非整托盘', '散件'];
+const warehouseTypeList = ['成品仓', '车间仓', '寄存仓'];
+
+let currentStatus = 'all';
+let viewData = [...rawData];
+
+/* ===== 下拉面板 ===== */
+const dropdownConfig = {
+  'dd-warehouse': { input: 'q-warehouse', options: warehouses },
+  'dd-park': { input: 'q-park', options: parks },
+  'dd-status': { input: 'q-status', options: statusList },
+  'dd-warehouse-type': { input: 'q-warehouse-type', options: warehouseTypeList }
+};
+
+/* 动态注入下拉样式 */
+(function() {
+  const style = document.createElement('style');
+  style.textContent = `
+    .dd-panel {
+      position: absolute; top: 36px; left: 0; min-width: 100%;
+      background: #fff; border: 1px solid var(--border-light);
+      border-radius: 4px; box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+      z-index: 100; max-height: 240px; overflow-y: auto;
+    }
+    .dd-panel .dd-item {
+      padding: 0 15px; height: 34px; line-height: 34px; font-size: 14px;
+      color: var(--text-regular); cursor: pointer; white-space: nowrap;
+    }
+    .dd-panel .dd-item:hover { background: var(--bg-hover); color: var(--primary); }
+  `;
+  document.head.appendChild(style);
+})();
+
+function toggleDropdown(panelId, event) {
+  event.stopPropagation();
+  document.querySelectorAll('.dd-panel').forEach(p => { if (p.id !== panelId) p.style.display = 'none'; });
+  const panel = document.getElementById(panelId);
+  if (panel.style.display === 'none' || !panel.innerHTML) {
+    const cfg = dropdownConfig[panelId];
+    panel.innerHTML = cfg.options.map(op =>
+      `<div class="dd-item" onclick="pickOption('${panelId}', '${op}')">${op}</div>`
+    ).join('');
+    panel.style.display = 'block';
+  } else {
+    panel.style.display = 'none';
+  }
+}
+
+function pickOption(panelId, value) {
+  const cfg = dropdownConfig[panelId];
+  document.getElementById(cfg.input).value = value;
+  document.getElementById(panelId).style.display = 'none';
+  doSearch();
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.wms-form-group')) {
+    document.querySelectorAll('.dd-panel').forEach(p => p.style.display = 'none');
+  }
+});
+
+/* ===== 统计 ===== */
+function refreshStats() {
+  document.getElementById('stat-all').textContent = '总库存 3500台';
+  document.getElementById('stat-full').textContent = '整托盘（10板2000个）';
+  document.getElementById('stat-part').textContent = '非整托盘 4板800个';
+  document.getElementById('stat-abnormal').textContent = '散件20个';
+}
+
+/* ===== 状态筛选 ===== */
+function filterStatus(status) {
+  currentStatus = status;
+  document.getElementById('stat-all').classList.toggle('active', status === 'all');
+  document.getElementById('stat-full').classList.toggle('active', status === '整托盘');
+  document.getElementById('stat-part').classList.toggle('active', status === '非整托盘');
+  document.getElementById('stat-abnormal').classList.toggle('active', status === '散件');
+  doSearch();
+}
+
+/* ===== 查询 ===== */
+function doSearch() {
+  const q = {
+    material: document.getElementById('q-material').value.trim().toLowerCase(),
+    materialName: document.getElementById('q-material-name').value.trim(),
+    batch: document.getElementById('q-batch').value.trim(),
+    custMaterial: document.getElementById('q-cust-material').value.trim().toLowerCase(),
+    pallet: document.getElementById('q-pallet').value.trim(),
+    box: document.getElementById('q-box').value.trim(),
+    plate: document.getElementById('q-plate').value.trim(),
+    warehouse: document.getElementById('q-warehouse').value,
+    warehouseType: document.getElementById('q-warehouse-type').value,
+    location: document.getElementById('q-location').value.trim(),
+    status: document.getElementById('q-status').value,
+    ageOp: document.getElementById('q-age-op').value,
+    ageValue: document.getElementById('q-age-value').value.trim(),
+    ageUnit: document.getElementById('q-age-unit').value
+  };
+  viewData = rawData.filter(r => {
+    if (currentStatus !== 'all' && r.status !== currentStatus) return false;
+    if (q.status && r.status !== q.status) return false;
+    if (q.material && !r.material.toLowerCase().includes(q.material)) return false;
+    if (q.materialName && !r.materialName.includes(q.materialName)) return false;
+    if (q.batch && !r.batch.includes(q.batch)) return false;
+    if (q.custMaterial && !r.custMaterial.toLowerCase().includes(q.custMaterial)) return false;
+    if (q.pallet && !r.pallet.includes(q.pallet)) return false;
+    if (q.box && !r.box.includes(q.box)) return false;
+    if (q.plate && !r.plate.includes(q.plate)) return false;
+    if (q.warehouse && r.warehouse !== q.warehouse) return false;
+    if (q.warehouseType && r.warehouseType !== q.warehouseType) return false;
+    if (q.location && !r.location.includes(q.location)) return false;
+    if (q.ageValue !== '') {
+      const ageThreshold = parseFloat(q.ageValue);
+      if (!isNaN(ageThreshold)) {
+        const threshold = q.ageUnit === '月' ? ageThreshold * 30 : ageThreshold;
+        switch (q.ageOp) {
+          case '=': if (r.age !== threshold) return false; break;
+          case '>': if (!(r.age > threshold)) return false; break;
+          case '>=': if (!(r.age >= threshold)) return false; break;
+          case '<': if (!(r.age < threshold)) return false; break;
+          case '<=': if (!(r.age <= threshold)) return false; break;
+          case '!=': if (r.age === threshold) return false; break;
+        }
+      }
+    }
+    return true;
+  });
+  renderTable();
+}
+
+function resetSearch() {
+  ['q-material','q-material-name','q-batch','q-cust-material','q-pallet','q-box','q-plate','q-warehouse','q-warehouse-type','q-location','q-park','q-status','q-age-value'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('q-age-op').value = '=';
+  document.getElementById('q-age-unit').value = '天';
+  currentStatus = 'all';
+  document.getElementById('stat-all').classList.add('active');
+  document.getElementById('stat-full').classList.remove('active');
+  document.getElementById('stat-part').classList.remove('active');
+  document.getElementById('stat-abnormal').classList.remove('active');
+  viewData = [...rawData];
+  renderTable();
+}
+
+/* ===== 渲染 ===== */
+function statusTag(status) {
+  if (status === '整托盘') return '<span class="wms-tag success">整托盘</span>';
+  if (status === '非整托盘') return '<span class="wms-tag warning">非整托盘</span>';
+  return '<span class="wms-tag danger">散件</span>';
+}
+
+function renderTable() {
+  const tbody = document.getElementById('table-body');
+  document.getElementById('total-count').textContent = viewData.length;
+  if (viewData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="22" class="empty-tip">暂无数据</td></tr>';
+    return;
+  }
+  tbody.innerHTML = viewData.map((r, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${r.pallet}</td>
+      <td>${r.material}</td>
+      <td>${r.materialName}</td>
+      <td>${r.batch}</td>
+      <td>${r.custMaterial}</td>
+      <td>${r.custMaterialName}</td>
+      <td>${r.productCategory}</td>
+      <td>${r.warehouse}</td>
+      <td>${r.location}</td>
+      <td class="num text-link" title="跳转到条码明细" onclick="goBarcodeDetail('${r.material}', '${r.plate}')">${r.qty}</td>
+      <td class="num">${r.avail}</td>
+      <td class="num">${r.locked > 0 ? '<span style="color:var(--danger);">' + r.locked + '</span>' : r.locked}</td>
+      <td class="num">${r.sealed}</td>
+      <td>${r.age}</td>
+      <td>${r.produceDate}</td>
+      <td>${statusTag(r.status)}</td>
+      <td>${r.inboundType}</td>
+      <td>${r.inboundDoc}</td>
+      <td>${r.inTime}</td>
+      <td>${r.plate}</td>
+      <td class="text-link" onclick="showBoxDetail('${r.box}')">${r.box}</td>
+    </tr>
+  `).join('');
+}
+
+function showDetail(plate) {
+  alert('查看栈板明细：' + plate + '（条码明细列表）');
+}
+
+function changePageSize(v) {
+  /* 演示：仅切换每页条数提示 */
+}
+
+/* ===== 初始化 ===== */
+refreshStats();
+renderTable();
+
+/* ===== 原始托盘明细弹框 ===== */
+function showBoxDetail(box) {
+  const row = rawData.find(r => r.box === box);
+  if (!row) return;
+  const lineCodes = ['PL01', 'PL02', 'PL03'];
+  const count = Math.max(1, Math.min(3, Math.ceil(row.qty / 50)));
+  const lines = [];
+  for (let i = 0; i < count; i++) {
+    lines.push({
+      barcode: box.replace('BX', 'BRC') + String(i + 1).padStart(3, '0'),
+      material: row.material,
+      materialName: row.materialName,
+      box: box,
+      produceDate: row.produceDate,
+      lineCode: lineCodes[i % lineCodes.length],
+      age: row.age
+    });
+  }
+  document.getElementById('boxDetailTitle').textContent = '原始托盘明细 — ' + box;
+  document.getElementById('boxDetailBody').innerHTML = lines.map(l => `
+    <tr>
+      <td>${l.barcode}</td>
+      <td>${l.material}</td>
+      <td>${l.materialName}</td>
+      <td>${l.box}</td>
+      <td>${l.produceDate}</td>
+      <td>${l.lineCode}</td>
+      <td>${l.age}</td>
+    </tr>
+  `).join('');
+  document.getElementById('boxDetailModal').style.display = 'flex';
+}
+
+function closeBoxDetail() {
+  document.getElementById('boxDetailModal').style.display = 'none';
+}
+
+/* ===== 跳转到条码明细 ===== */
+function goBarcodeDetail(material, plate) {
+  window.location.href = '条码明细查询.html?material=' + encodeURIComponent(material) + '&plate=' + encodeURIComponent(plate);
+}
+</script>
+
+<!-- 原始托盘明细弹框 -->
+<div class="modal-mask" id="boxDetailModal" style="display:none;">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span id="boxDetailTitle">原始托盘明细</span>
+      <span class="modal-close" onclick="closeBoxDetail()">×</span>
+    </div>
+    <div class="modal-body">
+      <table class="wms-table striped">
+        <thead>
+          <tr>
+            <th>条码</th>
+            <th>物料编码</th>
+            <th>物料名称</th>
+            <th>箱号</th>
+            <th>生产日期</th>
+            <th>产线编码</th>
+            <th>库龄</th>
+          </tr>
+        </thead>
+        <tbody id="boxDetailBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
