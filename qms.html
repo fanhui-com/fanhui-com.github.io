@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>封存管理（工业制品） - 格力WMS系统</title>
+  <style>
+    :root {
+      --wms-primary: #3F99A3;
+      --wms-primary-light: #5BAAB3;
+      --wms-primary-lighter: #DBEEEC;
+      --wms-primary-dark: #358A94;
+      --wms-primary-darker: #2A7A83;
+      --wms-link: #409EFF;
+      --wms-success: #67C23A;
+      --wms-success-light: rgba(103,194,58,0.1);
+      --wms-warning: #E6A23C;
+      --wms-warning-light: rgba(230,162,60,0.1);
+      --wms-danger: #F56C6C;
+      --wms-danger-light: rgba(245,108,108,0.1);
+      --wms-info: #909399;
+      --wms-info-light: rgba(144,147,153,0.1);
+      --wms-text-title: #333333;
+      --wms-text-regular: #606266;
+      --wms-text-secondary: #909399;
+      --wms-text-placeholder: #C0C4CC;
+      --wms-border: #DCDFE6;
+      --wms-border-light: #E4E7ED;
+      --wms-border-lighter: #EBEEF5;
+      --wms-bg-white: #FFFFFF;
+      --wms-bg-page: #F5F7FA;
+      --wms-bg-table-header: #FAFAFA;
+      --wms-bg-hover: #F5F7FA;
+      --wms-font-family: -apple-system, "system-ui", "Helvetica Neue", Helvetica, "Segoe UI", Arial, Roboto, "PingFang SC", miui, "Hiragino Sans GB", "Microsoft Yahei", sans-serif;
+      --wms-radius-base: 4px;
+      --wms-radius-btn: 3px;
+      --wms-header-height: 50px;
+      --wms-sidebar-width: 176px;
+      --wms-table-row-height: 48px;
+      --wms-table-header-height: 40px;
+      --wms-input-height: 32px;
+      --wms-btn-height: 32px;
+      --wms-tag-height: 24px;
+      --wms-shadow-base: 0 2px 4px rgba(0,0,0,0.12), 0 0 6px rgba(0,0,0,0.04);
+      --wms-focus-ring: 0 0 0 2px rgba(63,153,163,0.2);
+      --wms-transition-fast: 0.2s ease;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--wms-font-family);
+      font-size: 14px;
+      color: var(--wms-text-regular);
+      background: var(--wms-bg-page);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== Header ===== */
+    .wms-header {
+      height: var(--wms-header-height);
+      background: var(--wms-primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      font-size: 18px;
+      font-weight: 500;
+    }
+    .wms-header .user { font-size: 14px; font-weight: 400; }
+
+    /* ===== Layout ===== */
+    .wms-layout { display: flex; min-height: calc(100vh - var(--wms-header-height)); }
+    .wms-sidebar {
+      width: var(--wms-sidebar-width);
+      background: var(--wms-bg-white);
+      border-right: 1px solid var(--wms-border-lighter);
+      flex-shrink: 0;
+      overflow-y: auto;
+    }
+    .wms-main { flex: 1; background: var(--wms-bg-page); overflow-x: auto; padding: 16px; }
+    .wms-content-card {
+      background: var(--wms-bg-white);
+      border-radius: var(--wms-radius-base);
+      padding: 16px;
+      box-shadow: var(--wms-shadow-base);
+      min-width: 1400px;
+    }
+
+    /* ===== Menu ===== */
+    .wms-menu-item {
+      height: 40px; line-height: 40px; padding: 0 20px;
+      font-size: 14px; color: var(--wms-text-regular); cursor: pointer;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      transition: background var(--wms-transition-fast);
+    }
+    .wms-menu-item:hover { background: var(--wms-bg-hover); }
+    .wms-menu-item.active { background: var(--wms-primary-lighter); color: var(--wms-link); }
+    .wms-menu-item.child { padding-left: 40px; }
+    .wms-menu-group-title {
+      height: 40px; line-height: 40px; padding: 0 20px;
+      font-size: 13px; color: var(--wms-text-secondary); font-weight: 500;
+    }
+
+    /* ===== Breadcrumb ===== */
+    .wms-breadcrumb { font-size: 14px; color: var(--wms-text-secondary); padding: 8px 0 16px; }
+    .wms-breadcrumb .current { color: var(--wms-text-title); }
+    .wms-breadcrumb .sep { margin: 0 4px; color: var(--wms-text-placeholder); }
+
+    /* ===== Search Form ===== */
+    .wms-search-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(230px, 1fr));
+      gap: 12px 16px;
+      align-items: end;
+    }
+    .wms-form-label { display: block; font-size: 14px; color: var(--wms-text-regular); margin-bottom: 8px; }
+    .wms-form-label .req { color: var(--wms-danger); margin-right: 2px; }
+    .wms-input {
+      height: var(--wms-input-height); padding: 0 15px;
+      background: var(--wms-bg-white); border: 1px solid var(--wms-border);
+      border-radius: var(--wms-radius-base); font-size: 14px;
+      font-family: var(--wms-font-family); color: var(--wms-text-regular);
+      outline: none; width: 100%;
+      transition: border-color var(--wms-transition-fast);
+    }
+    .wms-input::placeholder { color: var(--wms-text-placeholder); }
+    .wms-input:focus { border-color: var(--wms-link); box-shadow: var(--wms-focus-ring); }
+    .wms-select { position: relative; width: 100%; }
+    .wms-select .wms-input { padding-right: 30px; cursor: pointer; }
+    .wms-select::after {
+      content: '▾'; position: absolute; right: 10px; top: 50%;
+      transform: translateY(-50%); color: var(--wms-text-secondary);
+      font-size: 12px; pointer-events: none;
+    }
+    .date-range { display: flex; align-items: center; gap: 6px; width: 100%; }
+    .date-range .wms-input { flex: 1; min-width: 0; }
+    .date-range .tilde { color: var(--wms-text-secondary); }
+
+    /* ===== Buttons ===== */
+    .wms-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      height: var(--wms-btn-height); padding: 0 20px;
+      font-size: 14px; font-family: var(--wms-font-family);
+      border-radius: var(--wms-radius-btn); cursor: pointer;
+      transition: all var(--wms-transition-fast);
+      border: 1px solid transparent; outline: none; text-decoration: none; gap: 6px;
+    }
+    .wms-btn-primary { background: var(--wms-primary); color: #fff; border-color: var(--wms-primary); }
+    .wms-btn-primary:hover { background: var(--wms-primary-dark); }
+    .wms-btn-default { background: #fff; color: var(--wms-text-regular); border-color: var(--wms-border); }
+    .wms-btn-default:hover { color: var(--wms-primary); border-color: var(--wms-primary); }
+    .wms-btn-danger-plain { background: #fff; color: var(--wms-danger); border-color: var(--wms-danger); }
+    .wms-btn-danger-plain:hover { opacity: 0.8; }
+
+    /* ===== Action Bar ===== */
+    .wms-flex-between { display: flex; justify-content: space-between; align-items: center; }
+    .wms-flex { display: flex; }
+    .wms-gap-sm { gap: 8px; }
+    .wms-mb-md { margin-bottom: 16px; }
+
+    /* ===== Table ===== */
+    .table-scroll { overflow-x: auto; border: 1px solid var(--wms-border-lighter); border-radius: var(--wms-radius-base); }
+    .wms-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 2600px; }
+    .wms-table thead th {
+      background: var(--wms-bg-table-header); color: var(--wms-text-title);
+      font-weight: 500; font-size: 13px; height: var(--wms-table-header-height);
+      padding: 0 12px; text-align: left; white-space: nowrap;
+      border-bottom: 1px solid var(--wms-border-lighter);
+      border-right: 1px solid var(--wms-border-lighter);
+    }
+    .wms-table thead th:last-child { border-right: none; }
+    .wms-table thead th .req { color: var(--wms-danger); }
+    .wms-table tbody td {
+      height: var(--wms-table-row-height); padding: 0 12px;
+      color: var(--wms-text-regular); border-bottom: 1px solid var(--wms-border-lighter);
+      border-right: 1px solid var(--wms-border-lighter);
+      white-space: nowrap;
+    }
+    .wms-table tbody td:last-child { border-right: none; }
+    .wms-table.striped tbody tr:nth-child(even) { background: var(--wms-bg-table-header); }
+    .wms-table tbody tr:hover { background: var(--wms-bg-hover); }
+    .wms-table tbody tr.editing { background: var(--wms-primary-lighter); }
+    .col-check { width: 50px; text-align: center; }
+    .wms-table .col-check { text-align: center; }
+    td.muted { color: var(--wms-text-placeholder); }
+
+    /* ===== Tags ===== */
+    .wms-tag {
+      display: inline-flex; align-items: center;
+      height: var(--wms-tag-height); line-height: 1; padding: 0 8px;
+      font-size: 12px; border-radius: var(--wms-radius-base);
+      background: var(--wms-primary-lighter); color: var(--wms-primary);
+    }
+    .wms-tag.warning { background: var(--wms-warning-light); color: var(--wms-warning); }
+    .wms-tag.info { background: var(--wms-info-light); color: var(--wms-info); }
+    .wms-tag.success { background: var(--wms-success-light); color: var(--wms-success); }
+    .wms-tag.plain { background: var(--wms-bg-page); color: var(--wms-text-regular); border: 1px solid var(--wms-border-lighter); }
+
+    /* ===== 新增行内提示 ===== */
+    .insert-tip {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; margin-bottom: 12px;
+      background: var(--wms-primary-lighter);
+      border: 1px dashed var(--wms-primary);
+      border-radius: var(--wms-radius-base);
+      font-size: 13px; color: var(--wms-primary-dark);
+    }
+    .insert-tip .mini-select { position: relative; width: 220px; }
+    .insert-tip .wms-input { height: 28px; font-size: 13px; background: #fff; }
+    .insert-tip .mini-select::after { content: '▾'; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--wms-text-secondary); font-size: 12px; pointer-events: none; }
+
+    /* ===== Pagination ===== */
+    .wms-pagination {
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: 4px; margin-top: 16px; font-size: 13px; color: var(--wms-text-regular);
+    }
+    .wms-pagination button {
+      min-width: 32px; height: 32px; padding: 0 8px;
+      border: 1px solid var(--wms-border); background: #fff;
+      border-radius: var(--wms-radius-base); cursor: pointer;
+      font-size: 13px; color: var(--wms-text-regular);
+      transition: all var(--wms-transition-fast); font-family: var(--wms-font-family);
+    }
+    .wms-pagination button:hover { color: var(--wms-primary); border-color: var(--wms-primary); }
+    .wms-pagination button.active { background: var(--wms-primary); color: #fff; border-color: var(--wms-primary); }
+    .wms-pagination button:disabled { color: var(--wms-text-placeholder); cursor: not-allowed; }
+
+    /* ===== 字段说明 ===== */
+    .field-note {
+      margin-top: 16px; padding: 12px 16px;
+      background: var(--wms-bg-page); border-radius: var(--wms-radius-base);
+      font-size: 13px; color: var(--wms-text-secondary); line-height: 2;
+    }
+    .field-note b { color: var(--wms-text-regular); font-weight: 500; }
+
+    /* ===== 下拉面板 ===== */
+    .wms-form-group { position: relative; }
+    .dd-panel {
+      position: absolute; top: 36px; left: 0; min-width: 100%;
+      background: #fff; border: 1px solid var(--wms-border-light);
+      border-radius: 4px; box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+      z-index: 100; max-height: 240px; overflow-y: auto; display: none;
+    }
+    .dd-panel.open { display: block; }
+    .dd-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 12px; height: 34px; line-height: 34px;
+      font-size: 14px; color: var(--wms-text-regular); cursor: pointer; white-space: nowrap;
+    }
+    .dd-item:hover { background: var(--wms-bg-hover); }
+    .dd-item input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Header ===== -->
+  <header class="wms-header">
+    <span>格力WMS系统</span>
+    <span class="user">👤 管理员</span>
+  </header>
+
+  <!-- ===== Layout ===== -->
+  <div class="wms-layout">
+
+    <!-- ===== Sidebar ===== -->
+    <aside class="wms-sidebar">
+      <div class="wms-menu-group-title">库内作业</div>
+      <div class="wms-menu-item child">移库移位</div>
+      <div class="wms-menu-item child">盘点管理</div>
+      <div class="wms-menu-item child active">封存管理（工业制品）</div>
+      <div class="wms-menu-item child">解封管理</div>
+      <div class="wms-menu-item child">批次管理</div>
+      <div class="wms-menu-group-title">入库管理</div>
+      <div class="wms-menu-item child">入库任务</div>
+      <div class="wms-menu-item child">入库记录</div>
+      <div class="wms-menu-group-title">出库管理</div>
+      <div class="wms-menu-item child">出库任务</div>
+      <div class="wms-menu-item child">发货单管理</div>
+      <div class="wms-menu-group-title">异常处理</div>
+      <div class="wms-menu-item child">异常工单</div>
+    </aside>
+
+    <!-- ===== Main ===== -->
+    <main class="wms-main">
+
+      <div class="wms-breadcrumb">
+        库内作业 <span class="sep">/</span> <span class="current">封存管理（工业制品）</span>
+      </div>
+
+      <div class="wms-content-card">
+
+        <!-- ===== 查询条件 ===== -->
+        <div class="wms-search-grid wms-mb-md">
+          <div class="wms-form-group">
+            <label class="wms-form-label">条码</label>
+            <input class="wms-input" placeholder="请输入条码">
+          </div>
+          <div class="wms-form-group">
+            <label class="wms-form-label">实物托盘</label>
+            <input class="wms-input" placeholder="请输入实物托盘号">
+          </div>
+          <div class="wms-form-group">
+            <label class="wms-form-label">原始托盘</label>
+            <input class="wms-input" placeholder="请输入原始托盘号">
+          </div>
+          <div class="wms-form-group">
+            <label class="wms-form-label">生产订单</label>
+            <input class="wms-input" placeholder="请输入生产订单号">
+          </div>
+          <div class="wms-form-group">
+            <label class="wms-form-label">生产日期</label>
+            <div class="date-range">
+              <input class="wms-input" type="date">
+              <span class="tilde">~</span>
+              <input class="wms-input" type="date">
+            </div>
+          </div>
+          <div class="wms-form-group">
+            <label class="wms-form-label">封存方式</label>
+            <div class="wms-select">
+              <input class="wms-input" id="q-seal-type" placeholder="全部（可多选）" readonly onclick="toggleSealTypePanel(event)">
+            </div>
+            <div class="dd-panel" id="dd-seal-type"></div>
+          </div>
+          <div class="wms-form-group">
+            <label class="wms-form-label">状态</label>
+            <div class="wms-select">
+              <input class="wms-input" placeholder="全部" readonly>
+            </div>
+          </div>
+          <div class="wms-form-group">
+            <label class="wms-form-label">封存来源</label>
+            <div class="wms-select">
+              <input class="wms-input" placeholder="全部" readonly>
+            </div>
+          </div>
+          <div class="wms-form-group">
+            <label class="wms-form-label">封存基地</label>
+            <select class="wms-input" id="q-base">
+              <option value="">全部</option>
+              <option value="珠海凯邦">珠海凯邦</option>
+              <option value="合肥凯邦">合肥凯邦</option>
+              <option value="重庆凯邦">重庆凯邦</option>
+              <option value="河南凯邦">河南凯邦</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:16px;">
+          <button class="wms-btn wms-btn-default">重置</button>
+          <button class="wms-btn wms-btn-primary">查询</button>
+        </div>
+
+        <!-- ===== 操作按钮栏 ===== -->
+        <div class="wms-flex-between wms-mb-md">
+          <div class="wms-flex wms-gap-sm">
+            <button class="wms-btn wms-btn-primary" onclick="addRow()">新增</button>
+            <button class="wms-btn wms-btn-default" onclick="applyStatus('封存')">封存</button>
+            <button class="wms-btn wms-btn-default" onclick="applyStatus('解封')">解封</button>
+            <button class="wms-btn wms-btn-danger-plain">删除</button>
+            <button class="wms-btn wms-btn-default">导出</button>
+          </div>
+        </div>
+
+        <!-- ===== 新增行提示 ===== -->
+        <div class="insert-tip">
+          <b>新增：</b>
+          <div class="mini-select"><input class="wms-input" value="按条码" readonly></div>
+          <span>封存方式四选一：按条码 / 按原始托盘 / 按实物托盘 / 按生产订单+生产日期，选择后录入封存数据（<span style="color:var(--wms-danger);">*</span> 必填）</span>
+        </div>
+
+        <!-- ===== 数据表格（查询结果字段 1:1 还原） ===== -->
+        <div class="table-scroll">
+          <table class="wms-table striped">
+            <thead>
+              <tr>
+                <th class="col-check"><input type="checkbox"></th>
+                <th>封存基地<span class="req">*</span></th>
+                <th>封存方式<span class="req">*</span></th>
+                <th>封存数据<span class="req">*</span></th>
+                <th>生产日期</th>
+                <th>物料编码</th>
+                <th>物料名称</th>
+                <th>批次</th>
+                <th>生产订单号</th>
+                <th>状态</th>
+                <th>封存时间</th>
+                <th>封存人</th>
+                <th>封存原因<span class="req">*</span></th>
+                <th>损坏程度<span class="req">*</span></th>
+                <th>来源单号</th>
+                <th>解封人</th>
+                <th>解封时间</th>
+                <th>创建人</th>
+                <th>创建时间</th>
+                <th>封存来源系统</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="col-check"><input type="checkbox"></td>
+                <td>珠海凯邦</td>
+                <td>按条码</td>
+                <td>条码 000001</td>
+                <td>2026-09-18</td>
+                <td>WL000001</td>
+                <td>压缩机缸体</td>
+                <td>20260918A</td>
+                <td>sc0001</td>
+                <td><span class="wms-tag">封存</span></td>
+                <td>2026-09-18 09:30</td>
+                <td>张工</td>
+                <td>质量待检</td>
+                <td>包装损坏</td>
+                <td>QMS20260918001</td>
+                <td class="muted">—</td>
+                <td class="muted">—</td>
+                <td>系统</td>
+                <td>2026-09-18 09:30</td>
+                <td><span class="wms-tag success">qms</span></td>
+              </tr>
+              <tr>
+                <td class="col-check"><input type="checkbox"></td>
+                <td>合肥凯邦</td>
+                <td>按原始托盘</td>
+                <td>托盘 YS-TP-000123</td>
+                <td>2026-09-17</td>
+                <td>WL000045</td>
+                <td>电机定子</td>
+                <td>20260917B</td>
+                <td>sc0002</td>
+                <td><span class="wms-tag warning">暂缓</span></td>
+                <td>2026-09-18 10:15</td>
+                <td>李工</td>
+                <td>待质量确认</td>
+                <td>电机损坏</td>
+                <td>QMS20260918002</td>
+                <td class="muted">—</td>
+                <td class="muted">—</td>
+                <td>系统</td>
+                <td>2026-09-18 10:15</td>
+                <td><span class="wms-tag success">qms</span></td>
+              </tr>
+              <tr>
+                <td class="col-check"><input type="checkbox"></td>
+                <td>重庆凯邦</td>
+                <td>按实物托盘</td>
+                <td>托盘 SW-TP-000456</td>
+                <td>2026-09-16</td>
+                <td>WL000102</td>
+                <td>电机转子</td>
+                <td>20260916C</td>
+                <td class="muted">—</td>
+                <td><span class="wms-tag">封存</span></td>
+                <td>2026-09-17 14:20</td>
+                <td>王工</td>
+                <td>客户订单变更</td>
+                <td>包装损坏</td>
+                <td>FC20260917001</td>
+                <td class="muted">—</td>
+                <td class="muted">—</td>
+                <td>刘明</td>
+                <td>2026-09-17 14:20</td>
+                <td><span class="wms-tag plain">wms</span></td>
+              </tr>
+              <tr>
+                <td class="col-check"><input type="checkbox"></td>
+                <td>珠海凯邦</td>
+                <td>按生产订单+生产日期</td>
+                <td>订单 sc0001（2026/9/18 ~ 2026/9/19）</td>
+                <td>2026-09-18 ~ 2026-09-19</td>
+                <td>WL000001</td>
+                <td>压缩机缸体</td>
+                <td>20260918A</td>
+                <td>sc0001</td>
+                <td><span class="wms-tag">封存</span></td>
+                <td>2026-09-19 08:00</td>
+                <td>系统</td>
+                <td>批次质量追溯</td>
+                <td>电机损坏</td>
+                <td>QMS20260919001</td>
+                <td class="muted">—</td>
+                <td class="muted">—</td>
+                <td>系统</td>
+                <td>2026-09-19 08:00</td>
+                <td><span class="wms-tag success">qms</span></td>
+              </tr>
+              <tr>
+                <td class="col-check"><input type="checkbox"></td>
+                <td>河南凯邦</td>
+                <td>按条码</td>
+                <td>条码 000288</td>
+                <td>2026-09-10</td>
+                <td>WL000288</td>
+                <td>压缩机曲轴</td>
+                <td>20260910D</td>
+                <td>sc0009</td>
+                <td><span class="wms-tag info">已解封</span></td>
+                <td>2026-09-11 11:00</td>
+                <td>张工</td>
+                <td>复检合格</td>
+                <td>包装损坏</td>
+                <td>QMS20260911001</td>
+                <td>赵工</td>
+                <td>2026-09-12 15:30</td>
+                <td>系统</td>
+                <td>2026-09-11 11:00</td>
+                <td><span class="wms-tag success">qms</span></td>
+              </tr>
+              <tr>
+                <td class="col-check"><input type="checkbox"></td>
+                <td>重庆凯邦</td>
+                <td>按实物托盘</td>
+                <td>托盘 SW-TP-000789</td>
+                <td>2026-09-08</td>
+                <td>WL000310</td>
+                <td>电机机座</td>
+                <td>20260908E</td>
+                <td class="muted">—</td>
+                <td><span class="wms-tag info">已解封</span></td>
+                <td>2026-09-09 16:45</td>
+                <td>王工</td>
+                <td>工艺验证</td>
+                <td>电机损坏</td>
+                <td>FC20260909001</td>
+                <td>李工</td>
+                <td>2026-09-10 09:10</td>
+                <td>刘明</td>
+                <td>2026-09-09 16:45</td>
+                <td><span class="wms-tag plain">wms</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ===== 分页 ===== -->
+        <div class="wms-pagination">
+          <span>共 286 条</span>
+          <button disabled>上一页</button>
+          <button class="active">1</button>
+          <button>2</button>
+          <button>3</button>
+          <button>…</button>
+          <button>10</button>
+          <button>下一页</button>
+        </div>
+
+        <!-- ===== 字段说明 ===== -->
+        <div class="field-note">
+          <b>字段说明</b><br>
+          ① <b>封存方式</b>（必填）：按条码 / 按原始托盘 / 按实物托盘 / 按生产订单+生产日期，四选一；<br>
+          ② <b>封存数据</b>（必填）：随封存方式录入对应条码 / 托盘号 / 生产订单（+日期段）；<br>
+          ③ <b>生产日期</b>：非必填，填写日期段；不填写表示不限日期；<br>
+          ④ <b>物料编码 / 物料名称</b>：按条码、按托盘封存时由条码/托盘带出，按订单封存时系统带出；<br>
+          ⑤ <b>批次 / 生产订单号 / 状态 / 封存时间 / 封存人 / 封存原因 / 来源单号 / 解封人 / 解封时间 / 创建人 / 创建时间</b>：系统带出；<br>
+          ⑥ <b>封存来源系统</b>：qms（质量系统发起）/ wms（仓储系统发起）。
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+<script>
+/* ===== 物料自动带出映射 ===== */
+var materialLookup = {
+  '条码 000001': { code: 'WL000001', name: '压缩机缸体', batch: '20260918A', order: 'sc0001', source: 'QMS20260918001' },
+  '条码 000288': { code: 'WL000288', name: '压缩机曲轴', batch: '20260910D', order: 'sc0009', source: 'QMS20260911001' },
+  '托盘 YS-TP-000123': { code: 'WL000045', name: '电机定子', batch: '20260917B', order: 'sc0002', source: 'QMS20260918002' },
+  '托盘 SW-TP-000456': { code: 'WL000102', name: '电机转子', batch: '20260916C', order: '', source: 'FC20260917001' },
+  '托盘 SW-TP-000789': { code: 'WL000310', name: '电机机座', batch: '20260908E', order: '', source: 'FC20260909001' },
+  'sc0001': { code: 'WL000001', name: '压缩机缸体', batch: '20260918A', order: 'sc0001', source: 'QMS20260919001' },
+  'sc0002': { code: 'WL000045', name: '电机定子', batch: '20260917B', order: 'sc0002', source: 'QMS20260918002' },
+  'sc0009': { code: 'WL000288', name: '压缩机曲轴', batch: '20260910D', order: 'sc0009', source: 'QMS20260911001' }
+};
+
+function setMaterialCell(tr, code, name) {
+  var m = tr.querySelector('.seal-material');
+  var n = tr.querySelector('.seal-material-name');
+  if (m) { m.textContent = code || '—'; m.className = 'seal-material' + (code ? '' : ' muted'); }
+  if (n) { n.textContent = name || '—'; n.className = 'seal-material-name' + (name ? '' : ' muted'); }
+}
+
+function resetMaterial(tr) {
+  setMaterialCell(tr, '', '');
+}
+
+function findMaterial(val) {
+  var hit = null;
+  Object.keys(materialLookup).some(function (k) {
+    if (val && (val.indexOf(k) !== -1 || k.indexOf(val) !== -1)) { hit = materialLookup[k]; return true; }
+    return false;
+  });
+  return hit;
+}
+
+function onSealDataInput(input) {
+  var tr = input.closest('tr');
+  var val = input.value.trim();
+  var hit = findMaterial(val);
+  if (hit) setMaterialCell(tr, hit.code, hit.name);
+  else resetMaterial(tr);
+}
+
+/* ===== 新增行 / 编辑行 ===== */
+function addRow() {
+  var tbody = document.querySelector('.wms-table tbody');
+  var tr = document.createElement('tr');
+  tr.className = 'editing';
+  tr.innerHTML =
+    '<td>' +
+      '<button class="wms-btn wms-btn-primary" style="height:26px;padding:0 10px;font-size:13px;" onclick="saveRow(this)">保存</button>' +
+      '<button class="wms-btn wms-btn-default" style="height:26px;padding:0 10px;font-size:13px;margin-left:6px;" onclick="cancelRow(this)">取消</button>' +
+    '</td>' +
+    '<td class="seal-base">' +
+      '<select class="wms-input" style="width:130px;height:28px;font-size:13px;">' +
+        '<option value="珠海凯邦" selected>珠海凯邦</option>' +
+        '<option value="合肥凯邦">合肥凯邦</option>' +
+        '<option value="重庆凯邦">重庆凯邦</option>' +
+        '<option value="河南凯邦">河南凯邦</option>' +
+      '</select>' +
+    '</td>' +
+    '<td>' +
+      '<select class="wms-input seal-type" onchange="onEditTypeChange(this)" style="width:180px;height:28px;font-size:13px;">' +
+        '<option value="按条码" selected>按条码</option>' +
+        '<option value="按原始托盘">按原始托盘</option>' +
+        '<option value="按实物托盘">按实物托盘</option>' +
+        '<option value="按生产订单+生产日期">按生产订单+生产日期</option>' +
+      '</select>' +
+    '</td>' +
+    '<td class="seal-data"><input class="wms-input" style="width:180px;height:28px;font-size:13px;" placeholder="必填录入条码" oninput="onSealDataInput(this)"></td>' +
+    '<td class="seal-date muted">—</td>' +
+    '<td class="seal-material muted">—</td>' +
+    '<td class="seal-material-name muted">—</td>' +
+    '<td class="muted">—</td>' +
+    '<td class="muted">—</td>' +
+    '<td class="muted">—</td>' +
+    '<td class="muted">—</td>' +
+    '<td class="muted">—</td>' +
+    '<td class="seal-reason">' +
+      '<select class="wms-input" style="width:140px;height:28px;font-size:13px;">' +
+        '<option value="" selected>请选择</option>' +
+        '<option value="临时管控">临时管控</option>' +
+        '<option value="自然灾害">自然灾害</option>' +
+        '<option value="质量待检">质量待检</option>' +
+        '<option value="工艺验证">工艺验证</option>' +
+        '<option value="其他">其他</option>' +
+      '</select>' +
+    '</td>' +
+    '<td class="seal-damage">' +
+      '<select class="wms-input" style="width:140px;height:28px;font-size:13px;">' +
+        '<option value="" selected>请选择</option>' +
+        '<option value="包装损坏">包装损坏</option>' +
+        '<option value="电机损坏">电机损坏</option>' +
+      '</select>' +
+    '</td>' +
+    '<td class="muted">—</td>' +
+    '<td class="muted">—</td>' +
+    '<td class="muted">—</td>' +
+    '<td class="muted">系统带出</td>' +
+    '<td class="muted">系统带出</td>' +
+    '<td class="muted">—</td>';
+  tbody.insertBefore(tr, tbody.firstChild);
+}
+
+function onEditTypeChange(sel) {
+  var tr = sel.closest('tr');
+  var dataCell = tr.querySelector('.seal-data');
+  var dateCell = tr.querySelector('.seal-date');
+  var v = sel.value;
+  var phMap = {
+    '按条码': '必填录入条码',
+    '按原始托盘': '必填录入原始托盘号',
+    '按实物托盘': '必填录入实物托盘号',
+    '按生产订单+生产日期': '必填录入生产订单号'
+  };
+  dataCell.innerHTML = '<input class="wms-input" style="width:180px;height:28px;font-size:13px;" placeholder="' + (phMap[v] || '') + '" oninput="onSealDataInput(this)">';
+  resetMaterial(tr);
+  if (v === '按生产订单+生产日期') {
+    dateCell.className = 'seal-date';
+    dateCell.innerHTML = '<div class="date-range" style="width:230px;">' +
+      '<input class="wms-input" type="date" style="height:28px;font-size:13px;">' +
+      '<span class="tilde">~</span>' +
+      '<input class="wms-input" type="date" style="height:28px;font-size:13px;">' +
+      '</div>';
+  } else {
+    dateCell.className = 'seal-date muted';
+    dateCell.innerHTML = '—';
+  }
+}
+
+function saveRow(btn) {
+  var tr = btn.closest('tr');
+  var sel = tr.querySelector('.seal-type');
+  var dataInput = tr.querySelector('.seal-data input');
+  var reasonSel = tr.querySelector('.seal-reason select');
+  var damageSel = tr.querySelector('.seal-damage select');
+  var baseSel = tr.querySelector('.seal-base select');
+  var dateInputs = tr.querySelectorAll('.seal-date input[type="date"]');
+  var sealType = sel ? sel.value : '';
+  var sealData = dataInput ? dataInput.value.trim() : '';
+  var baseVal = baseSel ? baseSel.value : '';
+  var reasonVal = reasonSel ? reasonSel.value : '';
+  var damageVal = damageSel ? damageSel.value : '';
+  var hit = findMaterial(sealData);
+  var materialVal = (hit && hit.code) || '—';
+  var nameVal = (hit && hit.name) || '—';
+  var batchVal = (hit && hit.batch) || '—';
+  var orderVal = (hit && hit.order) || '—';
+  var sourceVal = (hit && hit.source) || '—';
+  if (!sealData) { alert('封存数据为必填项'); return; }
+  if (!baseVal) { alert('封存基地为必填项'); return; }
+  if (!reasonVal) { alert('封存原因为必填项'); return; }
+  if (!damageVal) { alert('损坏程度为必填项'); return; }
+  // 封存方式 + 封存数据 不能重复
+  var dup = false;
+  document.querySelectorAll('.wms-table tbody tr:not(.editing)').forEach(function (r) {
+    if (r.children.length >= 15 &&
+        r.children[1].textContent.trim() === baseVal &&
+        r.children[2].textContent.trim() === sealType &&
+        r.children[3].textContent.trim() === sealData &&
+        r.children[14].textContent.trim() === sourceVal) dup = true;
+  });
+  if (dup) { alert('封存基地 + 封存方式 + 封存数据 + 来源单号 不能重复'); return; }
+  var dateText = '—';
+  if (dateInputs.length === 2) {
+    var s = dateInputs[0].value, e = dateInputs[1].value;
+    dateText = (s || e) ? (s + (e ? ' ~ ' + e : '')) : '—';
+  }
+  tr.className = '';
+  tr.innerHTML =
+    '<td class="col-check"><input type="checkbox"></td>' +
+    '<td>' + (baseSel ? baseSel.value : '—') + '</td>' +
+    '<td>' + sealType + '</td>' +
+    '<td>' + sealData + '</td>' +
+    '<td>' + dateText + '</td>' +
+    '<td>' + materialVal + '</td>' +
+    '<td>' + nameVal + '</td>' +
+    '<td>' + batchVal + '</td>' +
+    '<td>' + orderVal + '</td>' +
+    '<td><span class="wms-tag">封存</span></td>' +
+    '<td>' + nowStr() + '</td>' +
+    '<td>系统</td>' +
+    '<td>' + (reasonSel ? reasonSel.value : '—') + '</td>' +
+    '<td>' + (damageSel ? damageSel.value : '—') + '</td>' +
+    '<td>' + sourceVal + '</td>' +
+    '<td class="muted">—</td>' +
+    '<td class="muted">—</td>' +
+    '<td>系统</td>' +
+    '<td>' + nowStr() + '</td>' +
+    '<td><span class="wms-tag plain">wms</span></td>';
+}
+
+function cancelRow(btn) {
+  var tr = btn.closest('tr');
+  tr.parentNode.removeChild(tr);
+}
+
+function nowStr() {
+  var d = new Date();
+  function p(n) { return n < 10 ? '0' + n : '' + n; }
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+/* 封存 / 解封：仅修改状态列 */
+function applyStatus(action) {
+  var rows = document.querySelectorAll('.wms-table tbody tr:not(.editing)');
+  var changed = 0;
+  rows.forEach(function (r) {
+    var cb = r.querySelector('input[type="checkbox"]');
+    if (cb && cb.checked) {
+      if (r.children.length > 9) {
+        r.children[9].innerHTML = action === '封存'
+          ? '<span class="wms-tag">封存</span>'
+          : '<span class="wms-tag info">已解封</span>';
+      }
+      cb.checked = false;
+      changed++;
+    }
+  });
+  if (changed === 0) { alert('请先勾选要' + action + '的数据'); }
+}
+
+/* ===== 封存方式（查询条件，多选） ===== */
+var sealTypeOptions = ['按条码', '按原始托盘', '按实物托盘', '按生产订单+生产日期'];
+var sealTypeSelected = new Set();
+
+function renderSealTypeMulti() {
+  var panel = document.getElementById('dd-seal-type');
+  panel.innerHTML = sealTypeOptions.map(function (o) {
+    return '<label class="dd-item"><input type="checkbox" ' + (sealTypeSelected.has(o) ? 'checked' : '') + ' onchange="toggleSealType(\'' + o + '\', this.checked)">' + o + '</label>';
+  }).join('');
+}
+
+function toggleSealType(opt, checked) {
+  if (checked) sealTypeSelected.add(opt); else sealTypeSelected.delete(opt);
+  document.getElementById('q-seal-type').value = Array.from(sealTypeSelected).join(' / ');
+}
+
+function toggleSealTypePanel(event) {
+  event.stopPropagation();
+  renderSealTypeMulti();
+  document.getElementById('dd-seal-type').classList.toggle('open');
+}
+
+document.addEventListener('click', function (e) {
+  if (!e.target.closest('.wms-form-group')) {
+    document.getElementById('dd-seal-type').classList.remove('open');
+  }
+});
+</script>
+</body>
+</html>
