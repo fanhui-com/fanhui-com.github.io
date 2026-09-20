@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>手机端按批次卸货 - 格力WMS系统</title>
+  <style>
+    :root {
+      --wms-primary: #3F99A3;
+      --wms-primary-light: #5BAAB3;
+      --wms-primary-lighter: #DBEEEC;
+      --wms-primary-dark: #358A94;
+      --wms-primary-darker: #2A7A83;
+      --wms-link: #409EFF;
+      --wms-success: #67C23A;
+      --wms-success-light: rgba(103,194,58,0.12);
+      --wms-warning: #E6A23C;
+      --wms-warning-light: rgba(230,162,60,0.12);
+      --wms-danger: #F56C6C;
+      --wms-danger-light: rgba(245,108,108,0.12);
+      --wms-info: #909399;
+      --wms-text-title: #333333;
+      --wms-text-regular: #606266;
+      --wms-text-secondary: #909399;
+      --wms-text-placeholder: #C0C4CC;
+      --wms-border: #DCDFE6;
+      --wms-border-light: #E4E7ED;
+      --wms-border-lighter: #EBEEF5;
+      --wms-bg-page: #F5F7FA;
+      --wms-bg-table-header: #FAFAFA;
+      --wms-radius-base: 4px;
+      --wms-input-height: 40px;
+      --wms-font-family: -apple-system, "system-ui", "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft Yahei", sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--wms-font-family);
+      background: #2B3338;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+      padding: 32px 20px;
+      flex-wrap: wrap;
+    }
+
+    /* ================= 手机壳 ================= */
+    .phone {
+      width: 390px;
+      height: 780px;
+      background: #000;
+      border-radius: 44px;
+      padding: 12px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+      flex-shrink: 0;
+    }
+    .phone-screen {
+      width: 100%; height: 100%;
+      background: var(--wms-bg-page);
+      border-radius: 34px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .statusbar {
+      height: 34px; background: var(--wms-primary);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; color: #fff; font-size: 11px; flex-shrink: 0;
+    }
+    .appbar {
+      height: 46px; background: var(--wms-primary);
+      color: #fff; display: flex; align-items: center;
+      padding: 0 14px; gap: 10px; flex-shrink: 0;
+    }
+    .appbar .back { font-size: 20px; cursor: pointer; line-height: 1; }
+    .appbar .title { font-size: 17px; font-weight: 500; }
+    .page-body {
+      flex: 1; overflow-y: auto; padding: 12px 12px 90px;
+    }
+    .page-body::-webkit-scrollbar { width: 0; }
+
+    /* ================= 通用组件 ================= */
+    .field { margin-bottom: 12px; }
+    .field-label {
+      display: block; font-size: 13px; color: var(--wms-text-regular);
+      margin-bottom: 6px;
+    }
+    .field-label .req { color: var(--wms-danger); margin-right: 2px; }
+    .field-label .sub { color: var(--wms-text-secondary); font-size: 12px; font-weight: 400; }
+    .wms-input {
+      width: 100%; height: var(--wms-input-height);
+      border: 1px solid var(--wms-border); border-radius: var(--wms-radius-base);
+      padding: 0 12px; font-size: 15px; font-family: var(--wms-font-family);
+      color: var(--wms-text-regular); background: #fff; outline: none;
+      transition: border-color 0.2s ease;
+    }
+    .wms-input::placeholder { color: var(--wms-text-placeholder); }
+    .wms-input:focus { border-color: var(--wms-primary); box-shadow: 0 0 0 2px rgba(63,153,163,0.15); }
+    .wms-input:read-only { background: var(--wms-bg-table-header); }
+    .input-scan { display: flex; gap: 8px; }
+    .input-scan .wms-input { flex: 1; }
+    .wms-select { position: relative; width: 100%; }
+    .wms-select .wms-input { padding-right: 34px; cursor: pointer; }
+    .wms-select::after {
+      content: '▾'; position: absolute; right: 12px; top: 50%;
+      transform: translateY(-50%); color: var(--wms-text-secondary);
+      font-size: 13px; pointer-events: none;
+    }
+    .readonly-box {
+      width: 100%; height: var(--wms-input-height); line-height: var(--wms-input-height);
+      background: var(--wms-bg-table-header); border: 1px solid var(--wms-border-lighter);
+      border-radius: var(--wms-radius-base); padding: 0 12px;
+      font-size: 15px; color: var(--wms-text-regular);
+    }
+    .readonly-box b { color: var(--wms-text-title); font-weight: 500; }
+
+    /* ================= 校验提示 ================= */
+    .check-tip {
+      display: none; align-items: center; gap: 6px;
+      padding: 8px 12px; border-radius: var(--wms-radius-base);
+      font-size: 13px; margin-bottom: 12px;
+    }
+    .check-tip.show { display: flex; }
+    .check-tip.ok { background: var(--wms-success-light); color: var(--wms-success); }
+    .check-tip.warn { background: var(--wms-warning-light); color: var(--wms-warning); }
+    .check-tip.err { background: var(--wms-danger-light); color: var(--wms-danger); font-weight: 500; }
+
+    /* ================= 物料属性卡 ================= */
+    .attr-card { display: none; margin-bottom: 12px; }
+    .attr-card.show { display: block; }
+    .attr-title {
+      font-size: 14px; font-weight: 500; color: var(--wms-primary-dark);
+      margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+    }
+    .attr-title::before { content: ''; width: 3px; height: 14px; background: var(--wms-primary); border-radius: 2px; }
+    .attr-body {
+      background: #fff; border: 1px solid var(--wms-border-lighter);
+      border-radius: var(--wms-radius-base); padding: 4px 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .attr-row {
+      display: flex; font-size: 14px; line-height: 1.4;
+      padding: 7px 0; border-bottom: 1px solid var(--wms-border-lighter);
+    }
+    .attr-row:last-child { border-bottom: none; }
+    .attr-row .k { width: 88px; color: var(--wms-text-secondary); flex-shrink: 0; }
+    .attr-row .v { color: var(--wms-text-title); font-weight: 500; word-break: break-all; }
+    .dup-tip {
+      display: none; margin-top: 8px; padding: 8px 12px;
+      background: var(--wms-warning-light); color: var(--wms-warning);
+      border-radius: var(--wms-radius-base); font-size: 12px; line-height: 1.6;
+    }
+    .dup-tip.show { display: block; }
+
+    /* 扫码模式下拉框（单台/托盘，默认单台，替代扫码按钮位置） */
+    .mode-select {
+      height: var(--wms-input-height); padding: 0 10px;
+      border: none; border-radius: var(--wms-radius-base);
+      background: var(--wms-primary); font-size: 15px; font-weight: 500;
+      color: #fff; font-family: var(--wms-font-family);
+      flex-shrink: 0; outline: none; cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .mode-select:active { background: var(--wms-primary-darker); }
+    .mode-select option { color: var(--wms-text-title); background: #fff; }
+    .scan-hint {
+      font-size: 11px; color: var(--wms-text-secondary);
+      margin-top: 5px; line-height: 1.4;
+    }
+
+    /* 单据过滤提示 + 单据选项 */
+    .doc-badge {
+      display: none; margin-top: 6px; padding: 6px 10px;
+      background: var(--wms-primary-lighter); color: var(--wms-primary-dark);
+      border-radius: var(--wms-radius-base); font-size: 12px; line-height: 1.5;
+    }
+    .doc-badge.show { display: block; }
+    .doc-badge b { font-weight: 600; }
+    .doc-option {
+      padding: 11px 14px; border: 1px solid var(--wms-border-lighter);
+      border-radius: var(--wms-radius-base); margin-bottom: 10px;
+      cursor: pointer; transition: all 0.2s ease; background: #fff;
+    }
+    .doc-option:active { background: var(--wms-primary-lighter); }
+    .doc-option .d-no { font-size: 14px; color: var(--wms-text-title); font-weight: 500; }
+    .doc-option .d-sub { font-size: 12px; color: var(--wms-text-secondary); margin-top: 3px; line-height: 1.5; }
+    .doc-option .d-tag {
+      float: right; font-size: 11px; padding: 2px 8px; border-radius: 10px;
+      background: var(--wms-primary-lighter); color: var(--wms-primary-dark);
+    }
+    .attr-row .v.empty { color: var(--wms-text-placeholder); font-weight: 400; }
+    .attr-card.flash .attr-body { animation: bringOut 1.2s ease; }
+    @keyframes bringOut {
+      0%   { background: var(--wms-primary-lighter); border-color: var(--wms-primary); box-shadow: 0 0 0 3px rgba(63,153,163,0.25); }
+      100% { background: #fff; border-color: var(--wms-border-lighter); box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    }
+
+    /* ================= 底部操作栏 ================= */
+    .bottom-bar {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      background: #fff; border-top: 1px solid var(--wms-border-lighter);
+      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+      display: flex; gap: 10px; z-index: 10;
+    }
+    .btn {
+      flex: 1; height: 42px; border-radius: var(--wms-radius-base);
+      font-size: 15px; font-family: var(--wms-font-family);
+      border: none; cursor: pointer; transition: all 0.2s ease;
+    }
+    .btn:active { opacity: 0.85; }
+    .btn-primary { background: var(--wms-primary); color: #fff; }
+    .btn-outline { background: #fff; color: var(--wms-text-regular); border: 1px solid var(--wms-border); }
+
+    /* ================= 弹窗 ================= */
+    .dialog-mask {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.5);
+      z-index: 100; display: none; align-items: flex-end;
+    }
+    .dialog-mask.show { display: flex; }
+    .dialog {
+      width: 100%; background: #fff;
+      border-radius: 16px 16px 0 0; padding: 20px 16px 24px;
+      animation: slideUp 0.25s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .dialog-title {
+      font-size: 16px; font-weight: 500; color: var(--wms-text-title);
+      margin-bottom: 4px;
+    }
+    .dialog-sub { font-size: 13px; color: var(--wms-primary-dark); margin-bottom: 14px; }
+    .dialog-sub.warn { color: var(--wms-warning); }
+    .tray-input { display: flex; gap: 8px; }
+    .tray-input .wms-input { flex: 1; font-family: "SF Mono", Menlo, Consolas, monospace; letter-spacing: 0.5px; }
+    .icon-btn {
+      width: var(--wms-input-height); height: var(--wms-input-height);
+      border: 1px solid var(--wms-border); background: var(--wms-bg-table-header);
+      border-radius: var(--wms-radius-base); font-size: 18px; cursor: pointer;
+      color: var(--wms-primary-dark); flex-shrink: 0;
+    }
+    .dialog-row { margin-bottom: 14px; }
+    .dialog-actions { display: flex; gap: 12px; margin-top: 18px; }
+    .dialog-actions .btn { height: 42px; }
+
+    /* 单选托盘 */
+    .tray-option {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px; border: 1px solid var(--wms-border-lighter);
+      border-radius: var(--wms-radius-base); margin-bottom: 10px;
+      cursor: pointer; transition: all 0.2s ease; background: #fff;
+    }
+    .tray-option.checked { border-color: var(--wms-primary); background: var(--wms-primary-lighter); }
+    .radio-dot {
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 1px solid var(--wms-border); position: relative; flex-shrink: 0;
+    }
+    .tray-option.checked .radio-dot { border-color: var(--wms-primary); }
+    .tray-option.checked .radio-dot::after {
+      content: ''; position: absolute; inset: 3px;
+      background: var(--wms-primary); border-radius: 50%;
+    }
+    .tray-option .t-name { font-size: 14px; color: var(--wms-text-title); width: 70px; }
+    .tray-option .t-code { font-size: 15px; color: var(--wms-text-regular); font-weight: 500; }
+    .tray-option .t-tag {
+      margin-left: auto; font-size: 11px; padding: 2px 8px; border-radius: 10px;
+      background: var(--wms-primary-lighter); color: var(--wms-primary-dark);
+    }
+
+    /* ================= Toast ================= */
+    .toast {
+      position: absolute; top: 45%; left: 50%; transform: translate(-50%,-50%);
+      background: rgba(0,0,0,0.75); color: #fff; padding: 12px 22px;
+      border-radius: 8px; font-size: 14px; z-index: 200;
+      display: none; align-items: center; gap: 8px; white-space: nowrap;
+    }
+    .toast.show { display: flex; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* ================= 侧边说明面板 ================= */
+    .side-panel {
+      width: 400px; max-width: 92vw; color: #cfd8dc;
+      font-size: 13px; line-height: 1.9;
+    }
+    .side-panel h2 {
+      color: #fff; font-size: 17px; font-weight: 500;
+      margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+    }
+    .side-panel h2::before { content: ''; width: 4px; height: 16px; background: var(--wms-primary); border-radius: 2px; }
+    .side-panel .card {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; padding: 12px 16px; margin-bottom: 14px;
+    }
+    .side-panel b { color: #fff; font-weight: 500; }
+    .side-panel .tag {
+      display: inline-block; padding: 1px 8px; border-radius: 10px;
+      background: rgba(63,153,163,0.3); color: #9fd4da; font-size: 12px; margin-right: 4px;
+    }
+    .side-panel ol { padding-left: 18px; }
+    .side-panel .hint { color: #e6a23c; }
+  </style>
+</head>
+<body>
+
+  <!-- ================= 手机原型 ================= -->
+  <div class="phone">
+    <div class="phone-screen">
+
+      <!-- 状态栏 + 顶栏 -->
+      <div class="statusbar"><span>9:41</span><span>▮▮▮ ⌁ 🔋</span></div>
+      <div class="appbar">
+        <span class="back">‹</span>
+        <span class="title">按批次卸货</span>
+      </div>
+
+      <!-- 页面主体 -->
+      <div class="page-body">
+
+        <!-- 校验提示 -->
+        <div class="check-tip ok" id="tipOk">✓ 条码/箱号在库</div>
+        <div class="check-tip warn" id="tipWarn">！托盘号在库，将按托盘整板卸货</div>
+        <div class="check-tip err" id="tipErr">！该条码非按托盘批次卸货的，请用其他卸货模式</div>
+        <div class="check-tip err" id="tipNotFound">！未找到条码相关物料属性</div>
+
+        <!-- ① 扫码（无按钮：扫码枪扫入自动触发；模式下拉在按钮位，默认单台） -->
+        <div class="field">
+          <label class="field-label" id="scanLabelText">扫条码/箱号</label>
+          <div class="input-scan">
+            <input class="wms-input" id="scanInput" placeholder="请扫入单台条码 / 箱号">
+            <select class="mode-select" id="modeSelect">
+              <option value="single" selected>单台</option>
+              <option value="tray">托盘</option>
+            </select>
+          </div>
+          <div class="scan-hint">扫码枪扫入后自动触发（演示：<b>01</b> 匹配成功 · <b>02</b> 匹配失败 · <b>03</b> 非按托盘点数出库，按 Enter 键）</div>
+        </div>
+
+        <!-- ② 单据选择（扫码自动过滤，多条手工选） -->
+        <div class="field">
+          <label class="field-label"><span class="req">*</span>卸货单据</label>
+          <div class="wms-select">
+            <input class="wms-input" id="docInput" placeholder="扫码后自动过滤，多条时手工选择" readonly>
+          </div>
+          <div class="doc-badge" id="docBadge">已按扫入条码自动过滤出 <b>2</b> 条单据，请手工选择</div>
+        </div>
+        <!-- ② 卸货数量（已出库数量内联体现） -->
+        <div class="field">
+          <label class="field-label">
+            <span class="req">*</span>本次卸货数量（按批次点数）
+            <span class="sub" id="qtyHint" style="display:none;margin-left:2px;">批次已出库 100台</span>
+          </label>
+          <input class="wms-input" id="unloadQty" type="number" min="1" max="100" placeholder="请输入本次卸货数量">
+          <div class="check-tip err" id="qtyErr">！本次卸货数量不能超出出库总数（100台）</div>
+        </div>
+
+        <!-- ⑤ 卸货库位（下拉单选，不含出库库位/在途库位） -->
+        <div class="field">
+          <label class="field-label"><span class="req">*</span>卸货库位</label>
+          <select class="wms-input" id="unloadLoc" style="background-color:var(--wms-bg-color);appearance:auto;">
+            <option value="" selected disabled>请选择卸货库位</option>
+            <option value="A01-01">原材料库 A01-01</option>
+            <option value="A01-02">原材料库 A01-02</option>
+            <option value="B01-01">半成品库 B01-01</option>
+            <option value="B01-02">半成品库 B01-02</option>
+            <option value="C01-01">暂存库 C01-01</option>
+          </select>
+        </div>
+
+        <!-- ⑥ 卸货原因 -->
+        <div class="field">
+          <label class="field-label">卸货原因</label>
+          <select class="wms-input" id="unloadReason" style="background-color:var(--wms-bg-color);appearance:auto;">
+            <option value="" selected disabled>请选择卸货原因</option>
+            <option value="客户订单退回">客户订单退回（订单取消/客户拒收）</option>
+            <option value="物流发货退回">物流发货退回（货损、雨淋）</option>
+            <option value="库内装车异常">库内装车异常（货损、雨淋）</option>
+            <option value="客户特殊要求更换">客户特殊要求更换</option>
+          </select>
+          <!-- 说明：卸货原因四选一（固定枚举） -->
+        </div>
+
+        <!-- ⑦ 物料属性（扫码自动带出，默认预填示例数据） -->
+        <div class="attr-card show" id="attrCard">
+          <div class="attr-title">物料属性（扫码自动带出）</div>
+          <div class="attr-body" id="attrBody">
+            <div class="attr-row"><span class="k">物料编码：</span><span class="v empty" id="vCode">—</span></div>
+            <div class="attr-row"><span class="k">物料名称：</span><span class="v empty" id="vName">—</span></div>
+            <div class="attr-row"><span class="k">批次号：</span><span class="v empty" id="vBatch">—</span></div>
+            <div class="attr-row"><span class="k">生产订单：</span><span class="v empty" id="vOrder">—</span></div>
+            <div class="attr-row"><span class="k">原始托盘号：</span><span class="v empty" id="vTray">—</span></div>
+            <div class="attr-row"><span class="k">产地：</span><span class="v empty" id="vOrigin">—</span></div>
+            <div class="attr-row"><span class="k">生产日期：</span><span class="v empty" id="vDate">—</span></div>
+          </div>
+          <div class="dup-tip" id="dupTip">⚠ 散件入库物料重复批次属性入库提醒：该批次已存在入库记录，请核对批次属性后再执行卸货。</div>
+        </div>
+
+      </div>
+
+      <!-- 底部操作栏 -->
+      <div class="bottom-bar">
+        <button class="btn btn-primary" id="btnDirect">确认卸货</button>
+        <button class="btn btn-outline" id="btnCancel">取消</button>
+      </div>
+
+      <!-- ===== 弹窗0：卸货完成后询问是否打印 ===== -->
+      <div class="dialog-mask" id="dlgUnloadDone">
+        <div class="dialog" style="text-align:center;padding:24px 18px 22px;">
+          <div style="width:48px;height:48px;line-height:48px;margin:0 auto 12px;border-radius:50%;background:var(--wms-success-light);color:var(--wms-success);font-size:28px;font-weight:600;">✓</div>
+          <div class="dialog-title" style="margin-bottom:6px;">卸货已完成</div>
+          <div class="dialog-sub" id="unloadDoneSub" style="margin-bottom:14px;">批次 20260918A · 库位 A01-01 · 卸货数量 48台</div>
+          <div style="font-size:14px;color:var(--wms-text-regular);line-height:1.6;margin-bottom:18px;">
+            是否打印<span style="color:var(--wms-primary-dark);font-weight:500;">流程卡</span>？
+          </div>
+          <div class="dialog-actions">
+            <button class="btn btn-primary" id="btnGoPrint">打印流程卡</button>
+            <button class="btn btn-outline" id="btnLeavePage">直接离开</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 弹窗：打印流程卡（新托盘拆分 + 打印参数，合并一屏） ===== -->
+      <div class="dialog-mask" id="dlgPrint">
+        <div class="dialog">
+          <div class="dialog-title">打印流程卡</div>
+          <div class="dialog-sub">原始托盘号下拆分 · 新托盘号扫入不重复即可</div>
+          <div class="dialog-row">
+            <label class="field-label">新托盘号</label>
+            <div class="tray-input">
+              <input class="wms-input" id="newTrayInput" value="TP0000011111111111">
+              <button class="icon-btn" id="btnScanTray">⌗</button>
+            </div>
+          </div>
+          <div class="dialog-row" style="font-size:14px;color:var(--wms-text-regular);">
+            原始托盘号：<b id="srcTray" style="color:var(--wms-text-title);">Tp00001</b>
+          </div>
+          <div class="dialog-row">
+            <div class="tray-option checked">
+              <span class="radio-dot"></span><span class="t-name">新托盘</span><span class="t-code">Tp00001-01</span><span class="t-tag">拆分</span>
+            </div>
+            <div class="tray-option">
+              <span class="radio-dot"></span><span class="t-name">旧托盘</span><span class="t-code">Tp00001</span>
+            </div>
+          </div>
+          <div class="dialog-row">
+            <label class="field-label">流程卡模版</label>
+            <div class="wms-select">
+              <input class="wms-input" id="tplInput" value="流程卡模版" readonly>
+            </div>
+          </div>
+          <div class="dialog-row" style="display:flex;gap:10px;">
+            <div style="flex:1;">
+              <label class="field-label">打印数量</label>
+              <input class="wms-input" type="number" value="2">
+            </div>
+            <div style="flex:1;">
+              <label class="field-label">打印页数</label>
+              <input class="wms-input" type="number" value="1">
+            </div>
+          </div>
+          <div class="dialog-actions">
+            <button class="btn btn-primary" id="btnConfirmPrint">确认打印</button>
+            <button class="btn btn-outline" data-close="dlgPrint">取消</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 弹窗3：选择卸货单据（扫码自动过滤后手工选择） ===== -->
+      <div class="dialog-mask" id="dlgDoc">
+        <div class="dialog">
+          <div class="dialog-title">选择卸货单据</div>
+          <div class="dialog-sub" id="docSheetSub">已按扫入条码自动过滤</div>
+          <div class="dialog-row" id="docList" style="max-height:300px;overflow-y:auto;"></div>
+          <div class="dialog-actions">
+            <button class="btn btn-outline" data-close="dlgDoc">取消</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toast -->
+      <div class="toast" id="toast">卸货成功 ✓</div>
+
+    </div>
+  </div>
+
+  <!-- ================= 侧边交互说明 ================= -->
+  <div class="side-panel">
+    <h2>手机端 · 按批次卸货交互说明</h2>
+
+    <div class="card">
+      <b>字段还原（1:1）</b><br>
+      <span class="tag">扫码</span>扫条码/箱号/托盘（无按钮，扫码枪自动触发）+ <b>模式下拉框（单台/托盘，默认单台，占按钮位）</b><br>
+      <span class="tag">单据</span>卸货单据：erp单号xxxxx(上游发货单号xxx)<b>· 扫码自动过滤</b>，行号直接体现在单据框内<br>
+      <span class="tag">必填</span>本次卸货数量*（已出库数量内联标签行体现，<b>不能超出出库总数 100台</b>）<br>
+      <span class="tag">必填</span>卸货库位*（下拉单选，<b>不含出库库位 / 在途库位</b>）<br>
+      <span class="tag">必填</span>卸货原因（下拉选择：<b>客户订单退回（订单取消/客户拒收）/ 物流发货退回（货损、雨淋）/ 库内装车异常（货损、雨淋）/ 客户特殊要求更换</b>）<br>
+      <span class="tag">带出</span>物料属性卡：物料编码 / 物料名称 / 批次号 / 生产订单 / 原始托盘号 / 产地 / 生产日期
+    </div>
+
+    <div class="card">
+      <b>交互流程</b>
+      <ol>
+        <li><b>扫码触发</b>：无扫码按钮——<b>扫码枪扫入后自动触发</b>（演示按 Enter）；模式下拉框在原按钮位：<b>单台（默认）</b>扫单台条码/箱号、托盘扫托盘号，二者均用于<b>定位批次</b>，随后按批次点数卸货（托盘模式数量自动带出整板 48 台，可修改）；</li>
+        <li><b>扫码带出</b>：扫入条码/箱号/托盘 → 自动校验在库状态（<b>单台：库存已在库 → 黄色告警提示核对</b> / 托盘：托盘在库 ✓ + 托盘号在库！），自动带出物料属性卡，并<b>自动过滤卸货单据</b>：命中 1 条自动带出，命中多条弹出列表<b>手工选 1 条</b>（行号随单据带出）；</li>
+        <li><b>填写</b>：确认单据/行号 → 录入本次卸货数量、<b>下拉单选卸货库位</b>（候选不含出库库位 / 在途库位）、<b>下拉单选卸货原因</b>（固定枚举四选一）；</li>
+        ④ <b>确认卸货</b>：必填校验通过后点底部【<b>确认卸货</b>】（<b>与打印合并为一键</b>），弹出<b>"卸货已完成·是否打印流程卡"</b>确认窗——
+         <br>　· 点【<b>打印流程卡</b>】→ 进入"打印流程卡"窗口（新托盘拆分 + 新/旧托盘选择 + 模版 + 打印数量/页数）；
+         <br>　· 点【<b>直接离开</b>】→ 清空表单回到扫码初始态（卸货完成）；
+      ⑤ <b>取消</b>：清空当前录入，回到扫码初始态。
+      </ol>
+    </div>
+
+    <div class="card">
+      <b class="hint">⚠ 扫码异常提示（三类）</b><br>
+      ① 扫入条码不属于当前卸货模式的管控范围 → <b>"！该条码非按托盘批次卸货的，请用其他卸货模式"</b><br>
+      　 触发：托盘模式下扫入单台条码/箱号；或条码非按批次卸货管控（演示：<b>999</b> 开头）<br>
+      ② 系统中未找到该条码的物料属性 → <b>"！未找到条码相关物料属性"</b>，需核对条码后重试<br>
+      　 触发：演示输入 <b>02</b>（模拟数据匹配失败；输入 <b>01</b> 则匹配成功）<br>
+      ③ 该条码/箱号非按托盘点数出库 → <b>"！此条码/箱号非按托盘点数出库，请走其他卸货模式扫码卸货"</b><br>
+      　 触发：演示输入 <b>03</b><br>
+      三类异常均不带出物料属性与单据。
+    </div>
+
+    <div class="card">
+      <b class="hint">⚠ 散件入库物料重复批次属性入库提醒</b><br>
+      扫入散件物料且批次属性与在库记录重复时，物料属性卡下方自动出现提醒条，需人工核对后方可继续卸货。
+    </div>
+
+    <div class="card" style="opacity:0.75;">
+      💡 原型可交互：在输入框输入 <b>01</b> 后按 <b>Enter</b> 模拟扫码枪（数据匹配成功）→ 物料属性卡逐项填充并<b>青绿高亮闪动</b>；输入 <b>02</b> 匹配失败（未找到物料属性）；输入 <b>03</b> 触发"此条码/箱号非按托盘点数出库"异常条；点【打印】一步打开合并后的打印流程卡弹窗 → 点【直接卸货】/【取消】体验其余分支。
+    </div>
+  </div>
+
+<script>
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ===== 模拟扫码带出的物料属性数据 =====
+  var MATERIAL = {
+    vCode:   'kaib dianji',
+    vName:   '凯邦电机定子',
+    vBatch:  '20260918A',
+    vOrder:  'sc0000001',
+    vTray:   'Tp00001',
+    vOrigin: '珠海凯邦',
+    vDate:   '2026-09-18'
+  };
+  var FIELDS = ['vCode','vName','vBatch','vOrder','vTray','vOrigin','vDate'];
+
+  function fillAttr() {
+    FIELDS.forEach(function (id) {
+      var el = $(id);
+      el.textContent = MATERIAL[id];
+      el.classList.remove('empty');
+    });
+    // 高亮闪动，让"自动带出"看得见
+    var card = $('attrCard');
+    card.classList.remove('flash');
+    void card.offsetWidth; // 重启动画
+    card.classList.add('flash');
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function clearAttr() {
+    FIELDS.forEach(function (id) {
+      var el = $(id);
+      el.textContent = '—';
+      el.classList.add('empty');
+    });
+  }
+
+  // ===== 模拟卸货单据池（实际由系统按扫入条码/箱号/托盘自动过滤） =====
+  var DOCS = [
+    { no: 'ERP2026091801', src: 'FH2026091801', line: '10', qty: '40台', mat: 'kaib dianji · 凯邦电机定子' },
+    { no: 'ERP2026091802', src: 'FH2026091802', line: '20', qty: '60台', mat: 'kaib dianji · 凯邦电机定子' }
+  ];
+  var filteredDocs = [];
+
+  function renderDocList() {
+    var box = $('docList');
+    box.innerHTML = '';
+    filteredDocs.forEach(function (d) {
+      var el = document.createElement('div');
+      el.className = 'doc-option';
+      el.innerHTML = '<span class="d-tag">行号 ' + d.line + '</span>'
+        + '<div class="d-no">' + d.no + '</div>'
+        + '<div class="d-sub">上游发货单号 ' + d.src + ' · ' + d.mat + ' · 应卸 ' + d.qty + '</div>';
+      el.addEventListener('click', function () { pickDoc(d); });
+      box.appendChild(el);
+    });
+  }
+
+  function pickDoc(d) {
+    // 行号直接体现在单据输入框内，不单独占行
+    $('docInput').value = d.no + '（行号 ' + d.line + '）';
+    $('dlgDoc').classList.remove('show');
+    var badge = $('docBadge');
+    badge.innerHTML = '已选择：<b>' + d.no + '</b>（行号 ' + d.line + ' · 上游发货单号 ' + d.src + '）';
+    badge.classList.add('show');
+    showToast('已选择卸货单据 ' + d.no + '，行号已带出');
+  }
+
+  function filterDocs(scanVal) {
+    // 模拟：按扫入值过滤单据池（演示扫 "01" 命中 2 条，多条需手工选；"02" 匹配失败）
+    return DOCS.filter(function (d) { return d.mat.indexOf('kaib dianji') > -1; });
+  }
+
+  // ===== 扫码模式（下拉框：单台 / 托盘，默认单台） =====
+  var scanMode = 'single';
+  function switchMode(m) {
+    scanMode = m;
+    var input = $('scanInput');
+    if (m === 'single') {
+      $('scanLabelText').textContent = '扫条码/箱号';
+      input.placeholder = '请扫入单台条码 / 箱号';
+    } else {
+      $('scanLabelText').textContent = '扫托盘号';
+      input.placeholder = '请扫入托盘号（整板卸货）';
+    }
+    input.value = '';
+    $('tipErr').classList.remove('show');
+    $('tipNotFound').classList.remove('show');
+  }
+
+  // ===== 扫码 =====
+  function doScan() {
+    var input = $('scanInput');
+    if (!input.value.trim()) { input.value = (scanMode === 'single' ? '01' : 'TP01'); }
+    var v = input.value.trim();
+    var isTrayCode = /^(tp)/i.test(v);
+
+    // ===== 扫码异常校验 =====
+    // ① 模式不匹配 / 条码不属批次卸货管控（演示：999 开头）
+    if ((scanMode === 'tray' && !isTrayCode) || v.indexOf('999') === 0) {
+      $('tipOk').classList.remove('show');
+      $('tipWarn').classList.remove('show');
+      $('tipErr').textContent = '！该条码非按托盘批次卸货的，请用其他卸货模式';
+      $('tipErr').classList.add('show');
+      $('dupTip').classList.remove('show');
+      showToast('该条码非按托盘批次卸货的，请用其他卸货模式');
+      return;
+    }
+    $('tipErr').classList.remove('show');
+
+    // ③ 该条码/箱号非按托盘点数出库（演示：输入 03）
+    if (v === '03') {
+      $('tipOk').classList.remove('show');
+      $('tipWarn').classList.remove('show');
+      $('tipErr').textContent = '！此条码/箱号非按托盘点数出库，请走其他卸货模式扫码卸货';
+      $('tipErr').classList.add('show');
+      $('dupTip').classList.remove('show');
+      showToast('此条码/箱号非按托盘点数出库！请走其他卸货模式扫码卸货');
+      return;
+    }
+
+    // ② 条码在系统中未找到相关物料属性（演示：输入 02 匹配失败；输入 01 匹配成功）
+    var knownCode = (scanMode === 'single') ? (v === '01') : (v.toLowerCase() === 'tp01');
+    if (!knownCode) {
+      $('tipOk').classList.remove('show');
+      $('tipWarn').classList.remove('show');
+      $('tipNotFound').classList.add('show');
+      $('dupTip').classList.remove('show');
+      showToast('未找到条码相关物料属性，请核对条码后重试');
+      return;
+    }
+    $('tipNotFound').classList.remove('show');
+
+    // 已出库数量内联到卸货数量标签行
+    $('qtyHint').style.display = 'inline';
+    fillAttr();
+
+    if (scanMode === 'single') {
+      // 单台模式：扫单台条码/箱号，定位批次后按批次点数卸货；库存已在库 → 黄色告警提示核对
+      $('tipOk').classList.remove('show');
+      $('tipWarn').textContent = '！该条码/箱号库存已在库，已定位批次 20260918A，请核对后卸货';
+      $('tipWarn').classList.add('show');
+      setTimeout(function () { $('dupTip').classList.add('show'); }, 400);
+    } else {
+      // 托盘模式：扫托盘号，定位批次，整板卸货数量自动带出
+      $('tipOk').textContent = '✓ 托盘在库，已定位批次 20260918A';
+      $('tipOk').classList.add('show');
+      $('tipWarn').textContent = '！托盘号在库，将按托盘整板卸货';
+      $('tipWarn').classList.add('show');
+      if (!$('unloadQty').value) {
+        $('unloadQty').value = '48'; // 托盘 TP01 整板 48 台，自动带出可修改
+      }
+      setTimeout(function () { $('dupTip').classList.remove('show'); }, 0);
+    }
+
+    // 卸货单据：扫码自动过滤
+    filteredDocs = filterDocs(input.value.trim());
+    var badge = $('docBadge');
+    if (filteredDocs.length === 1) {
+      pickDoc(filteredDocs[0]);
+      showToast(scanMode === 'single' ? '扫码成功，已定位批次，物料属性与卸货单据已自动带出'
+                                      : '托盘整板卸货：批次、数量与单据已自动带出');
+    } else if (filteredDocs.length > 1) {
+      badge.innerHTML = '已按扫入' + (scanMode === 'single' ? '条码' : '托盘号') + '自动过滤出 <b>' + filteredDocs.length + '</b> 条单据，请手工选择';
+      badge.classList.add('show');
+      $('docSheetSub').textContent = '已按扫入' + (scanMode === 'single' ? '条码' : '托盘号') + '自动过滤出 ' + filteredDocs.length + ' 条，请选择 1 条';
+      renderDocList();
+      $('dlgDoc').classList.add('show');
+      showToast('扫码成功，物料属性已带出；命中 ' + filteredDocs.length + ' 条单据，请选择');
+    } else {
+      badge.classList.remove('show');
+      showToast('扫码成功，但未匹配到卸货单据');
+    }
+  }
+
+  // ===== 事件绑定（统一 addEventListener，兼容预览环境） =====
+  document.addEventListener('DOMContentLoaded', function () {
+    $('modeSelect').addEventListener('change', function () { switchMode(this.value); });
+    $('scanInput').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); doScan(); }
+    });
+    $('docInput').addEventListener('click', function () {
+      if (!filteredDocs.length) { showToast('请先扫入条码/箱号/托盘，系统将自动过滤单据'); return; }
+      $('docSheetSub').textContent = '已按扫入条码自动过滤出 ' + filteredDocs.length + ' 条，请选择 1 条';
+      renderDocList();
+      $('dlgDoc').classList.add('show');
+    });
+
+    $('btnScanTray').addEventListener('click', function () { showToast('扫描新托盘号'); });
+    $('tplInput').addEventListener('click', function () { showToast('请选择流程卡模版'); });
+
+    document.querySelectorAll('.tray-option').forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        document.querySelectorAll('.tray-option').forEach(function (o) { o.classList.remove('checked'); });
+        opt.classList.add('checked');
+      });
+    });
+
+    $('btnConfirmPrint').addEventListener('click', function () {
+      $('dlgPrint').classList.remove('show');
+      showToast('流程卡打印成功 ✓');
+    });
+    document.querySelectorAll('[data-close]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        $(btn.getAttribute('data-close')).classList.remove('show');
+        showToast('已取消，回到主页面');
+      });
+    });
+
+    // ===== 卸货数量 ≤ 出库总数（100台）校验 =====
+    var TOTAL_QTY = 100; // 出库总数（演示值，与已出库提示口径一致）
+    function checkQty() {
+      var q = parseFloat($('unloadQty').value);
+      if (!isNaN(q) && q > TOTAL_QTY) {
+        $('qtyErr').classList.add('show');
+        return false;
+      }
+      $('qtyErr').classList.remove('show');
+      return true;
+    }
+    $('unloadQty').addEventListener('input', checkQty);
+    $('unloadQty').addEventListener('blur', checkQty);
+
+    // ===== 卸货原因（固定枚举四选一） =====
+
+    $('btnDirect').addEventListener('click', function () {
+      var qty = $('unloadQty').value;
+      var loc = $('unloadLoc').value;
+      var reason = $('unloadReason').value || '';
+      if (!qty || !loc) { showToast('请填写本次卸货数量与卸货库位'); return; }
+      if (!reason) { showToast('请选择卸货原因'); return; }
+      if (!checkQty()) { showToast('本次卸货数量不能超出出库总数（' + TOTAL_QTY + '台）'); return; }
+      // 卸货校验通过 → 弹出"是否打印流程卡"确认窗
+      var locTxt = $('unloadLoc').options[$('unloadLoc').selectedIndex].text || loc;
+      $('unloadDoneSub').textContent = '批次 ' + (MATERIAL.vBatch || '—') + ' · 库位 ' + locTxt + ' · 卸货数量 ' + qty + '台 · 原因：' + reason;
+      $('dlgUnloadDone').classList.add('show');
+    });
+
+    // 卸货完成弹窗 → 选择"打印流程卡"
+    $('btnGoPrint').addEventListener('click', function () {
+      $('dlgUnloadDone').classList.remove('show');
+      $('dlgPrint').classList.add('show');
+      showToast('已卸货，进入打印流程卡');
+    });
+
+    // 卸货完成弹窗 → 选择"直接离开"
+    $('btnLeavePage').addEventListener('click', function () {
+      $('dlgUnloadDone').classList.remove('show');
+      $('btnCancel').click(); // 清空表单，回到扫码初始态
+      showToast('按批次卸货成功 ✓ 已离开当前页');
+    });
+
+    $('btnCancel').addEventListener('click', function () {
+      $('scanInput').value = '';
+      $('unloadQty').value = '';
+      $('unloadLoc').value = '';
+      $('unloadReason').value = '';
+      $('docInput').value = '';
+      $('qtyHint').style.display = 'none';
+      $('qtyErr').classList.remove('show');
+      $('tipOk').classList.remove('show');
+      $('tipWarn').classList.remove('show');
+      $('tipErr').classList.remove('show');
+      $('tipNotFound').classList.remove('show');
+      $('dupTip').classList.remove('show');
+      $('docBadge').classList.remove('show');
+      filteredDocs = [];
+      clearAttr();
+      showToast('已取消，回到扫码初始态');
+    });
+  });
+
+  // ===== Toast =====
+  var toastTimer = null;
+  function showToast(msg) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1800);
+  }
+</script>
+</body>
+</html>
