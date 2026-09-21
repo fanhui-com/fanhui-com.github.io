@@ -423,25 +423,15 @@
         <button class="btn btn-outline" id="btnCancel">取消</button>
       </div>
 
-      <!-- ===== 弹窗0：卸货完成后询问是否打印 ===== -->
+      <!-- ===== 弹窗：卸货成功 + 打印流程卡（合并一屏） ===== -->
       <div class="dialog-mask" id="dlgUnloadDone">
-        <div class="dialog" style="text-align:center;padding:24px 18px 22px;">
-          <div style="width:48px;height:48px;line-height:48px;margin:0 auto 12px;border-radius:50%;background:var(--wms-success-light);color:var(--wms-success);font-size:28px;font-weight:600;">✓</div>
-          <div class="dialog-title" style="margin-bottom:6px;">卸货已完成</div>
-          <div class="dialog-sub" id="unloadDoneSub" style="margin-bottom:14px;">批次 20260918A · 库位 A01-01 · 卸货数量 48台</div>
-          <div style="font-size:14px;color:var(--wms-text-regular);line-height:1.6;margin-bottom:18px;">
-            是否打印<span style="color:var(--wms-primary-dark);font-weight:500;">流程卡</span>？
-          </div>
-          <div class="dialog-actions">
-            <button class="btn btn-primary" id="btnGoPrint">打印流程卡</button>
-            <button class="btn btn-outline" id="btnLeavePage">直接离开</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ===== 弹窗：打印流程卡（新托盘拆分 + 打印参数，合并一屏） ===== -->
-      <div class="dialog-mask" id="dlgPrint">
         <div class="dialog">
+          <div style="text-align:center;margin-bottom:14px;">
+            <div style="width:48px;height:48px;line-height:48px;margin:0 auto 8px;border-radius:50%;background:var(--wms-success-light);color:var(--wms-success);font-size:28px;font-weight:600;">✓</div>
+            <div class="dialog-title" style="margin-bottom:4px;">卸货成功</div>
+            <div class="dialog-sub" id="unloadDoneSub" style="margin-bottom:0;">批次 20260918A · 库位 A01-01 · 卸货数量 48台</div>
+          </div>
+
           <div class="dialog-title">打印流程卡</div>
           <div class="dialog-sub">原始托盘号下拆分 · 新托盘号扫入不重复即可</div>
           <div class="dialog-row">
@@ -480,7 +470,7 @@
           </div>
           <div class="dialog-actions">
             <button class="btn btn-primary" id="btnConfirmPrint">确认打印</button>
-            <button class="btn btn-outline" data-close="dlgPrint">取消</button>
+            <button class="btn btn-outline" id="btnLeavePage">直接离开</button>
           </div>
         </div>
       </div>
@@ -500,7 +490,7 @@
       <!-- ===== 弹窗：托盘明细（扫到托盘弹出） ===== -->
       <div class="dialog-mask" id="dlgTrayDetail">
         <div class="dialog tray-dialog">
-          <div class="dialog-title">托盘模式：扫托盘，按托盘出库</div>
+          <div class="dialog-title">托盘明细</div>
           <div class="tray-head">
             <div class="tray-head-main">
               <span class="tray-no" id="trayNo">tp0011111111</span>
@@ -711,9 +701,11 @@
     if ($('noTrayPrompt').checked) { noTrayPrompt = true; trayDefaultAction = 'whole'; }
     closeTrayDetail();
     $('unloadQty').value = TRAY_DETAIL.totalQty;
-    $('tipOk').textContent = '✓ 托盘在库，整托盘卸货数量已带出';
+    $('qtyHint').style.display = 'inline';
+    $('qtyHint').textContent = '整板总数 ' + TRAY_DETAIL.totalQty + '台 已自动带出（可修改）';
+    $('tipOk').textContent = '✓ 整托盘卸货，数量已带出';
     $('tipOk').classList.add('show');
-    $('tipWarn').textContent = '！托盘号在库，将按托盘整板卸货';
+    $('tipWarn').textContent = '！将按托盘整板卸货';
     $('tipWarn').classList.add('show');
     afterScanFilterDocs();
     showToast('整托盘卸货，数量已带出 ' + TRAY_DETAIL.totalQty + '台');
@@ -723,7 +715,9 @@
     if ($('noTrayPrompt').checked) { noTrayPrompt = true; trayDefaultAction = 'count'; }
     closeTrayDetail();
     $('unloadQty').value = '';
-    $('tipOk').textContent = '✓ 托盘在库，请录入点数卸货数量';
+    $('qtyHint').style.display = 'inline';
+    $('qtyHint').textContent = '批次已出库 100台，请录入点数卸货数量';
+    $('tipOk').textContent = '✓ 点数卸货，请录入本次卸货数量';
     $('tipOk').classList.add('show');
     $('tipWarn').classList.remove('show');
     $('unloadQty').focus();
@@ -795,21 +789,12 @@
     $('qtyHint').style.display = 'inline';
     fillAttr();
 
-    if (scanMode === 'single') {
-      // 单台模式：扫单台条码/箱号，定位批次后按批次点数卸货；库存已在库 → 黄色告警提示核对
-      $('tipOk').classList.remove('show');
-      $('tipWarn').textContent = '！该条码/箱号库存已在库，已定位批次 20260918A，请核对后卸货';
-      $('tipWarn').classList.add('show');
-      setTimeout(function () { $('dupTip').classList.add('show'); }, 400);
-      afterScanFilterDocs();
+    // 无论单台/托盘模式，扫入成功均弹出托盘明细框
+    if (noTrayPrompt) {
+      if (trayDefaultAction === 'count') chooseCountUnload();
+      else chooseWholeTray();
     } else {
-      // 托盘模式：扫托盘号 → 弹出托盘明细，选择整托盘卸货 / 点数卸货
-      if (noTrayPrompt) {
-        if (trayDefaultAction === 'count') chooseCountUnload();
-        else chooseWholeTray();
-      } else {
-        openTrayDetail();
-      }
+      openTrayDetail();
     }
   }
 
@@ -860,8 +845,9 @@
     });
 
     $('btnConfirmPrint').addEventListener('click', function () {
-      $('dlgPrint').classList.remove('show');
-      showToast('流程卡打印成功 ✓');
+      $('dlgUnloadDone').classList.remove('show');
+      $('btnCancel').click();
+      showToast('流程卡打印成功 ✓ 卸货完成');
     });
     document.querySelectorAll('[data-close]').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -897,13 +883,6 @@
       var locTxt = $('unloadLoc').options[$('unloadLoc').selectedIndex].text || loc;
       $('unloadDoneSub').textContent = '批次 ' + (MATERIAL.vBatch || '—') + ' · 库位 ' + locTxt + ' · 卸货数量 ' + qty + '台 · 原因：' + reason;
       $('dlgUnloadDone').classList.add('show');
-    });
-
-    // 卸货完成弹窗 → 选择"打印流程卡"
-    $('btnGoPrint').addEventListener('click', function () {
-      $('dlgUnloadDone').classList.remove('show');
-      $('dlgPrint').classList.add('show');
-      showToast('已卸货，进入打印流程卡');
     });
 
     // 卸货完成弹窗 → 选择"直接离开"
