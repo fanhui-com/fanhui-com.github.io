@@ -243,6 +243,27 @@
     .dialog-actions { display: flex; gap: 12px; margin-top: 18px; }
     .dialog-actions .btn { height: 42px; }
 
+    /* ================= 托盘明细弹框 ================= */
+    .tray-dialog { max-height: 94%; overflow: hidden; display: flex; flex-direction: column; }
+    .tray-head { margin-bottom: 10px; }
+    .tray-head-main { display: flex; align-items: baseline; gap: 10px; }
+    .tray-no { font-size: 16px; font-weight: 600; color: var(--wms-text-title); }
+    .tray-total { font-size: 13px; font-weight: 500; color: var(--wms-primary-dark); background: var(--wms-primary-lighter); padding: 1px 10px; border-radius: 10px; }
+    .tray-head-sub { font-size: 12px; color: var(--wms-text-secondary); margin-top: 4px; }
+    .tray-meta { background: var(--wms-bg-table-header); border: 1px solid var(--wms-border-lighter); border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; }
+    .tray-meta-row { display: flex; flex-wrap: wrap; column-gap: 14px; font-size: 13px; line-height: 2; }
+    .tray-meta-row span { color: var(--wms-text-secondary); }
+    .tray-meta-row b { color: var(--wms-text-title); font-weight: 500; margin-right: 2px; }
+    .tray-table-wrap { max-height: 220px; overflow: auto; border: 1px solid var(--wms-border-lighter); border-radius: 6px; margin-bottom: 10px; }
+    .tray-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .tray-table th { background: var(--wms-primary-lighter); color: var(--wms-primary-dark); font-weight: 500; padding: 7px 8px; text-align: left; white-space: nowrap; position: sticky; top: 0; z-index: 1; }
+    .tray-table td { padding: 7px 8px; border-bottom: 1px solid var(--wms-border-lighter); color: var(--wms-text-regular); white-space: nowrap; }
+    .tray-table tbody tr:nth-child(odd) td { background: rgba(63,153,163,0.05); }
+    .no-tip-row { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--wms-text-regular); margin-bottom: 12px; cursor: pointer; }
+    .no-tip-row input { width: 15px; height: 15px; cursor: pointer; }
+    .tray-actions { display: flex; gap: 10px; }
+    .tray-actions .btn { flex: 1; height: 42px; }
+
     /* 单选托盘 */
     .tray-option {
       display: flex; align-items: center; gap: 10px;
@@ -476,6 +497,42 @@
         </div>
       </div>
 
+      <!-- ===== 弹窗：托盘明细（扫到托盘弹出） ===== -->
+      <div class="dialog-mask" id="dlgTrayDetail">
+        <div class="dialog tray-dialog">
+          <div class="dialog-title">托盘模式：扫托盘，按托盘出库</div>
+          <div class="tray-head">
+            <div class="tray-head-main">
+              <span class="tray-no" id="trayNo">tp0011111111</span>
+              <span class="tray-total" id="trayTotal">100台</span>
+            </div>
+            <div class="tray-head-sub">默认带出整板总数 · 修改时带出上一次</div>
+          </div>
+          <div class="tray-meta">
+            <div class="tray-meta-row"><span>物料编码</span><b id="tmCode">凯邦0000001</b><span>物料名称</span><b id="tmName">凯邦电机定子</b></div>
+            <div class="tray-meta-row"><span>生产日期</span><b id="tmDates">2026-07-01, 2026-08-01</b><span>库龄</span><b id="tmAge">12月</b></div>
+            <div class="tray-meta-row"><span>当前库位</span><b id="tmLoc">原材料库 A01-01</b><span>批次</span><b id="tmBatch">20260918A</b></div>
+            <div class="tray-meta-row"><span>客户物料码</span><b id="tmCustCode">CUST-0001</b><span>客户物料名称</span><b id="tmCustName">客户物料A</b></div>
+          </div>
+          <div class="tray-table-wrap">
+            <table class="tray-table">
+              <thead>
+                <tr>
+                  <th>条码/箱号</th><th>数量</th><th>库龄</th><th>生产日期</th><th>生产订单</th><th>产地</th><th>入库日期</th><th>托盘号</th>
+                </tr>
+              </thead>
+              <tbody id="trayDetailBody"></tbody>
+            </table>
+          </div>
+          <label class="no-tip-row"><input type="checkbox" id="noTrayPrompt"> 不再提示（勾选后不再弹出此框）</label>
+          <div class="tray-actions">
+            <button class="btn btn-primary" id="btnWholeTray">整托盘卸货</button>
+            <button class="btn btn-primary" id="btnCountUnload">点数卸货</button>
+            <button class="btn btn-outline" data-close="dlgTrayDetail">取消</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Toast -->
       <div class="toast" id="toast">卸货成功 ✓</div>
 
@@ -603,6 +660,77 @@
     return DOCS.filter(function (d) { return d.mat.indexOf('kaib dianji') > -1; });
   }
 
+  // ===== 托盘明细（扫到托盘弹出） =====
+  var noTrayPrompt = false;
+  var trayDefaultAction = 'whole'; // 'whole' | 'count'
+  var TRAY_DETAIL = {
+    trayNo: 'tp0011111111',
+    totalQty: 100,
+    materialCode: '凯邦0000001',
+    materialName: '凯邦电机定子',
+    produceDates: '2026-07-01, 2026-08-01',
+    age: '12月',
+    currentLoc: '原材料库 A01-01',
+    batch: '20260918A',
+    custMaterialCode: 'CUST-0001',
+    custMaterialName: '客户物料A',
+    rows: [
+      { code: 'tr0001', qty: 1, age: '10月', date: '2026-07-01', order: '订单01', origin: '珠海凯邦', inDate: '2026-07-05', tray: 'tp0011111111' },
+      { code: 'tr0002', qty: 1, age: '10月', date: '2026-07-01', order: '订单01', origin: '珠海凯邦', inDate: '2026-07-05', tray: 'tp0011111111' },
+      { code: 'tr0003', qty: 100, age: '11月', date: '2026-08-01', order: '订单01', origin: '珠海凯邦', inDate: '2026-08-03', tray: 'tp0011111111' },
+      { code: 'tr0004', qty: 100, age: '11月', date: '2026-08-01', order: '订单01', origin: '珠海凯邦', inDate: '2026-08-03', tray: 'tp0011111111' }
+    ]
+  };
+
+  function renderTrayDetail() {
+    $('trayNo').textContent = TRAY_DETAIL.trayNo;
+    $('trayTotal').textContent = TRAY_DETAIL.totalQty + '台';
+    $('tmCode').textContent = TRAY_DETAIL.materialCode;
+    $('tmName').textContent = TRAY_DETAIL.materialName;
+    $('tmDates').textContent = TRAY_DETAIL.produceDates;
+    $('tmAge').textContent = TRAY_DETAIL.age;
+    $('tmLoc').textContent = TRAY_DETAIL.currentLoc;
+    $('tmBatch').textContent = TRAY_DETAIL.batch;
+    $('tmCustCode').textContent = TRAY_DETAIL.custMaterialCode;
+    $('tmCustName').textContent = TRAY_DETAIL.custMaterialName;
+    $('trayDetailBody').innerHTML = TRAY_DETAIL.rows.map(function (r) {
+      return '<tr><td>' + r.code + '</td><td>' + r.qty + '</td><td>' + r.age + '</td><td>' + r.date + '</td><td>' + r.order + '</td><td>' + r.origin + '</td><td>' + r.inDate + '</td><td>' + r.tray + '</td></tr>';
+    }).join('');
+  }
+
+  function openTrayDetail() {
+    renderTrayDetail();
+    $('dlgTrayDetail').classList.add('show');
+  }
+
+  function closeTrayDetail() {
+    $('dlgTrayDetail').classList.remove('show');
+  }
+
+  function chooseWholeTray() {
+    if ($('noTrayPrompt').checked) { noTrayPrompt = true; trayDefaultAction = 'whole'; }
+    closeTrayDetail();
+    $('unloadQty').value = TRAY_DETAIL.totalQty;
+    $('tipOk').textContent = '✓ 托盘在库，整托盘卸货数量已带出';
+    $('tipOk').classList.add('show');
+    $('tipWarn').textContent = '！托盘号在库，将按托盘整板卸货';
+    $('tipWarn').classList.add('show');
+    afterScanFilterDocs();
+    showToast('整托盘卸货，数量已带出 ' + TRAY_DETAIL.totalQty + '台');
+  }
+
+  function chooseCountUnload() {
+    if ($('noTrayPrompt').checked) { noTrayPrompt = true; trayDefaultAction = 'count'; }
+    closeTrayDetail();
+    $('unloadQty').value = '';
+    $('tipOk').textContent = '✓ 托盘在库，请录入点数卸货数量';
+    $('tipOk').classList.add('show');
+    $('tipWarn').classList.remove('show');
+    $('unloadQty').focus();
+    afterScanFilterDocs();
+    showToast('点数卸货，请录入本次卸货数量');
+  }
+
   // ===== 扫码模式（下拉框：单台 / 托盘，默认单台） =====
   var scanMode = 'single';
   function switchMode(m) {
@@ -673,20 +801,21 @@
       $('tipWarn').textContent = '！该条码/箱号库存已在库，已定位批次 20260918A，请核对后卸货';
       $('tipWarn').classList.add('show');
       setTimeout(function () { $('dupTip').classList.add('show'); }, 400);
+      afterScanFilterDocs();
     } else {
-      // 托盘模式：扫托盘号，定位批次，整板卸货数量自动带出
-      $('tipOk').textContent = '✓ 托盘在库，已定位批次 20260918A';
-      $('tipOk').classList.add('show');
-      $('tipWarn').textContent = '！托盘号在库，将按托盘整板卸货';
-      $('tipWarn').classList.add('show');
-      if (!$('unloadQty').value) {
-        $('unloadQty').value = '48'; // 托盘 TP01 整板 48 台，自动带出可修改
+      // 托盘模式：扫托盘号 → 弹出托盘明细，选择整托盘卸货 / 点数卸货
+      if (noTrayPrompt) {
+        if (trayDefaultAction === 'count') chooseCountUnload();
+        else chooseWholeTray();
+      } else {
+        openTrayDetail();
       }
-      setTimeout(function () { $('dupTip').classList.remove('show'); }, 0);
     }
+  }
 
-    // 卸货单据：扫码自动过滤
-    filteredDocs = filterDocs(input.value.trim());
+  // 卸货单据：扫码自动过滤（单台即时触发；托盘在选完整托盘/点数后触发）
+  function afterScanFilterDocs() {
+    filteredDocs = filterDocs($('scanInput').value.trim());
     var badge = $('docBadge');
     if (filteredDocs.length === 1) {
       pickDoc(filteredDocs[0]);
@@ -720,6 +849,8 @@
 
     $('btnScanTray').addEventListener('click', function () { showToast('扫描新托盘号'); });
     $('tplInput').addEventListener('click', function () { showToast('请选择流程卡模版'); });
+    $('btnWholeTray').addEventListener('click', chooseWholeTray);
+    $('btnCountUnload').addEventListener('click', chooseCountUnload);
 
     document.querySelectorAll('.tray-option').forEach(function (opt) {
       opt.addEventListener('click', function () {
