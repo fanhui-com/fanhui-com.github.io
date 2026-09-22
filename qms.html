@@ -305,8 +305,8 @@
             <input class="wms-input" placeholder="请输入原始托盘号">
           </div>
           <div class="wms-form-group">
-            <label class="wms-form-label">生产订单</label>
-            <input class="wms-input" placeholder="请输入生产订单号">
+            <label class="wms-form-label">产线编码</label>
+            <input class="wms-input" placeholder="请输入产线编码">
           </div>
           <div class="wms-form-group">
             <label class="wms-form-label">生产日期</label>
@@ -367,7 +367,7 @@
         <div class="insert-tip">
           <b>新增：</b>
           <div class="mini-select"><input class="wms-input" value="按条码" readonly></div>
-          <span>封存方式四选一：按条码 / 按原始托盘 / 按实物托盘 / 按生产订单+生产日期，选择后录入封存数据（<span style="color:var(--wms-danger);">*</span> 必填）</span>
+          <span>封存方式四选一：按条码 / 按原始托盘 / 按实物托盘 / 按产线编码+生产日期，选择后录入封存数据（<span style="color:var(--wms-danger);">*</span> 必填）</span>
         </div>
 
         <!-- ===== 数据表格（查询结果字段 1:1 还原） ===== -->
@@ -467,8 +467,8 @@
               <tr>
                 <td class="col-check"><input type="checkbox"></td>
                 <td>珠海凯邦</td>
-                <td>按生产订单+生产日期</td>
-                <td>订单 sc0001（2026/9/18 ~ 2026/9/19）</td>
+                <td>按产线编码+生产日期</td>
+                <td>产线 PL001（2026/9/18 ~ 2026/9/19）</td>
                 <td>2026-09-18 ~ 2026-09-19</td>
                 <td>WL000001</td>
                 <td>压缩机缸体</td>
@@ -549,10 +549,10 @@
         <!-- ===== 字段说明 ===== -->
         <div class="field-note">
           <b>字段说明</b><br>
-          ① <b>封存方式</b>（必填）：按条码 / 按原始托盘 / 按实物托盘 / 按生产订单+生产日期，四选一；<br>
-          ② <b>封存数据</b>（必填）：随封存方式录入对应条码 / 托盘号 / 生产订单（+日期段）；<br>
+          ① <b>封存方式</b>（必填）：按条码 / 按原始托盘 / 按实物托盘 / 按产线编码+生产日期，四选一；<br>
+          ② <b>封存数据</b>（必填）：随封存方式录入对应条码 / 托盘号 / 产线编码（+日期段）；<br>
           ③ <b>生产日期</b>：非必填，填写日期段；不填写表示不限日期；<br>
-          ④ <b>物料编码 / 物料名称</b>：按条码、按托盘封存时由条码/托盘带出，按订单封存时系统带出；<br>
+          ④ <b>物料编码 / 物料名称</b>：按条码、按托盘封存时由条码/托盘带出，按产线封存时系统带出；<br>
           ⑤ <b>批次 / 生产订单号 / 状态 / 封存时间 / 封存人 / 封存原因 / 来源单号 / 解封人 / 解封时间 / 创建人 / 创建时间</b>：系统带出；<br>
           ⑥ <b>封存来源系统</b>：qms（质量系统发起）/ wms（仓储系统发起）。
         </div>
@@ -569,7 +569,7 @@ var materialLookup = {
   '托盘 YS-TP-000123': { code: 'WL000045', name: '电机定子', batch: '20260917B', order: 'sc0002', source: 'QMS20260918002' },
   '托盘 SW-TP-000456': { code: 'WL000102', name: '电机转子', batch: '20260916C', order: '', source: 'FC20260917001' },
   '托盘 SW-TP-000789': { code: 'WL000310', name: '电机机座', batch: '20260908E', order: '', source: 'FC20260909001' },
-  'sc0001': { code: 'WL000001', name: '压缩机缸体', batch: '20260918A', order: 'sc0001', source: 'QMS20260919001' },
+  'PL001': { code: 'WL000001', name: '压缩机缸体', batch: '20260918A', order: 'sc0001', source: 'QMS20260919001' },
   'sc0002': { code: 'WL000045', name: '电机定子', batch: '20260917B', order: 'sc0002', source: 'QMS20260918002' },
   'sc0009': { code: 'WL000288', name: '压缩机曲轴', batch: '20260910D', order: 'sc0009', source: 'QMS20260911001' }
 };
@@ -625,7 +625,7 @@ function addRow() {
         '<option value="按条码" selected>按条码</option>' +
         '<option value="按原始托盘">按原始托盘</option>' +
         '<option value="按实物托盘">按实物托盘</option>' +
-        '<option value="按生产订单+生产日期">按生产订单+生产日期</option>' +
+        '<option value="按产线编码+生产日期">按产线编码+生产日期</option>' +
       '</select>' +
     '</td>' +
     '<td class="seal-data"><input class="wms-input" style="width:180px;height:28px;font-size:13px;" placeholder="必填录入条码" oninput="onSealDataInput(this)"></td>' +
@@ -672,11 +672,11 @@ function onEditTypeChange(sel) {
     '按条码': '必填录入条码',
     '按原始托盘': '必填录入原始托盘号',
     '按实物托盘': '必填录入实物托盘号',
-    '按生产订单+生产日期': '必填录入生产订单号'
+    '按产线编码+生产日期': '必填录入产线编码'
   };
   dataCell.innerHTML = '<input class="wms-input" style="width:180px;height:28px;font-size:13px;" placeholder="' + (phMap[v] || '') + '" oninput="onSealDataInput(this)">';
   resetMaterial(tr);
-  if (v === '按生产订单+生产日期') {
+  if (v === '按产线编码+生产日期') {
     dateCell.className = 'seal-date';
     dateCell.innerHTML = '<div class="date-range" style="width:230px;">' +
       '<input class="wms-input" type="date" style="height:28px;font-size:13px;">' +
@@ -782,7 +782,7 @@ function applyStatus(action) {
 }
 
 /* ===== 封存方式（查询条件，多选） ===== */
-var sealTypeOptions = ['按条码', '按原始托盘', '按实物托盘', '按生产订单+生产日期'];
+var sealTypeOptions = ['按条码', '按原始托盘', '按实物托盘', '按产线编码+生产日期'];
 var sealTypeSelected = new Set();
 
 function renderSealTypeMulti() {
