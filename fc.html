@@ -309,6 +309,14 @@
             <input class="wms-input" placeholder="请输入产线编码">
           </div>
           <div class="wms-form-group">
+            <label class="wms-form-label">物料编码</label>
+            <input class="wms-input" placeholder="请输入物料编码">
+          </div>
+          <div class="wms-form-group">
+            <label class="wms-form-label">批次</label>
+            <input class="wms-input" placeholder="请输入批次">
+          </div>
+          <div class="wms-form-group">
             <label class="wms-form-label">生产日期</label>
             <div class="date-range">
               <input class="wms-input" type="date">
@@ -337,13 +345,10 @@
           </div>
           <div class="wms-form-group">
             <label class="wms-form-label">封存基地</label>
-            <select class="wms-input" id="q-base">
-              <option value="">全部</option>
-              <option value="珠海凯邦">珠海凯邦</option>
-              <option value="合肥凯邦">合肥凯邦</option>
-              <option value="重庆凯邦">重庆凯邦</option>
-              <option value="河南凯邦">河南凯邦</option>
-            </select>
+            <div class="wms-select">
+              <input class="wms-input" id="q-base" placeholder="请选择基地（可多选）" readonly onclick="toggleBasePanel(event)">
+            </div>
+            <div class="dd-panel" id="dd-base"></div>
           </div>
         </div>
 
@@ -653,7 +658,7 @@ function addRow() {
     '<td class="seal-date muted">—</td>' +
     '<td class="seal-material muted">—</td>' +
     '<td class="seal-material-name muted">—</td>' +
-    '<td class="muted">—</td>' +
+    '<td class="seal-batch muted">—</td>' +
     '<td class="muted">—</td>' +
     '<td class="muted">—</td>' +
     '<td class="muted">—</td>' +
@@ -690,6 +695,7 @@ function onEditTypeChange(sel) {
   var dateCell = tr.querySelector('.seal-date');
   var matCell = tr.querySelector('.seal-material');
   var nameCell = tr.querySelector('.seal-material-name');
+  var batchCell = tr.querySelector('.seal-batch');
   var v = sel.value;
   var phMap = {
     '按条码': '必填录入条码',
@@ -709,10 +715,15 @@ function onEditTypeChange(sel) {
     matCell.className = 'seal-material';
     matCell.innerHTML = '<input class="wms-input" style="width:150px;height:28px;font-size:13px;" placeholder="必填录入物料编码" oninput="onMaterialCodeInput(this)">';
     if (nameCell) { nameCell.textContent = '—'; nameCell.className = 'seal-material-name muted'; }
+    // 批次可录入，非必填
+    batchCell.className = 'seal-batch';
+    batchCell.innerHTML = '<input class="wms-input" style="width:120px;height:28px;font-size:13px;" placeholder="选填批次">';
   } else {
     dateCell.className = 'seal-date muted';
     dateCell.innerHTML = '—';
     resetMaterial(tr);
+    batchCell.className = 'seal-batch muted';
+    batchCell.innerHTML = '—';
   }
 }
 
@@ -732,6 +743,8 @@ function saveRow(btn) {
   var isLineType = sealType === '按产线编码+生产日期';
   var materialInput = tr.querySelector('.seal-material input');
   var manualCode = materialInput ? materialInput.value.trim() : '';
+  var batchInput = tr.querySelector('.seal-batch input');
+  var manualBatch = batchInput ? batchInput.value.trim() : '';
   var hit = findMaterial(sealData);
   var materialVal = (hit && hit.code) || '—';
   var nameVal = (hit && hit.name) || '—';
@@ -740,7 +753,7 @@ function saveRow(btn) {
   var sourceVal = (hit && hit.source) || '—';
   if (!sealData) { alert('封存数据为必填项'); return; }
   if (isLineType && !manualCode) { alert('物料编码为必填项'); return; }
-  if (isLineType) { materialVal = manualCode; nameVal = codeToName[manualCode] || '—'; }
+  if (isLineType) { materialVal = manualCode; nameVal = codeToName[manualCode] || '—'; batchVal = manualBatch || '—'; }
   if (!baseVal) { alert('封存基地为必填项'); return; }
   if (!reasonVal) { alert('封存原因为必填项'); return; }
   if (!damageVal) { alert('损坏程度为必填项'); return; }
@@ -813,6 +826,39 @@ function applyStatus(action) {
   if (changed === 0) { alert('请先勾选要' + action + '的数据'); }
 }
 
+/* ===== 封存基地（查询条件，多选，默认当前基地） ===== */
+var baseOptions = ['珠海凯邦', '合肥凯邦', '重庆凯邦', '河南凯邦'];
+var baseSelected = new Set(['珠海凯邦']); // 默认当前基地
+
+function renderBaseMulti() {
+  var panel = document.getElementById('dd-base');
+  var items = baseOptions.map(function (o) {
+    return '<label class="dd-item"><input type="checkbox" ' + (baseSelected.has(o) ? 'checked' : '') + ' onchange="toggleBase(\'' + o + '\', this.checked)">' + o + '</label>';
+  }).join('');
+  panel.innerHTML =
+    '<label class="dd-item" style="border-bottom:1px solid var(--wms-border-lighter);">' +
+      '<input type="checkbox" ' + (baseSelected.size === baseOptions.length ? 'checked' : '') + ' onchange="toggleAllBase(this.checked)">全选' +
+    '</label>' + items;
+  document.getElementById('q-base').value = Array.from(baseSelected).join(' / ');
+}
+
+function toggleBase(opt, checked) {
+  if (checked) baseSelected.add(opt); else baseSelected.delete(opt);
+  renderBaseMulti();
+}
+
+function toggleAllBase(checked) {
+  baseSelected.clear();
+  if (checked) baseOptions.forEach(function (o) { baseSelected.add(o); });
+  renderBaseMulti();
+}
+
+function toggleBasePanel(event) {
+  event.stopPropagation();
+  renderBaseMulti();
+  document.getElementById('dd-base').classList.toggle('open');
+}
+
 /* ===== 封存方式（查询条件，多选） ===== */
 var sealTypeOptions = ['按条码', '按原始托盘', '按实物托盘', '按产线编码+生产日期'];
 var sealTypeSelected = new Set();
@@ -838,8 +884,12 @@ function toggleSealTypePanel(event) {
 document.addEventListener('click', function (e) {
   if (!e.target.closest('.wms-form-group')) {
     document.getElementById('dd-seal-type').classList.remove('open');
+    document.getElementById('dd-base').classList.remove('open');
   }
 });
+
+/* 初始化封存基地查询条件（默认当前基地） */
+renderBaseMulti();
 </script>
 </body>
 </html>
