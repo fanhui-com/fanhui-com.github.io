@@ -367,7 +367,7 @@
         <div class="insert-tip">
           <b>新增：</b>
           <div class="mini-select"><input class="wms-input" value="按条码" readonly></div>
-          <span>封存方式四选一：按条码 / 按原始托盘 / 按实物托盘 / 按产线编码+生产日期，选择后录入封存数据（<span style="color:var(--wms-danger);">*</span> 必填）</span>
+          <span>封存方式四选一：按条码 / 按原始托盘 / 按实物托盘 / 按产线编码+生产日期，选择后录入封存数据（<span style="color:var(--wms-danger);">*</span> 必填）；按产线编码+生产日期封存时物料编码必填</span>
         </div>
 
         <!-- ===== 数据表格（查询结果字段 1:1 还原） ===== -->
@@ -380,7 +380,7 @@
                 <th>封存方式<span class="req">*</span></th>
                 <th>封存数据<span class="req">*</span></th>
                 <th>生产日期</th>
-                <th>物料编码</th>
+                <th>物料编码<span class="req">*</span></th>
                 <th>物料名称</th>
                 <th>批次</th>
                 <th>生产订单号</th>
@@ -552,7 +552,7 @@
           ① <b>封存方式</b>（必填）：按条码 / 按原始托盘 / 按实物托盘 / 按产线编码+生产日期，四选一；<br>
           ② <b>封存数据</b>（必填）：随封存方式录入对应条码 / 托盘号 / 产线编码（+日期段）；<br>
           ③ <b>生产日期</b>：非必填，填写日期段；不填写表示不限日期；<br>
-          ④ <b>物料编码 / 物料名称</b>：按条码、按托盘封存时由条码/托盘带出，按产线封存时系统带出；<br>
+          ④ <b>物料编码 / 物料名称</b>：按条码、按托盘封存时由条码/托盘带出；按产线编码+生产日期封存时<b>物料编码必填</b>（手工录入），物料名称由物料编码带出；<br>
           ⑤ <b>批次 / 生产订单号 / 状态 / 封存时间 / 封存人 / 封存原因 / 来源单号 / 解封人 / 解封时间 / 创建人 / 创建时间</b>：系统带出；<br>
           ⑥ <b>封存来源系统</b>：qms（质量系统发起）/ wms（仓储系统发起）。
         </div>
@@ -572,6 +572,15 @@ var materialLookup = {
   'PL001': { code: 'WL000001', name: '压缩机缸体', batch: '20260918A', order: 'sc0001', source: 'QMS20260919001' },
   'sc0002': { code: 'WL000045', name: '电机定子', batch: '20260917B', order: 'sc0002', source: 'QMS20260918002' },
   'sc0009': { code: 'WL000288', name: '压缩机曲轴', batch: '20260910D', order: 'sc0009', source: 'QMS20260911001' }
+};
+
+/* ===== 物料编码 → 物料名称 反向映射（按产线封存手工录入物料编码时带出名称） ===== */
+var codeToName = {
+  'WL000001': '压缩机缸体',
+  'WL000045': '电机定子',
+  'WL000102': '电机转子',
+  'WL000310': '电机机座',
+  'WL000288': '压缩机曲轴'
 };
 
 function setMaterialCell(tr, code, name) {
@@ -600,6 +609,18 @@ function onSealDataInput(input) {
   var hit = findMaterial(val);
   if (hit) setMaterialCell(tr, hit.code, hit.name);
   else resetMaterial(tr);
+}
+
+/* 按产线编码+生产日期封存：手工录入物料编码，自动带出物料名称 */
+function onMaterialCodeInput(input) {
+  var tr = input.closest('tr');
+  var nameCell = tr.querySelector('.seal-material-name');
+  var code = input.value.trim();
+  var name = codeToName[code] || '';
+  if (nameCell) {
+    nameCell.textContent = name || '—';
+    nameCell.className = 'seal-material-name' + (name ? '' : ' muted');
+  }
 }
 
 /* ===== 新增行 / 编辑行 ===== */
@@ -667,6 +688,8 @@ function onEditTypeChange(sel) {
   var tr = sel.closest('tr');
   var dataCell = tr.querySelector('.seal-data');
   var dateCell = tr.querySelector('.seal-date');
+  var matCell = tr.querySelector('.seal-material');
+  var nameCell = tr.querySelector('.seal-material-name');
   var v = sel.value;
   var phMap = {
     '按条码': '必填录入条码',
@@ -675,7 +698,6 @@ function onEditTypeChange(sel) {
     '按产线编码+生产日期': '必填录入产线编码'
   };
   dataCell.innerHTML = '<input class="wms-input" style="width:180px;height:28px;font-size:13px;" placeholder="' + (phMap[v] || '') + '" oninput="onSealDataInput(this)">';
-  resetMaterial(tr);
   if (v === '按产线编码+生产日期') {
     dateCell.className = 'seal-date';
     dateCell.innerHTML = '<div class="date-range" style="width:230px;">' +
@@ -683,9 +705,14 @@ function onEditTypeChange(sel) {
       '<span class="tilde">~</span>' +
       '<input class="wms-input" type="date" style="height:28px;font-size:13px;">' +
       '</div>';
+    // 按产线编码+生产日期封存：物料编码必填，手工录入
+    matCell.className = 'seal-material';
+    matCell.innerHTML = '<input class="wms-input" style="width:150px;height:28px;font-size:13px;" placeholder="必填录入物料编码" oninput="onMaterialCodeInput(this)">';
+    if (nameCell) { nameCell.textContent = '—'; nameCell.className = 'seal-material-name muted'; }
   } else {
     dateCell.className = 'seal-date muted';
     dateCell.innerHTML = '—';
+    resetMaterial(tr);
   }
 }
 
@@ -702,6 +729,9 @@ function saveRow(btn) {
   var baseVal = baseSel ? baseSel.value : '';
   var reasonVal = reasonSel ? reasonSel.value : '';
   var damageVal = damageSel ? damageSel.value : '';
+  var isLineType = sealType === '按产线编码+生产日期';
+  var materialInput = tr.querySelector('.seal-material input');
+  var manualCode = materialInput ? materialInput.value.trim() : '';
   var hit = findMaterial(sealData);
   var materialVal = (hit && hit.code) || '—';
   var nameVal = (hit && hit.name) || '—';
@@ -709,6 +739,8 @@ function saveRow(btn) {
   var orderVal = (hit && hit.order) || '—';
   var sourceVal = (hit && hit.source) || '—';
   if (!sealData) { alert('封存数据为必填项'); return; }
+  if (isLineType && !manualCode) { alert('物料编码为必填项'); return; }
+  if (isLineType) { materialVal = manualCode; nameVal = codeToName[manualCode] || '—'; }
   if (!baseVal) { alert('封存基地为必填项'); return; }
   if (!reasonVal) { alert('封存原因为必填项'); return; }
   if (!damageVal) { alert('损坏程度为必填项'); return; }
