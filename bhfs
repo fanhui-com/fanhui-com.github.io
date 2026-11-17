@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WMS 备货方式选型说明</title>
+<style>
+    /* 全局重置与锁定 */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        background-color: #f8fafc; color: #1e293b; height: 100vh; display: flex; flex-direction: column; 
+        overflow: hidden; padding: 24px; font-size: 13px;
+    }
+
+    /* 顶部通栏说明 */
+    .header { margin-bottom: 16px; display: flex; justify-content: space-between; align-items: flex-end; }
+    .title { font-size: 20px; font-weight: 600; color: #0f172a; margin-bottom: 6px; }
+    .desc { color: #64748b; font-size: 13px; max-width: 800px; line-height: 1.5; }
+    
+    .rule-box {
+        background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; 
+        padding: 8px 16px; border-radius: 6px; font-size: 13px; display: flex; gap: 24px;
+    }
+    .rule-box span { display: flex; align-items: center; gap: 6px; }
+
+    /* 核心网格区 (3x3) */
+    .grid {
+        display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+        gap: 12px; flex: 1; height: calc(100vh - 100px);
+    }
+
+    /* 卡片样式 (系统文档风) */
+    .card {
+        background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px;
+        padding: 16px; display: flex; flex-direction: column; transition: all 0.2s;
+    }
+    .card:hover { border-color: #93c5fd; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+    
+    /* 卡片头部 */
+    .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .card-title { font-size: 15px; font-weight: 600; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+    .card-num {
+        display: inline-flex; justify-content: center; align-items: center;
+        width: 20px; height: 20px; background: #f1f5f9; color: #64748b; border-radius: 4px; font-size: 12px;
+    }
+
+    /* 标签系统 */
+    .tag { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 500; border: 1px solid transparent; }
+    .tag-blue { background: #e0f2fe; color: #0284c7; border-color: #bae6fd; }
+    .tag-green { background: #dcfce7; color: #16a34a; border-color: #bbf7d0; }
+    .tag-red { background: #fee2e2; color: #dc2626; border-color: #fecaca; }
+    .tag-orange { background: #ffedd5; color: #ea580c; border-color: #fed7aa; }
+    .tag-gray { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+
+    /* 卡片内容 */
+    .content-block { margin-bottom: 8px; flex: 1; }
+    .content-label { color: #94a3b8; font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+    .content-text { color: #334155; line-height: 1.5; }
+
+    /* 特殊高亮 */
+    .alert-text { color: #dc2626; font-weight: 500; }
+    .highlight-text { color: #2563eb; font-weight: 500; }
+
+</style>
+</head>
+<body>
+
+    <!-- 顶部总则 -->
+    <div class="header">
+        <div>
+            <div class="title">WMS 备货方式配置说明</div>
+            <div class="desc">备货方式决定了 PDA 任务的生成维度。常规 WMS 系统对“按车备货”兼容性最好。</div>
+        </div>
+        <div class="rule-box">
+            <span><strong>已知车单关系：</strong>选按车备货</span>
+            <span style="color:#cbd5e1">|</span>
+            <span><strong>未知车单关系：</strong>选按单备货，后续人工分车</span>
+        </div>
+    </div>
+
+    <!-- 3x3 网格矩阵 -->
+    <div class="grid">
+        <!-- 1 -->
+        <div class="card" style="border-top: 3px solid #22c55e;">
+            <div class="card-head">
+                <div class="card-title"><span class="card-num">1</span> 按车备货</div>
+                <span class="tag tag-green">推荐首选</span>
+            </div>
+            <div class="content-block">
+                <div class="content-label">业务逻辑 (按一辆一个车次)</div>
+                <div class="content-text">按装载单号或相同车牌生成一个车次。TMS已指定装载单的直接生成，无装载单有车牌的按车牌合并。</div>
+            </div>
+            <div class="content-block">
+                <div class="content-label">适用场景</div>
+                <div class="content-text highlight-text">先配车后备货。</div>
+            </div>
+        </div>
+
+        <!-- 2 -->
+        <div class="card" style="border-top: 3px solid #ef4444;">
+            <div class="card-head">
+                <div class="card-title"><span class="card-num">2</span> 按 WMS 单号备货</div>
+                <span class="tag tag-red">不推荐</span>
+            </div>
+            <div class="content-block">
+                <div class="content-label">业务逻辑 (一单一车次)</div>
+                <div class="content-text">按最小颗粒度(ERP单号+行号)生成，不可拆单发货，一个物料行一个任务卡片。</div>
+            </div>
+            <div class="content-block">
+                <div class="content-label">适用场景</div>
+                <div class="content-text alert-text">卡片过多，效率极低，装车需逐个核对，无特殊需求避开。</div>
+            </div>
+        </div>
+
+        <!-- 3 -->
+        <div class="card">
+            <div class="card-head">
+                <div class="card-title"><span class="card-num">3</span> 按单组合备货</div>
+                <span class="tag tag-orange">人工干预</span>
+            </div>
+            <div class="content-block">
+                <div class="content-label">业务逻辑 (勾选单据生成车次)</div>
+                <div class="content-text">手工将多个订单捆绑合并生成车次，系统针对勾选行合并下发 PDA 任务。</div>
+            </div>
+            <div class="content-block">
+                <div class="content-label">适用场景</div>
+                <div class="content-text highlight-text">先备货后配车。</div>
+                <div class="content-text">适合发货计划变动大，需计划员频繁人工分配的场景。</div>
+            </div>
+        </div>
+
+        <!-- 4 -->
+        <div class="card">
+            <div class="card-head">
+                <div class="card-title"><span class="card-num">4</span> 按 ERP 单号备货</div>
+                <span class="tag tag-gray">先备后配</span>
+            </div>
+            <div class="content-block">
+                <div class="content-label">业务逻辑 (一单一车次)</div>
+                <div class="content-text">按 ERP 单号生成一个独立的备货任务。</div>
+            </div>
+            <div class="content-block">
+                <div class="content-label">适用场景</div>
+                <div class="content-text highlight-text">先开单后备货。</div>
+                <div class="content-text">适合确定 ERP 单下物料需全部发货，不拼车或等车到后再分车的场景。</div>
+            </div>
+        </div>
+
+        <!-- 5 -->
+        <div class="card">
+            <div class="card-head">
+                <div class="card-title"><span class="card-num">5</span> 按上游发货单备货</div>
+                <span class="tag tag-gray">先备后配</span>
+            </div>
+            <div class="content-block">
+                <div class="content-label">业务逻辑 (一单一车次)</div>
+                <div class="content-text">按上游发货单（OMS 发货通知单）单号生成备货任务。</div>
+            </div>
+            <div class="content-block">
+                <div class="content-label">适用场景</div>
+                <div class="content-text highlight-text">先出库后开 ERP 单。</div>
+                <div class="content-text">适合先备货后配车模式。</div>
+            </div>
+        </div>
+
+        <!-- 6 -->
+        <div class="card">
+            <div class="card-head">
+                <div class="card-title"><span class="card-num">6</span> 按车承运商</div>
+                <span class="tag tag-orange">快递专属</span>
+            </div>
+            <div class="content-block">
+                <div class="content-label">业务逻辑 (承运商+规格)</div>
+                <div class="content-text">将相同承运商的订单合并生成一个车次备货，支持伴随人工贴面单作业。</div>
+            </div>
+            <div class="content-block">
+                <div class="content-label">适用场景</div>
+                <div class="content-text highlight-text">快递揽件模式。</div>
+            </div>
+        </div>
+
+        <!-- 7 -->
+        <div class="card">
+            <div class="card-head">
+                <div class="card-title"><span class="card-num">7</span> 按车备货混合模式</div>
+                <span class="tag tag-blue">智能分流</span>
+            </div>
+            <div class="content-block">
+                <div class="content-label">业务逻辑 (自动拆分)</div>
+                <div class="content-text">系统智能判断：快递按承运商合并；非快递按装载单/车牌合并。</div>
+            </div>
+            <div class="content-block">
+                <div class="content-label">适用场景</div>
+                <div class="content-text">同一批单据中包含多种运输方式，需自动分流的场景。</div>
+            </div>
+        </div>
+
+        <!-- 8 -->
+        <div class="card">
+            <div class="card-head">
+                <div class="card-title"><span class="card-num">8</span> 按收货客户信息</div>
+                <span class="tag tag-blue">直发客户</span>
+            </div>
+            <div class="content-block">
+                <div class="content-label">业务逻辑 (客户+地址+联系人)</div>
+                <div class="content-text">必须满足这三项完全一致，才能合并为一个车次任务。</div>
+            </div>
+            <div class="content-block">
+                <div class="content-label">适用场景</div>
+                <div class="content-text">销售公司直发客户，需严格按收货信息打包装车。</div>
+            </div>
+        </div>
+
+        <!-- 9 -->
+        <div class="card">
+            <div class="card-head">
+                <div class="card-title"><span class="card-num">9</span> 按下单公司</div>
+                <span class="tag tag-blue">网批专属</span>
+            </div>
+            <div class="content-block">
+                <div class="content-label">业务逻辑 (相同下单公司一车次)</div>
+                <div class="content-text">按相同的下单公司维度进行合并备货。</div>
+            </div>
+            <div class="content-block">
+                <div class="content-label">适用场景</div>
+                <div class="content-text">网批客户备货。等同于按相同客户备货装车。</div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
